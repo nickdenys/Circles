@@ -21,6 +21,7 @@ class AlbumListController extends Controller
     {
         $lists = $request->user()
             ->albumLists()
+            ->withCount('albums')
             ->orderByRaw("CASE WHEN type = 'system' THEN 0 ELSE 1 END")
             ->orderBy('title')
             ->simplePaginate(20);
