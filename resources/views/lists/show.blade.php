@@ -153,34 +153,76 @@
                 $minutes = intdiv($totalSeconds % 3600, 60);
                 $runtimeFormatted = $hours > 0 ? $hours . 'h ' . $minutes . 'm' : $minutes . ' min';
             @endphp
-            <a
-                href="{{ $album->spotify_uri }}"
+            <div
                 class="album-card group flex gap-4 rounded-xl border border-zinc-200 bg-white p-4 transition hover:border-zinc-300 hover:shadow-sm dark:border-zinc-700 dark:bg-zinc-900 dark:hover:border-zinc-600"
                 data-album-id="{{ $album->spotify_id }}"
             >
-                @if ($album->cover_url)
-                    <img src="{{ $album->cover_url }}" alt="" class="h-20 w-20 shrink-0 rounded-lg object-cover" />
-                @else
-                    <div class="flex h-20 w-20 shrink-0 items-center justify-center rounded-lg bg-zinc-200 dark:bg-zinc-700">
-                        <svg class="h-8 w-8 text-zinc-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="m9 9 10.5-3m0 6.553v3.75a2.25 2.25 0 0 1-1.632 2.163l-1.32.377a1.803 1.803 0 1 1-.99-3.467l2.31-.66a2.25 2.25 0 0 0 1.632-2.163Zm0 0V2.25L9 5.25v10.303m0 0v3.75a2.25 2.25 0 0 1-1.632 2.163l-1.32.377a1.803 1.803 0 0 1-.99-3.467l2.31-.66A2.25 2.25 0 0 0 9 15.553Z" />
-                        </svg>
-                    </div>
-                @endif
-                <div class="min-w-0 flex-1">
+                <a href="{{ $album->spotify_uri }}" class="shrink-0">
+                    @if ($album->cover_url)
+                        <img src="{{ $album->cover_url }}" alt="" class="h-20 w-20 rounded-lg object-cover" />
+                    @else
+                        <div class="flex h-20 w-20 items-center justify-center rounded-lg bg-zinc-200 dark:bg-zinc-700">
+                            <svg class="h-8 w-8 text-zinc-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="m9 9 10.5-3m0 6.553v3.75a2.25 2.25 0 0 1-1.632 2.163l-1.32.377a1.803 1.803 0 1 1-.99-3.467l2.31-.66a2.25 2.25 0 0 0 1.632-2.163Zm0 0V2.25L9 5.25v10.303m0 0v3.75a2.25 2.25 0 0 1-1.632 2.163l-1.32.377a1.803 1.803 0 0 1-.99-3.467l2.31-.66A2.25 2.25 0 0 0 9 15.553Z" />
+                            </svg>
+                        </div>
+                    @endif
+                </a>
+                <a href="{{ $album->spotify_uri }}" class="min-w-0 flex-1">
                     <p class="truncate text-sm font-semibold">{{ $album->title }}</p>
                     <p class="truncate text-sm text-zinc-600 dark:text-zinc-400">{{ $album->artists }}</p>
                     <p class="mt-1 text-xs text-zinc-500 dark:text-zinc-500">
                         {{ ucfirst($album->album_type) }} · {{ $album->total_tracks }} {{ str('track')->plural($album->total_tracks) }} · {{ $runtimeFormatted }}
                     </p>
                     <p class="text-xs text-zinc-400 dark:text-zinc-500">{{ $album->release_date }}</p>
-                </div>
-            </a>
+                </a>
+                <button
+                    type="button"
+                    class="remove-album-button shrink-0 self-center rounded-lg p-1.5 text-zinc-400 opacity-0 transition hover:bg-red-50 hover:text-red-600 group-hover:opacity-100 dark:hover:bg-red-950 dark:hover:text-red-400"
+                    data-album-id="{{ $album->id }}"
+                    data-album-title="{{ $album->title }}"
+                    title="Remove from list"
+                >
+                    <svg class="h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" />
+                    </svg>
+                </button>
+            </div>
         @empty
             <p id="albums-empty-state" class="py-8 text-center text-zinc-500 dark:text-zinc-400">
                 No albums yet. Search for albums above to add them to this list.
             </p>
         @endforelse
+    </div>
+
+    {{-- Remove Album Modal --}}
+    <div id="remove-album-modal" class="fixed inset-0 z-50 hidden items-center justify-center">
+        <div id="remove-album-backdrop" class="absolute inset-0 bg-black/50"></div>
+        <div class="relative mx-4 w-full max-w-sm rounded-xl border border-zinc-200 bg-white p-6 shadow-xl dark:border-zinc-700 dark:bg-zinc-900">
+            <h2 class="text-lg font-semibold">Remove Album</h2>
+            <p class="mt-2 text-sm text-zinc-600 dark:text-zinc-400">
+                Are you sure you want to remove <span id="remove-album-title" class="font-medium"></span> from this list?
+            </p>
+
+            <form id="remove-album-form" method="POST" class="mt-6 flex items-center justify-end gap-3">
+                @csrf
+                @method('DELETE')
+
+                <button
+                    type="button"
+                    id="cancel-remove-album"
+                    class="rounded-lg px-4 py-2 text-sm font-medium text-zinc-600 transition hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100"
+                >
+                    Cancel
+                </button>
+                <button
+                    type="submit"
+                    class="rounded-lg bg-red-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-red-700 dark:bg-red-600 dark:hover:bg-red-700"
+                >
+                    Confirm
+                </button>
+            </form>
+        </div>
     </div>
 
     @unless ($list->isSystem())
@@ -311,8 +353,7 @@
             }
 
             function createAlbumCard(album) {
-                const card = document.createElement('a');
-                card.href = album.spotify_uri;
+                const card = document.createElement('div');
                 card.className = 'album-card group flex gap-4 rounded-xl border border-zinc-200 bg-white p-4 transition hover:border-zinc-300 hover:shadow-sm dark:border-zinc-700 dark:bg-zinc-900 dark:hover:border-zinc-600';
                 card.dataset.albumId = album.spotify_id;
 
@@ -321,16 +362,20 @@
                 var albumType = album.album_type ? album.album_type.charAt(0).toUpperCase() + album.album_type.slice(1) : '';
 
                 const imgHtml = album.cover_url
-                    ? '<img src="' + escapeHtml(album.cover_url) + '" alt="" class="h-20 w-20 shrink-0 rounded-lg object-cover" />'
-                    : '<div class="flex h-20 w-20 shrink-0 items-center justify-center rounded-lg bg-zinc-200 dark:bg-zinc-700"><svg class="h-8 w-8 text-zinc-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m9 9 10.5-3m0 6.553v3.75a2.25 2.25 0 0 1-1.632 2.163l-1.32.377a1.803 1.803 0 1 1-.99-3.467l2.31-.66a2.25 2.25 0 0 0 1.632-2.163Zm0 0V2.25L9 5.25v10.303m0 0v3.75a2.25 2.25 0 0 1-1.632 2.163l-1.32.377a1.803 1.803 0 0 1-.99-3.467l2.31-.66A2.25 2.25 0 0 0 9 15.553Z" /></svg></div>';
+                    ? '<img src="' + escapeHtml(album.cover_url) + '" alt="" class="h-20 w-20 rounded-lg object-cover" />'
+                    : '<div class="flex h-20 w-20 items-center justify-center rounded-lg bg-zinc-200 dark:bg-zinc-700"><svg class="h-8 w-8 text-zinc-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m9 9 10.5-3m0 6.553v3.75a2.25 2.25 0 0 1-1.632 2.163l-1.32.377a1.803 1.803 0 1 1-.99-3.467l2.31-.66a2.25 2.25 0 0 0 1.632-2.163Zm0 0V2.25L9 5.25v10.303m0 0v3.75a2.25 2.25 0 0 1-1.632 2.163l-1.32.377a1.803 1.803 0 0 1-.99-3.467l2.31-.66A2.25 2.25 0 0 0 9 15.553Z" /></svg></div>';
 
-                card.innerHTML = imgHtml +
-                    '<div class="min-w-0 flex-1">' +
+                card.innerHTML =
+                    '<a href="' + escapeHtml(album.spotify_uri) + '" class="shrink-0">' + imgHtml + '</a>' +
+                    '<a href="' + escapeHtml(album.spotify_uri) + '" class="min-w-0 flex-1">' +
                         '<p class="truncate text-sm font-semibold">' + escapeHtml(album.title) + '</p>' +
                         '<p class="truncate text-sm text-zinc-600 dark:text-zinc-400">' + escapeHtml(album.artists) + '</p>' +
                         '<p class="mt-1 text-xs text-zinc-500 dark:text-zinc-500">' + escapeHtml(albumType) + ' &middot; ' + trackCount + ' ' + trackLabel + ' &middot; ' + formatRuntime(album.runtime_ms) + '</p>' +
                         '<p class="text-xs text-zinc-400 dark:text-zinc-500">' + escapeHtml(album.release_date || '') + '</p>' +
-                    '</div>';
+                    '</a>' +
+                    '<button type="button" class="remove-album-button shrink-0 self-center rounded-lg p-1.5 text-zinc-400 opacity-0 transition hover:bg-red-50 hover:text-red-600 group-hover:opacity-100 dark:hover:bg-red-950 dark:hover:text-red-400" data-album-id="' + album.id + '" data-album-title="' + escapeHtml(album.title) + '" title="Remove from list">' +
+                        '<svg class="h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" /></svg>' +
+                    '</button>';
 
                 return card;
             }
@@ -454,6 +499,48 @@
                 if (e.key === 'Escape') {
                     hideDropdown();
                     searchInput.blur();
+                }
+            });
+        })();
+    </script>
+
+    <script>
+        (function () {
+            const removeModal = document.getElementById('remove-album-modal');
+            const removeBackdrop = document.getElementById('remove-album-backdrop');
+            const removeForm = document.getElementById('remove-album-form');
+            const removeTitleEl = document.getElementById('remove-album-title');
+            const cancelRemoveBtn = document.getElementById('cancel-remove-album');
+            const albumsContainer = document.getElementById('albums-container');
+            const baseRemoveUrl = @json(url('/lists/' . $list->id . '/albums'));
+
+            function openRemoveModal(albumId, albumTitle) {
+                removeTitleEl.textContent = albumTitle;
+                removeForm.action = baseRemoveUrl + '/' + albumId;
+                removeModal.classList.remove('hidden');
+                removeModal.classList.add('flex');
+            }
+
+            function closeRemoveModal() {
+                removeModal.classList.add('hidden');
+                removeModal.classList.remove('flex');
+            }
+
+            cancelRemoveBtn.addEventListener('click', closeRemoveModal);
+            removeBackdrop.addEventListener('click', closeRemoveModal);
+
+            albumsContainer.addEventListener('click', function (e) {
+                const btn = e.target.closest('.remove-album-button');
+                if (btn) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    openRemoveModal(btn.dataset.albumId, btn.dataset.albumTitle);
+                }
+            });
+
+            document.addEventListener('keydown', function (e) {
+                if (e.key === 'Escape' && !removeModal.classList.contains('hidden')) {
+                    closeRemoveModal();
                 }
             });
         })();

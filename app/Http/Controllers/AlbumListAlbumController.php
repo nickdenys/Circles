@@ -6,6 +6,7 @@ use App\Models\Album;
 use App\Models\AlbumList;
 use App\Services\SpotifyService;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 
 class AlbumListAlbumController extends Controller
@@ -60,5 +61,17 @@ class AlbumListAlbumController extends Controller
                 'spotify_uri' => $album->spotify_uri,
             ],
         ], 201);
+    }
+
+    /**
+     * Remove an album from the given list.
+     */
+    public function destroy(Request $request, AlbumList $albumList, Album $album): RedirectResponse
+    {
+        abort_unless($albumList->user_id === $request->user()->id, 403);
+
+        $albumList->albums()->detach($album->id);
+
+        return redirect()->route('lists.show', $albumList);
     }
 }
