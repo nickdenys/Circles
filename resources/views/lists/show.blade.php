@@ -146,11 +146,41 @@
     </div>
 
     <div id="albums-container" class="mt-8 flex flex-col gap-3">
-        @if ($list->albums_count === 0)
+        @forelse ($list->albums as $album)
+            @php
+                $totalSeconds = intdiv($album->runtime_ms, 1000);
+                $hours = intdiv($totalSeconds, 3600);
+                $minutes = intdiv($totalSeconds % 3600, 60);
+                $runtimeFormatted = $hours > 0 ? $hours . 'h ' . $minutes . 'm' : $minutes . ' min';
+            @endphp
+            <a
+                href="{{ $album->spotify_uri }}"
+                class="album-card group flex gap-4 rounded-xl border border-zinc-200 bg-white p-4 transition hover:border-zinc-300 hover:shadow-sm dark:border-zinc-700 dark:bg-zinc-900 dark:hover:border-zinc-600"
+                data-album-id="{{ $album->spotify_id }}"
+            >
+                @if ($album->cover_url)
+                    <img src="{{ $album->cover_url }}" alt="" class="h-20 w-20 shrink-0 rounded-lg object-cover" />
+                @else
+                    <div class="flex h-20 w-20 shrink-0 items-center justify-center rounded-lg bg-zinc-200 dark:bg-zinc-700">
+                        <svg class="h-8 w-8 text-zinc-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="m9 9 10.5-3m0 6.553v3.75a2.25 2.25 0 0 1-1.632 2.163l-1.32.377a1.803 1.803 0 1 1-.99-3.467l2.31-.66a2.25 2.25 0 0 0 1.632-2.163Zm0 0V2.25L9 5.25v10.303m0 0v3.75a2.25 2.25 0 0 1-1.632 2.163l-1.32.377a1.803 1.803 0 0 1-.99-3.467l2.31-.66A2.25 2.25 0 0 0 9 15.553Z" />
+                        </svg>
+                    </div>
+                @endif
+                <div class="min-w-0 flex-1">
+                    <p class="truncate text-sm font-semibold">{{ $album->title }}</p>
+                    <p class="truncate text-sm text-zinc-600 dark:text-zinc-400">{{ $album->artists }}</p>
+                    <p class="mt-1 text-xs text-zinc-500 dark:text-zinc-500">
+                        {{ ucfirst($album->album_type) }} · {{ $album->total_tracks }} {{ str('track')->plural($album->total_tracks) }} · {{ $runtimeFormatted }}
+                    </p>
+                    <p class="text-xs text-zinc-400 dark:text-zinc-500">{{ $album->release_date }}</p>
+                </div>
+            </a>
+        @empty
             <p id="albums-empty-state" class="py-8 text-center text-zinc-500 dark:text-zinc-400">
                 No albums yet. Search for albums above to add them to this list.
             </p>
-        @endif
+        @endforelse
     </div>
 
     @unless ($list->isSystem())
@@ -273,19 +303,33 @@
                 }
             }
 
+            function formatRuntime(ms) {
+                var totalSeconds = Math.floor(ms / 1000);
+                var hours = Math.floor(totalSeconds / 3600);
+                var minutes = Math.floor((totalSeconds % 3600) / 60);
+                return hours > 0 ? hours + 'h ' + minutes + 'm' : minutes + ' min';
+            }
+
             function createAlbumCard(album) {
-                const card = document.createElement('div');
-                card.className = 'flex items-center gap-4 rounded-xl border border-zinc-200 bg-white p-4 dark:border-zinc-700 dark:bg-zinc-900';
+                const card = document.createElement('a');
+                card.href = album.spotify_uri;
+                card.className = 'album-card group flex gap-4 rounded-xl border border-zinc-200 bg-white p-4 transition hover:border-zinc-300 hover:shadow-sm dark:border-zinc-700 dark:bg-zinc-900 dark:hover:border-zinc-600';
                 card.dataset.albumId = album.spotify_id;
 
+                var trackCount = album.total_tracks || 0;
+                var trackLabel = trackCount === 1 ? 'track' : 'tracks';
+                var albumType = album.album_type ? album.album_type.charAt(0).toUpperCase() + album.album_type.slice(1) : '';
+
                 const imgHtml = album.cover_url
-                    ? '<img src="' + escapeHtml(album.cover_url) + '" alt="" class="h-16 w-16 shrink-0 rounded-lg object-cover" />'
-                    : '<div class="flex h-16 w-16 shrink-0 items-center justify-center rounded-lg bg-zinc-200 dark:bg-zinc-700"><svg class="h-8 w-8 text-zinc-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m9 9 10.5-3m0 6.553v3.75a2.25 2.25 0 0 1-1.632 2.163l-1.32.377a1.803 1.803 0 1 1-.99-3.467l2.31-.66a2.25 2.25 0 0 0 1.632-2.163Zm0 0V2.25L9 5.25v10.303m0 0v3.75a2.25 2.25 0 0 1-1.632 2.163l-1.32.377a1.803 1.803 0 0 1-.99-3.467l2.31-.66A2.25 2.25 0 0 0 9 15.553Z" /></svg></div>';
+                    ? '<img src="' + escapeHtml(album.cover_url) + '" alt="" class="h-20 w-20 shrink-0 rounded-lg object-cover" />'
+                    : '<div class="flex h-20 w-20 shrink-0 items-center justify-center rounded-lg bg-zinc-200 dark:bg-zinc-700"><svg class="h-8 w-8 text-zinc-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m9 9 10.5-3m0 6.553v3.75a2.25 2.25 0 0 1-1.632 2.163l-1.32.377a1.803 1.803 0 1 1-.99-3.467l2.31-.66a2.25 2.25 0 0 0 1.632-2.163Zm0 0V2.25L9 5.25v10.303m0 0v3.75a2.25 2.25 0 0 1-1.632 2.163l-1.32.377a1.803 1.803 0 0 1-.99-3.467l2.31-.66A2.25 2.25 0 0 0 9 15.553Z" /></svg></div>';
 
                 card.innerHTML = imgHtml +
                     '<div class="min-w-0 flex-1">' +
                         '<p class="truncate text-sm font-semibold">' + escapeHtml(album.title) + '</p>' +
-                        '<p class="truncate text-xs text-zinc-500 dark:text-zinc-400">' + escapeHtml(album.artists) + '</p>' +
+                        '<p class="truncate text-sm text-zinc-600 dark:text-zinc-400">' + escapeHtml(album.artists) + '</p>' +
+                        '<p class="mt-1 text-xs text-zinc-500 dark:text-zinc-500">' + escapeHtml(albumType) + ' &middot; ' + trackCount + ' ' + trackLabel + ' &middot; ' + formatRuntime(album.runtime_ms) + '</p>' +
+                        '<p class="text-xs text-zinc-400 dark:text-zinc-500">' + escapeHtml(album.release_date || '') + '</p>' +
                     '</div>';
 
                 return card;

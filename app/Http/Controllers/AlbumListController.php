@@ -47,6 +47,7 @@ class AlbumListController extends Controller
         abort_unless($albumList->user_id === $request->user()->id, 403);
 
         $albumList->loadCount('albums');
+        $albumList->load('albums');
 
         return view('lists.show', ['list' => $albumList]);
     }
