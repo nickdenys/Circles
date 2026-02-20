@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\StoreAlbumListRequest;
+use App\Models\AlbumList;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -34,6 +35,16 @@ class AlbumListController extends Controller
         }
 
         return view('lists.index', ['lists' => $lists]);
+    }
+
+    /**
+     * Display the list detail page.
+     */
+    public function show(Request $request, AlbumList $albumList): View
+    {
+        abort_unless($albumList->user_id === $request->user()->id, 403);
+
+        return view('lists.show', ['list' => $albumList]);
     }
 
     /**
