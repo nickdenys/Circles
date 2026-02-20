@@ -15,5 +15,6 @@ Route::middleware('auth')->group(function (): void {
 
     Route::get('/', fn () => view('home'))->name('home');
     Route::get('/lists', [AlbumListController::class, 'index'])->name('lists.index');
+    Route::post('/lists', [AlbumListController::class, 'store'])->name('lists.store');
     Route::get('/lists/{albumList}', fn () => view('lists.show'))->name('lists.show');
 });

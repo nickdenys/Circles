@@ -2,8 +2,10 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\StoreAlbumListRequest;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 
 class AlbumListController extends Controller
@@ -32,5 +34,19 @@ class AlbumListController extends Controller
         }
 
         return view('lists.index', ['lists' => $lists]);
+    }
+
+    /**
+     * Store a newly created custom list.
+     */
+    public function store(StoreAlbumListRequest $request): RedirectResponse
+    {
+        $request->user()->albumLists()->create([
+            'title' => $request->validated('title'),
+            'description' => $request->validated('description'),
+            'type' => 'custom',
+        ]);
+
+        return redirect()->route('lists.index');
     }
 }
