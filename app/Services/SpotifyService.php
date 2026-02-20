@@ -4,16 +4,33 @@ namespace App\Services;
 
 use App\Models\User;
 use Illuminate\Http\Client\Response;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 
 class SpotifyService
 {
     private const string BASE_URL = 'https://api.spotify.com/v1';
 
+    private const int SEARCH_CACHE_TTL = 3600;
+
+    private const int ALBUM_CACHE_TTL = 86400;
+
+    private bool $shouldBypassCache = false;
+
     /**
      * Create a new class instance.
      */
     public function __construct(private User $user) {}
+
+    /**
+     * Bypass the cache for the next request.
+     */
+    public function bypassCache(): static
+    {
+        $this->shouldBypassCache = true;
+
+        return $this;
+    }
 
     /**
      * Search for albums on Spotify.
@@ -22,6 +39,14 @@ class SpotifyService
      */
     public function searchAlbums(string $query, int $limit = 5): array
     {
+        $cacheKey = 'spotify_search:'.$this->user->id.':'.md5($query).':'.$limit;
+
+        if ($this->shouldBypassCache) {
+            Cache::forget($cacheKey);
+        } elseif (Cache::has($cacheKey)) {
+            return Cache::get($cacheKey);
+        }
+
         $response = $this->get('/search', [
             'q' => $query,
             'type' => 'album',
@@ -34,13 +59,17 @@ class SpotifyService
 
         $albums = $response->json('albums.items', []);
 
-        return array_map(fn (array $album) => [
+        $results = array_map(fn (array $album) => [
             'id' => $album['id'],
             'name' => $album['name'],
             'artists' => implode(', ', array_column($album['artists'], 'name')),
             'image' => $album['images'][0]['url'] ?? null,
             'uri' => $album['uri'],
         ], $albums);
+
+        Cache::put($cacheKey, $results, self::SEARCH_CACHE_TTL);
+
+        return $results;
     }
 
     /**
@@ -50,6 +79,14 @@ class SpotifyService
      */
     public function getAlbum(string $spotifyId): ?array
     {
+        $cacheKey = 'spotify_album:'.$spotifyId;
+
+        if ($this->shouldBypassCache) {
+            Cache::forget($cacheKey);
+        } elseif (Cache::has($cacheKey)) {
+            return Cache::get($cacheKey);
+        }
+
         $response = $this->get('/albums/'.$spotifyId);
 
         if ($response->failed()) {
@@ -61,7 +98,7 @@ class SpotifyService
         $runtimeMs = collect($album['tracks']['items'] ?? [])
             ->sum('duration_ms');
 
-        return [
+        $data = [
             'spotify_id' => $album['id'],
             'title' => $album['name'],
             'artists' => implode(', ', array_column($album['artists'], 'name')),
@@ -72,6 +109,10 @@ class SpotifyService
             'release_date' => $album['release_date'],
             'spotify_uri' => $album['uri'],
         ];
+
+        Cache::put($cacheKey, $data, self::ALBUM_CACHE_TTL);
+
+        return $data;
     }
 
     /**
