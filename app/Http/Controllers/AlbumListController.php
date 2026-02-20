@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\StoreAlbumListRequest;
+use App\Http\Requests\UpdateAlbumListRequest;
 use App\Models\AlbumList;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\JsonResponse;
@@ -59,5 +60,18 @@ class AlbumListController extends Controller
         ]);
 
         return redirect()->route('lists.index');
+    }
+
+    /**
+     * Update the specified custom list.
+     */
+    public function update(UpdateAlbumListRequest $request, AlbumList $albumList): RedirectResponse
+    {
+        $albumList->update([
+            'title' => $request->validated('title'),
+            'description' => $request->validated('description'),
+        ]);
+
+        return redirect()->route('lists.show', $albumList);
     }
 }
