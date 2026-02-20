@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\AlbumListAlbumController;
 use App\Http\Controllers\AlbumListController;
 use App\Http\Controllers\Auth\SpotifyAuthController;
 use App\Http\Controllers\SpotifySearchController;
@@ -20,6 +21,8 @@ Route::middleware('auth')->group(function (): void {
     Route::get('/lists/{albumList}', [AlbumListController::class, 'show'])->name('lists.show');
     Route::put('/lists/{albumList}', [AlbumListController::class, 'update'])->name('lists.update');
     Route::delete('/lists/{albumList}', [AlbumListController::class, 'destroy'])->name('lists.destroy');
+
+    Route::post('/lists/{albumList}/albums', [AlbumListAlbumController::class, 'store'])->name('lists.albums.store');
 
     Route::get('/spotify/search/albums', [SpotifySearchController::class, 'albums'])->name('spotify.search.albums');
 });

@@ -44,6 +44,37 @@ class SpotifyService
     }
 
     /**
+     * Get a single album from Spotify by its ID.
+     *
+     * @return array{spotify_id: string, title: string, artists: string, cover_url: string|null, runtime_ms: int, album_type: string, total_tracks: int, release_date: string, spotify_uri: string}|null
+     */
+    public function getAlbum(string $spotifyId): ?array
+    {
+        $response = $this->get('/albums/'.$spotifyId);
+
+        if ($response->failed()) {
+            return null;
+        }
+
+        $album = $response->json();
+
+        $runtimeMs = collect($album['tracks']['items'] ?? [])
+            ->sum('duration_ms');
+
+        return [
+            'spotify_id' => $album['id'],
+            'title' => $album['name'],
+            'artists' => implode(', ', array_column($album['artists'], 'name')),
+            'cover_url' => $album['images'][0]['url'] ?? null,
+            'runtime_ms' => $runtimeMs,
+            'album_type' => $album['album_type'],
+            'total_tracks' => $album['total_tracks'],
+            'release_date' => $album['release_date'],
+            'spotify_uri' => $album['uri'],
+        ];
+    }
+
+    /**
      * Make an authenticated GET request to the Spotify API.
      */
     private function get(string $endpoint, array $query = []): Response

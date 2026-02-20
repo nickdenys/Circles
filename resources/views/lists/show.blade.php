@@ -5,8 +5,8 @@
             @if ($list->description)
                 <p class="mt-1 text-zinc-600 dark:text-zinc-400">{{ $list->description }}</p>
             @endif
-            <p class="mt-2 text-sm text-zinc-500 dark:text-zinc-400">
-                {{ $list->albums_count ?? 0 }} {{ str('album')->plural($list->albums_count ?? 0) }}
+            <p id="album-count" class="mt-2 text-sm text-zinc-500 dark:text-zinc-400">
+                {{ $list->albums_count }} {{ str('album')->plural($list->albums_count) }}
             </p>
         </div>
 
@@ -146,9 +146,11 @@
     </div>
 
     <div id="albums-container" class="mt-8 flex flex-col gap-3">
-        <p class="py-8 text-center text-zinc-500 dark:text-zinc-400">
-            No albums yet. Search for albums above to add them to this list.
-        </p>
+        @if ($list->albums_count === 0)
+            <p id="albums-empty-state" class="py-8 text-center text-zinc-500 dark:text-zinc-400">
+                No albums yet. Search for albums above to add them to this list.
+            </p>
+        @endif
     </div>
 
     @unless ($list->isSystem())
@@ -219,10 +221,15 @@
             const resultsContainer = document.getElementById('album-search-results');
             const loadingEl = document.getElementById('album-search-loading');
             const emptyEl = document.getElementById('album-search-empty');
+            const albumsContainer = document.getElementById('albums-container');
+            const albumCountEl = document.getElementById('album-count');
             const searchUrl = @json(route('spotify.search.albums'));
+            const addAlbumUrl = @json(route('lists.albums.store', $list));
+            const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
 
             let debounceTimer = null;
             let abortController = null;
+            let albumCount = {{ $list->albums_count }};
 
             function escapeHtml(text) {
                 const div = document.createElement('div');
@@ -254,6 +261,70 @@
                 resultsContainer.innerHTML = '';
             }
 
+            function updateAlbumCount() {
+                albumCount++;
+                albumCountEl.textContent = albumCount + ' ' + (albumCount === 1 ? 'album' : 'albums');
+            }
+
+            function removeEmptyState() {
+                const emptyState = document.getElementById('albums-empty-state');
+                if (emptyState) {
+                    emptyState.remove();
+                }
+            }
+
+            function createAlbumCard(album) {
+                const card = document.createElement('div');
+                card.className = 'flex items-center gap-4 rounded-xl border border-zinc-200 bg-white p-4 dark:border-zinc-700 dark:bg-zinc-900';
+                card.dataset.albumId = album.spotify_id;
+
+                const imgHtml = album.cover_url
+                    ? '<img src="' + escapeHtml(album.cover_url) + '" alt="" class="h-16 w-16 shrink-0 rounded-lg object-cover" />'
+                    : '<div class="flex h-16 w-16 shrink-0 items-center justify-center rounded-lg bg-zinc-200 dark:bg-zinc-700"><svg class="h-8 w-8 text-zinc-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m9 9 10.5-3m0 6.553v3.75a2.25 2.25 0 0 1-1.632 2.163l-1.32.377a1.803 1.803 0 1 1-.99-3.467l2.31-.66a2.25 2.25 0 0 0 1.632-2.163Zm0 0V2.25L9 5.25v10.303m0 0v3.75a2.25 2.25 0 0 1-1.632 2.163l-1.32.377a1.803 1.803 0 0 1-.99-3.467l2.31-.66A2.25 2.25 0 0 0 9 15.553Z" /></svg></div>';
+
+                card.innerHTML = imgHtml +
+                    '<div class="min-w-0 flex-1">' +
+                        '<p class="truncate text-sm font-semibold">' + escapeHtml(album.title) + '</p>' +
+                        '<p class="truncate text-xs text-zinc-500 dark:text-zinc-400">' + escapeHtml(album.artists) + '</p>' +
+                    '</div>';
+
+                return card;
+            }
+
+            function addAlbum(spotifyId) {
+                fetch(addAlbumUrl, {
+                    method: 'POST',
+                    headers: {
+                        'Accept': 'application/json',
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': csrfToken,
+                        'X-Requested-With': 'XMLHttpRequest',
+                    },
+                    body: JSON.stringify({ spotify_id: spotifyId }),
+                })
+                .then(function (response) {
+                    if (response.status === 409) {
+                        return response.json().then(function (data) {
+                            throw new Error(data.message || 'Album already in this list.');
+                        });
+                    }
+                    if (!response.ok) {
+                        throw new Error('Failed to add album.');
+                    }
+                    return response.json();
+                })
+                .then(function (data) {
+                    removeEmptyState();
+                    albumsContainer.appendChild(createAlbumCard(data.data));
+                    updateAlbumCount();
+                    hideDropdown();
+                    searchInput.value = '';
+                })
+                .catch(function () {
+                    hideDropdown();
+                });
+            }
+
             function showResults(albums) {
                 loadingEl.classList.add('hidden');
                 emptyEl.classList.add('hidden');
@@ -279,6 +350,10 @@
                             '<p class="truncate text-sm font-medium">' + escapeHtml(album.name) + '</p>' +
                             '<p class="truncate text-xs text-zinc-500 dark:text-zinc-400">' + escapeHtml(album.artists) + '</p>' +
                         '</div>';
+
+                    button.addEventListener('click', function () {
+                        addAlbum(album.id);
+                    });
 
                     resultsContainer.appendChild(button);
                 });

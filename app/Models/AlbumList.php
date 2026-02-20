@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
 class AlbumList extends Model
 {
@@ -29,6 +30,14 @@ class AlbumList extends Model
     public function isSystem(): bool
     {
         return $this->type === 'system';
+    }
+
+    /**
+     * Get the albums in this list.
+     */
+    public function albums(): BelongsToMany
+    {
+        return $this->belongsToMany(Album::class)->withPivot('position')->withTimestamps()->orderBy('position');
     }
 
     /**
