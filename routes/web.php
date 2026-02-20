@@ -18,4 +18,5 @@ Route::middleware('auth')->group(function (): void {
     Route::post('/lists', [AlbumListController::class, 'store'])->name('lists.store');
     Route::get('/lists/{albumList}', [AlbumListController::class, 'show'])->name('lists.show');
     Route::put('/lists/{albumList}', [AlbumListController::class, 'update'])->name('lists.update');
+    Route::delete('/lists/{albumList}', [AlbumListController::class, 'destroy'])->name('lists.destroy');
 });

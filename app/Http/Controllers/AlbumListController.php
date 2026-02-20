@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\DestroyAlbumListRequest;
 use App\Http\Requests\StoreAlbumListRequest;
 use App\Http\Requests\UpdateAlbumListRequest;
 use App\Models\AlbumList;
@@ -73,5 +74,15 @@ class AlbumListController extends Controller
         ]);
 
         return redirect()->route('lists.show', $albumList);
+    }
+
+    /**
+     * Delete the specified custom list.
+     */
+    public function destroy(DestroyAlbumListRequest $request, AlbumList $albumList): RedirectResponse
+    {
+        $albumList->delete();
+
+        return redirect()->route('lists.index');
     }
 }
