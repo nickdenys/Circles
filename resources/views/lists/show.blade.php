@@ -156,7 +156,15 @@
             <div
                 class="album-card group flex gap-4 rounded-xl border border-zinc-200 bg-white p-4 transition hover:border-zinc-300 hover:shadow-sm dark:border-zinc-700 dark:bg-zinc-900 dark:hover:border-zinc-600"
                 data-album-id="{{ $album->spotify_id }}"
+                data-album-db-id="{{ $album->id }}"
             >
+                <div class="drag-handle flex shrink-0 cursor-grab items-center text-zinc-300 active:cursor-grabbing dark:text-zinc-600">
+                    <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 24 24">
+                        <circle cx="9" cy="5" r="1.5" /><circle cx="15" cy="5" r="1.5" />
+                        <circle cx="9" cy="12" r="1.5" /><circle cx="15" cy="12" r="1.5" />
+                        <circle cx="9" cy="19" r="1.5" /><circle cx="15" cy="19" r="1.5" />
+                    </svg>
+                </div>
                 <a href="{{ $album->spotify_uri }}" class="shrink-0">
                     @if ($album->cover_url)
                         <img src="{{ $album->cover_url }}" alt="" class="h-20 w-20 rounded-lg object-cover" />
@@ -425,6 +433,7 @@
                 const card = document.createElement('div');
                 card.className = 'album-card group flex gap-4 rounded-xl border border-zinc-200 bg-white p-4 transition hover:border-zinc-300 hover:shadow-sm dark:border-zinc-700 dark:bg-zinc-900 dark:hover:border-zinc-600';
                 card.dataset.albumId = album.spotify_id;
+                card.dataset.albumDbId = album.id;
 
                 var trackCount = album.total_tracks || 0;
                 var trackLabel = trackCount === 1 ? 'track' : 'tracks';
@@ -435,6 +444,9 @@
                     : '<div class="flex h-20 w-20 items-center justify-center rounded-lg bg-zinc-200 dark:bg-zinc-700"><svg class="h-8 w-8 text-zinc-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m9 9 10.5-3m0 6.553v3.75a2.25 2.25 0 0 1-1.632 2.163l-1.32.377a1.803 1.803 0 1 1-.99-3.467l2.31-.66a2.25 2.25 0 0 0 1.632-2.163Zm0 0V2.25L9 5.25v10.303m0 0v3.75a2.25 2.25 0 0 1-1.632 2.163l-1.32.377a1.803 1.803 0 0 1-.99-3.467l2.31-.66A2.25 2.25 0 0 0 9 15.553Z" /></svg></div>';
 
                 card.innerHTML =
+                    '<div class="drag-handle flex shrink-0 cursor-grab items-center text-zinc-300 active:cursor-grabbing dark:text-zinc-600">' +
+                        '<svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 24 24"><circle cx="9" cy="5" r="1.5" /><circle cx="15" cy="5" r="1.5" /><circle cx="9" cy="12" r="1.5" /><circle cx="15" cy="12" r="1.5" /><circle cx="9" cy="19" r="1.5" /><circle cx="15" cy="19" r="1.5" /></svg>' +
+                    '</div>' +
                     '<a href="' + escapeHtml(album.spotify_uri) + '" class="shrink-0">' + imgHtml + '</a>' +
                     '<a href="' + escapeHtml(album.spotify_uri) + '" class="min-w-0 flex-1">' +
                         '<p class="truncate text-sm font-semibold">' + escapeHtml(album.title) + '</p>' +
@@ -769,6 +781,215 @@
             document.addEventListener('keydown', function (e) {
                 if (e.key === 'Escape' && !moveModal.classList.contains('hidden')) {
                     closeMoveModal();
+                }
+            });
+        })();
+    </script>
+
+    <script>
+        (function () {
+            var container = document.getElementById('albums-container');
+            var reorderUrl = @json(route('lists.albums.reorder', $list));
+            var csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+
+            var draggedCard = null;
+            var placeholder = null;
+            var startY = 0;
+            var offsetY = 0;
+            var holdTimer = null;
+            var isDragging = false;
+
+            function getCards() {
+                return Array.from(container.querySelectorAll('.album-card'));
+            }
+
+            function createPlaceholder(height) {
+                var el = document.createElement('div');
+                el.className = 'drag-placeholder rounded-xl border-2 border-dashed border-zinc-300 dark:border-zinc-600';
+                el.style.height = height + 'px';
+                return el;
+            }
+
+            function startDrag(card, clientY) {
+                isDragging = true;
+                draggedCard = card;
+
+                var rect = card.getBoundingClientRect();
+                offsetY = clientY - rect.top;
+
+                placeholder = createPlaceholder(rect.height);
+                card.parentNode.insertBefore(placeholder, card);
+
+                card.style.position = 'fixed';
+                card.style.top = (clientY - offsetY) + 'px';
+                card.style.left = rect.left + 'px';
+                card.style.width = rect.width + 'px';
+                card.style.zIndex = '100';
+                card.style.opacity = '0.9';
+                card.style.boxShadow = '0 10px 25px -5px rgba(0,0,0,0.2)';
+                card.style.pointerEvents = 'none';
+                card.style.transition = 'none';
+                card.classList.add('cursor-grabbing');
+
+                document.body.style.userSelect = 'none';
+                document.body.style.webkitUserSelect = 'none';
+            }
+
+            function moveDrag(clientY) {
+                if (!isDragging || !draggedCard) return;
+
+                draggedCard.style.top = (clientY - offsetY) + 'px';
+
+                var cards = getCards();
+                for (var i = 0; i < cards.length; i++) {
+                    var card = cards[i];
+                    if (card === draggedCard) continue;
+
+                    var rect = card.getBoundingClientRect();
+                    var midY = rect.top + rect.height / 2;
+
+                    if (clientY < midY) {
+                        container.insertBefore(placeholder, card);
+                        return;
+                    }
+                }
+
+                container.appendChild(placeholder);
+            }
+
+            function endDrag() {
+                clearTimeout(holdTimer);
+
+                if (!isDragging || !draggedCard) {
+                    isDragging = false;
+                    return;
+                }
+
+                placeholder.parentNode.insertBefore(draggedCard, placeholder);
+                placeholder.remove();
+
+                draggedCard.style.position = '';
+                draggedCard.style.top = '';
+                draggedCard.style.left = '';
+                draggedCard.style.width = '';
+                draggedCard.style.zIndex = '';
+                draggedCard.style.opacity = '';
+                draggedCard.style.boxShadow = '';
+                draggedCard.style.pointerEvents = '';
+                draggedCard.style.transition = '';
+                draggedCard.classList.remove('cursor-grabbing');
+
+                document.body.style.userSelect = '';
+                document.body.style.webkitUserSelect = '';
+
+                saveOrder();
+
+                draggedCard = null;
+                placeholder = null;
+                isDragging = false;
+            }
+
+            function saveOrder() {
+                var cards = getCards();
+                var albumIds = [];
+                for (var i = 0; i < cards.length; i++) {
+                    var id = cards[i].dataset.albumDbId;
+                    if (id) {
+                        albumIds.push(parseInt(id, 10));
+                    }
+                }
+
+                if (albumIds.length === 0) return;
+
+                fetch(reorderUrl, {
+                    method: 'PUT',
+                    headers: {
+                        'Accept': 'application/json',
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': csrfToken,
+                        'X-Requested-With': 'XMLHttpRequest',
+                    },
+                    body: JSON.stringify({ album_ids: albumIds }),
+                });
+            }
+
+            // Mouse events — drag starts immediately on mousedown on the handle
+            container.addEventListener('mousedown', function (e) {
+                var handle = e.target.closest('.drag-handle');
+                if (!handle) return;
+
+                var card = handle.closest('.album-card');
+                if (!card) return;
+
+                e.preventDefault();
+                startDrag(card, e.clientY);
+            });
+
+            document.addEventListener('mousemove', function (e) {
+                if (isDragging) {
+                    e.preventDefault();
+                    moveDrag(e.clientY);
+                }
+            });
+
+            document.addEventListener('mouseup', function () {
+                if (isDragging) {
+                    endDrag();
+                }
+            });
+
+            // Touch events — long press (200ms) on the card initiates drag
+            container.addEventListener('touchstart', function (e) {
+                var handle = e.target.closest('.drag-handle');
+                if (handle) {
+                    // Drag handle: start immediately on touch
+                    var card = handle.closest('.album-card');
+                    if (!card) return;
+
+                    var touch = e.touches[0];
+                    startY = touch.clientY;
+
+                    holdTimer = setTimeout(function () {
+                        startDrag(card, touch.clientY);
+                    }, 200);
+                    return;
+                }
+
+                var card = e.target.closest('.album-card');
+                if (!card) return;
+
+                // If not on handle, ignore for drag (allow normal scroll)
+            }, { passive: true });
+
+            container.addEventListener('touchmove', function (e) {
+                if (holdTimer && !isDragging) {
+                    var touch = e.touches[0];
+                    if (Math.abs(touch.clientY - startY) > 10) {
+                        clearTimeout(holdTimer);
+                        holdTimer = null;
+                    }
+                    return;
+                }
+
+                if (isDragging) {
+                    e.preventDefault();
+                    moveDrag(e.touches[0].clientY);
+                }
+            }, { passive: false });
+
+            container.addEventListener('touchend', function () {
+                clearTimeout(holdTimer);
+                holdTimer = null;
+                if (isDragging) {
+                    endDrag();
+                }
+            });
+
+            container.addEventListener('touchcancel', function () {
+                clearTimeout(holdTimer);
+                holdTimer = null;
+                if (isDragging) {
+                    endDrag();
                 }
             });
         })();

@@ -94,6 +94,29 @@ class AlbumListAlbumController extends Controller
     }
 
     /**
+     * Reorder albums in the given list.
+     */
+    public function reorder(Request $request, AlbumList $albumList): JsonResponse
+    {
+        abort_unless($albumList->user_id === $request->user()->id, 403);
+
+        $request->validate([
+            'album_ids' => ['required', 'array'],
+            'album_ids.*' => ['required', 'integer'],
+        ]);
+
+        $albumIds = $request->input('album_ids');
+
+        foreach ($albumIds as $position => $albumId) {
+            $albumList->albums()->updateExistingPivot($albumId, [
+                'position' => $position + 1,
+            ]);
+        }
+
+        return response()->json(['message' => 'Order updated.']);
+    }
+
+    /**
      * Remove an album from the given list.
      */
     public function destroy(Request $request, AlbumList $albumList, Album $album): RedirectResponse

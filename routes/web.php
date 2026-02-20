@@ -24,6 +24,7 @@ Route::middleware('auth')->group(function (): void {
     Route::delete('/lists/{albumList}', [AlbumListController::class, 'destroy'])->name('lists.destroy');
 
     Route::post('/lists/{albumList}/albums', [AlbumListAlbumController::class, 'store'])->name('lists.albums.store');
+    Route::put('/lists/{albumList}/albums/reorder', [AlbumListAlbumController::class, 'reorder'])->name('lists.albums.reorder');
     Route::post('/lists/{albumList}/albums/{album}/move', [AlbumListAlbumController::class, 'move'])->name('lists.albums.move');
     Route::delete('/lists/{albumList}/albums/{album}', [AlbumListAlbumController::class, 'destroy'])->name('lists.albums.destroy');
 
