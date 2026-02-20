@@ -17,12 +17,14 @@ Route::middleware('auth')->group(function (): void {
 
     Route::get('/', fn () => view('home'))->name('home');
     Route::get('/lists', [AlbumListController::class, 'index'])->name('lists.index');
+    Route::get('/lists/search', [AlbumListController::class, 'search'])->name('lists.search');
     Route::post('/lists', [AlbumListController::class, 'store'])->name('lists.store');
     Route::get('/lists/{albumList}', [AlbumListController::class, 'show'])->name('lists.show');
     Route::put('/lists/{albumList}', [AlbumListController::class, 'update'])->name('lists.update');
     Route::delete('/lists/{albumList}', [AlbumListController::class, 'destroy'])->name('lists.destroy');
 
     Route::post('/lists/{albumList}/albums', [AlbumListAlbumController::class, 'store'])->name('lists.albums.store');
+    Route::post('/lists/{albumList}/albums/{album}/move', [AlbumListAlbumController::class, 'move'])->name('lists.albums.move');
     Route::delete('/lists/{albumList}/albums/{album}', [AlbumListAlbumController::class, 'destroy'])->name('lists.albums.destroy');
 
     Route::get('/spotify/search/albums', [SpotifySearchController::class, 'albums'])->name('spotify.search.albums');

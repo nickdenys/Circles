@@ -64,6 +64,36 @@ class AlbumListAlbumController extends Controller
     }
 
     /**
+     * Move an album from one list to another.
+     */
+    public function move(Request $request, AlbumList $albumList, Album $album): RedirectResponse
+    {
+        abort_unless($albumList->user_id === $request->user()->id, 403);
+
+        $request->validate([
+            'destination_list_id' => ['required', 'integer', 'exists:album_lists,id'],
+        ]);
+
+        $destinationList = AlbumList::findOrFail($request->input('destination_list_id'));
+
+        abort_unless($destinationList->user_id === $request->user()->id, 403);
+
+        if ($destinationList->albums()->where('album_id', $album->id)->exists()) {
+            return redirect()->route('lists.show', $albumList)
+                ->with('error', 'Album already exists in the destination list.');
+        }
+
+        $maxPosition = $destinationList->albums()->max('album_album_list.position') ?? 0;
+
+        $albumList->albums()->detach($album->id);
+        $destinationList->albums()->attach($album->id, [
+            'position' => $maxPosition + 1,
+        ]);
+
+        return redirect()->route('lists.show', $albumList);
+    }
+
+    /**
      * Remove an album from the given list.
      */
     public function destroy(Request $request, AlbumList $albumList, Album $album): RedirectResponse

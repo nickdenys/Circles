@@ -53,6 +53,37 @@ class AlbumListController extends Controller
     }
 
     /**
+     * Search user's lists for autocomplete.
+     */
+    public function search(Request $request): JsonResponse
+    {
+        $request->validate([
+            'q' => ['required', 'string', 'min:1'],
+            'exclude' => ['nullable', 'integer'],
+        ]);
+
+        $query = $request->input('q');
+        $exclude = $request->input('exclude');
+
+        $lists = $request->user()
+            ->albumLists()
+            ->whereRaw('LOWER(title) LIKE ?', ['%'.mb_strtolower($query).'%'])
+            ->when($exclude, fn ($q) => $q->where('id', '!=', $exclude))
+            ->orderByRaw("CASE WHEN type = 'system' THEN 0 ELSE 1 END")
+            ->orderBy('title')
+            ->limit(5)
+            ->get(['id', 'title', 'type']);
+
+        return response()->json([
+            'data' => $lists->map(fn ($list) => [
+                'id' => $list->id,
+                'title' => $list->title,
+                'type' => $list->type,
+            ]),
+        ]);
+    }
+
+    /**
      * Store a newly created custom list.
      */
     public function store(StoreAlbumListRequest $request): RedirectResponse

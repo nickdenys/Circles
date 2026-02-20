@@ -176,17 +176,30 @@
                     </p>
                     <p class="text-xs text-zinc-400 dark:text-zinc-500">{{ $album->release_date }}</p>
                 </a>
-                <button
-                    type="button"
-                    class="remove-album-button shrink-0 self-center rounded-lg p-1.5 text-zinc-400 opacity-0 transition hover:bg-red-50 hover:text-red-600 group-hover:opacity-100 dark:hover:bg-red-950 dark:hover:text-red-400"
-                    data-album-id="{{ $album->id }}"
-                    data-album-title="{{ $album->title }}"
-                    title="Remove from list"
-                >
-                    <svg class="h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" />
-                    </svg>
-                </button>
+                <div class="flex shrink-0 items-center gap-1 self-center opacity-0 transition group-hover:opacity-100">
+                    <button
+                        type="button"
+                        class="move-album-button rounded-lg p-1.5 text-zinc-400 transition hover:bg-blue-50 hover:text-blue-600 dark:hover:bg-blue-950 dark:hover:text-blue-400"
+                        data-album-id="{{ $album->id }}"
+                        data-album-title="{{ $album->title }}"
+                        title="Move to list"
+                    >
+                        <svg class="h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M7.5 21 3 16.5m0 0L7.5 12M3 16.5h13.5m0-13.5L21 7.5m0 0L16.5 12M21 7.5H7.5" />
+                        </svg>
+                    </button>
+                    <button
+                        type="button"
+                        class="remove-album-button rounded-lg p-1.5 text-zinc-400 transition hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-950 dark:hover:text-red-400"
+                        data-album-id="{{ $album->id }}"
+                        data-album-title="{{ $album->title }}"
+                        title="Remove from list"
+                    >
+                        <svg class="h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" />
+                        </svg>
+                    </button>
+                </div>
             </div>
         @empty
             <p id="albums-empty-state" class="py-8 text-center text-zinc-500 dark:text-zinc-400">
@@ -218,6 +231,62 @@
                 <button
                     type="submit"
                     class="rounded-lg bg-red-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-red-700 dark:bg-red-600 dark:hover:bg-red-700"
+                >
+                    Confirm
+                </button>
+            </form>
+        </div>
+    </div>
+
+    {{-- Move Album Modal --}}
+    <div id="move-album-modal" class="fixed inset-0 z-50 hidden items-center justify-center">
+        <div id="move-album-backdrop" class="absolute inset-0 bg-black/50"></div>
+        <div class="relative mx-4 w-full max-w-md rounded-xl border border-zinc-200 bg-white p-6 shadow-xl dark:border-zinc-700 dark:bg-zinc-900">
+            <h2 class="text-lg font-semibold">Move Album</h2>
+            <p class="mt-1 text-sm text-zinc-600 dark:text-zinc-400">
+                Move <span id="move-album-title" class="font-medium"></span> to another list.
+            </p>
+
+            <div id="move-list-search-container" class="relative mt-4">
+                <input
+                    type="text"
+                    id="move-list-search-input"
+                    placeholder="Search your lists..."
+                    autocomplete="off"
+                    class="block w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm shadow-sm transition placeholder:text-zinc-400 focus:border-zinc-500 focus:outline-none focus:ring-1 focus:ring-zinc-500 dark:border-zinc-600 dark:bg-zinc-800 dark:placeholder:text-zinc-500 dark:focus:border-zinc-400 dark:focus:ring-zinc-400"
+                />
+                <div id="move-list-dropdown" class="absolute z-50 mt-1 hidden w-full rounded-lg border border-zinc-200 bg-white shadow-lg dark:border-zinc-700 dark:bg-zinc-900">
+                    <div id="move-list-loading" class="hidden px-4 py-3 text-center text-sm text-zinc-500 dark:text-zinc-400">
+                        Searching...
+                    </div>
+                    <div id="move-list-results" class="flex flex-col"></div>
+                    <div id="move-list-empty" class="hidden px-4 py-3 text-center text-sm text-zinc-500 dark:text-zinc-400">
+                        No lists found.
+                    </div>
+                </div>
+            </div>
+
+            <div id="move-selected-list" class="mt-3 hidden rounded-lg border border-blue-200 bg-blue-50 px-3 py-2 text-sm dark:border-blue-800 dark:bg-blue-950">
+                <span class="text-zinc-700 dark:text-zinc-300">Moving to: </span>
+                <span id="move-selected-list-name" class="font-medium"></span>
+            </div>
+
+            <form id="move-album-form" method="POST" class="mt-4 flex items-center justify-end gap-3">
+                @csrf
+                <input type="hidden" id="move-destination-list-id" name="destination_list_id" value="" />
+
+                <button
+                    type="button"
+                    id="cancel-move-album"
+                    class="rounded-lg px-4 py-2 text-sm font-medium text-zinc-600 transition hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100"
+                >
+                    Cancel
+                </button>
+                <button
+                    type="submit"
+                    id="confirm-move-album"
+                    disabled
+                    class="rounded-lg bg-zinc-900 px-4 py-2 text-sm font-medium text-white transition hover:bg-zinc-700 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-white dark:text-zinc-900 dark:hover:bg-zinc-200"
                 >
                     Confirm
                 </button>
@@ -373,9 +442,14 @@
                         '<p class="mt-1 text-xs text-zinc-500 dark:text-zinc-500">' + escapeHtml(albumType) + ' &middot; ' + trackCount + ' ' + trackLabel + ' &middot; ' + formatRuntime(album.runtime_ms) + '</p>' +
                         '<p class="text-xs text-zinc-400 dark:text-zinc-500">' + escapeHtml(album.release_date || '') + '</p>' +
                     '</a>' +
-                    '<button type="button" class="remove-album-button shrink-0 self-center rounded-lg p-1.5 text-zinc-400 opacity-0 transition hover:bg-red-50 hover:text-red-600 group-hover:opacity-100 dark:hover:bg-red-950 dark:hover:text-red-400" data-album-id="' + album.id + '" data-album-title="' + escapeHtml(album.title) + '" title="Remove from list">' +
-                        '<svg class="h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" /></svg>' +
-                    '</button>';
+                    '<div class="flex shrink-0 items-center gap-1 self-center opacity-0 transition group-hover:opacity-100">' +
+                        '<button type="button" class="move-album-button rounded-lg p-1.5 text-zinc-400 transition hover:bg-blue-50 hover:text-blue-600 dark:hover:bg-blue-950 dark:hover:text-blue-400" data-album-id="' + album.id + '" data-album-title="' + escapeHtml(album.title) + '" title="Move to list">' +
+                            '<svg class="h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M7.5 21 3 16.5m0 0L7.5 12M3 16.5h13.5m0-13.5L21 7.5m0 0L16.5 12M21 7.5H7.5" /></svg>' +
+                        '</button>' +
+                        '<button type="button" class="remove-album-button rounded-lg p-1.5 text-zinc-400 transition hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-950 dark:hover:text-red-400" data-album-id="' + album.id + '" data-album-title="' + escapeHtml(album.title) + '" title="Remove from list">' +
+                            '<svg class="h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" /></svg>' +
+                        '</button>' +
+                    '</div>';
 
                 return card;
             }
@@ -541,6 +615,160 @@
             document.addEventListener('keydown', function (e) {
                 if (e.key === 'Escape' && !removeModal.classList.contains('hidden')) {
                     closeRemoveModal();
+                }
+            });
+        })();
+    </script>
+
+    <script>
+        (function () {
+            const moveModal = document.getElementById('move-album-modal');
+            const moveBackdrop = document.getElementById('move-album-backdrop');
+            const moveForm = document.getElementById('move-album-form');
+            const moveTitleEl = document.getElementById('move-album-title');
+            const cancelMoveBtn = document.getElementById('cancel-move-album');
+            const confirmMoveBtn = document.getElementById('confirm-move-album');
+            const moveSearchInput = document.getElementById('move-list-search-input');
+            const moveDropdown = document.getElementById('move-list-dropdown');
+            const moveResults = document.getElementById('move-list-results');
+            const moveLoading = document.getElementById('move-list-loading');
+            const moveEmpty = document.getElementById('move-list-empty');
+            const moveSelectedEl = document.getElementById('move-selected-list');
+            const moveSelectedName = document.getElementById('move-selected-list-name');
+            const destinationInput = document.getElementById('move-destination-list-id');
+            const albumsContainer = document.getElementById('albums-container');
+            const searchUrl = @json(route('lists.search'));
+            const currentListId = {{ $list->id }};
+            const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+
+            let moveDebounceTimer = null;
+            let moveAbortController = null;
+
+            function escapeHtml(text) {
+                const div = document.createElement('div');
+                div.textContent = text;
+                return div.innerHTML;
+            }
+
+            function openMoveModal(albumId, albumTitle) {
+                moveTitleEl.textContent = albumTitle;
+                moveForm.action = '/lists/' + currentListId + '/albums/' + albumId + '/move';
+                moveModal.classList.remove('hidden');
+                moveModal.classList.add('flex');
+                resetMoveSearch();
+                moveSearchInput.focus();
+            }
+
+            function closeMoveModal() {
+                moveModal.classList.add('hidden');
+                moveModal.classList.remove('flex');
+                resetMoveSearch();
+            }
+
+            function resetMoveSearch() {
+                moveSearchInput.value = '';
+                moveDropdown.classList.add('hidden');
+                moveLoading.classList.add('hidden');
+                moveEmpty.classList.add('hidden');
+                moveResults.innerHTML = '';
+                moveSelectedEl.classList.add('hidden');
+                moveSelectedName.textContent = '';
+                destinationInput.value = '';
+                confirmMoveBtn.disabled = true;
+            }
+
+            function selectList(listId, listTitle) {
+                destinationInput.value = listId;
+                moveSelectedName.textContent = listTitle;
+                moveSelectedEl.classList.remove('hidden');
+                confirmMoveBtn.disabled = false;
+                moveDropdown.classList.add('hidden');
+                moveSearchInput.value = '';
+            }
+
+            function performListSearch(query) {
+                if (moveAbortController) {
+                    moveAbortController.abort();
+                }
+
+                moveAbortController = new AbortController();
+                moveDropdown.classList.remove('hidden');
+                moveLoading.classList.remove('hidden');
+                moveEmpty.classList.add('hidden');
+                moveResults.innerHTML = '';
+
+                fetch(searchUrl + '?q=' + encodeURIComponent(query) + '&exclude=' + currentListId, {
+                    headers: {
+                        'Accept': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest',
+                    },
+                    signal: moveAbortController.signal,
+                })
+                .then(function (response) { return response.json(); })
+                .then(function (data) {
+                    moveLoading.classList.add('hidden');
+                    var lists = data.data || [];
+
+                    if (lists.length === 0) {
+                        moveEmpty.classList.remove('hidden');
+                        return;
+                    }
+
+                    lists.forEach(function (list) {
+                        var button = document.createElement('button');
+                        button.type = 'button';
+                        button.className = 'flex items-center gap-2 px-4 py-2.5 text-left text-sm transition hover:bg-zinc-50 dark:hover:bg-zinc-800 first:rounded-t-lg last:rounded-b-lg';
+
+                        var typeLabel = list.type === 'system'
+                            ? '<span class="shrink-0 rounded bg-zinc-200 px-1.5 py-0.5 text-xs text-zinc-600 dark:bg-zinc-700 dark:text-zinc-400">System</span>'
+                            : '';
+
+                        button.innerHTML = '<span class="truncate">' + escapeHtml(list.title) + '</span>' + typeLabel;
+
+                        button.addEventListener('click', function () {
+                            selectList(list.id, list.title);
+                        });
+
+                        moveResults.appendChild(button);
+                    });
+                })
+                .catch(function (error) {
+                    if (error.name !== 'AbortError') {
+                        moveDropdown.classList.add('hidden');
+                    }
+                });
+            }
+
+            moveSearchInput.addEventListener('input', function () {
+                var query = moveSearchInput.value.trim();
+
+                clearTimeout(moveDebounceTimer);
+
+                if (query.length < 1) {
+                    moveDropdown.classList.add('hidden');
+                    return;
+                }
+
+                moveDebounceTimer = setTimeout(function () {
+                    performListSearch(query);
+                }, 300);
+            });
+
+            cancelMoveBtn.addEventListener('click', closeMoveModal);
+            moveBackdrop.addEventListener('click', closeMoveModal);
+
+            albumsContainer.addEventListener('click', function (e) {
+                var btn = e.target.closest('.move-album-button');
+                if (btn) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    openMoveModal(btn.dataset.albumId, btn.dataset.albumTitle);
+                }
+            });
+
+            document.addEventListener('keydown', function (e) {
+                if (e.key === 'Escape' && !moveModal.classList.contains('hidden')) {
+                    closeMoveModal();
                 }
             });
         })();
