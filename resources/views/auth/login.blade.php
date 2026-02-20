@@ -4,12 +4,18 @@
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <title>Login - {{ config('app.name', 'Hoopify') }}</title>
+        <script>
+            document.documentElement.classList.toggle(
+                'dark',
+                localStorage.theme === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)
+            );
+        </script>
         @vite(['resources/css/app.css', 'resources/js/app.js'])
     </head>
-    <body class="flex min-h-screen items-center justify-center bg-zinc-950 text-white antialiased">
+    <body class="flex min-h-screen items-center justify-center bg-white text-zinc-900 antialiased dark:bg-zinc-950 dark:text-white">
         <div class="w-full max-w-sm px-6 text-center">
             <h1 class="mb-2 text-4xl font-bold tracking-tight">Hoopify</h1>
-            <p class="mb-10 text-zinc-400">Organize your music library with Spotify.</p>
+            <p class="mb-10 text-zinc-500 dark:text-zinc-400">Organize your music library with Spotify.</p>
 
             <a
                 href="{{ route('spotify.redirect') }}"
