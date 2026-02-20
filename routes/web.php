@@ -12,7 +12,6 @@ Route::middleware('guest')->group(function (): void {
 Route::middleware('auth')->group(function (): void {
     Route::post('/logout', [SpotifyAuthController::class, 'logout'])->name('logout');
 
-    Route::get('/', function () {
-        return 'Welcome, '.auth()->user()->name;
-    })->name('home');
+    Route::get('/', fn () => view('home'))->name('home');
+    Route::get('/lists', fn () => view('lists.index'))->name('lists.index');
 });
