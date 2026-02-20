@@ -42,14 +42,32 @@ class AlbumListController extends Controller
     /**
      * Display the list detail page.
      */
-    public function show(Request $request, AlbumList $albumList): View
+    public function show(Request $request, AlbumList $albumList): View|JsonResponse
     {
         abort_unless($albumList->user_id === $request->user()->id, 403);
 
         $albumList->loadCount('albums');
-        $albumList->load('albums');
+        $albums = $albumList->albums()->simplePaginate(20);
 
-        return view('lists.show', ['list' => $albumList]);
+        if ($request->wantsJson()) {
+            return response()->json([
+                'data' => $albums->getCollection()->map(fn ($album) => [
+                    'id' => $album->id,
+                    'spotify_id' => $album->spotify_id,
+                    'title' => $album->title,
+                    'artists' => $album->artists,
+                    'cover_url' => $album->cover_url,
+                    'runtime_ms' => $album->runtime_ms,
+                    'album_type' => $album->album_type,
+                    'total_tracks' => $album->total_tracks,
+                    'release_date' => $album->release_date,
+                    'spotify_uri' => $album->spotify_uri,
+                ]),
+                'next_page_url' => $albums->nextPageUrl(),
+            ]);
+        }
+
+        return view('lists.show', ['list' => $albumList, 'albums' => $albums]);
     }
 
     /**
