@@ -20,6 +20,7 @@ Route::middleware('auth')->group(function (): void {
     Route::get('/lists/search', [AlbumListController::class, 'search'])->name('lists.search');
     Route::post('/lists', [AlbumListController::class, 'store'])->name('lists.store');
     Route::get('/lists/{albumList}', [AlbumListController::class, 'show'])->name('lists.show');
+    Route::post('/lists/{albumList}/refresh', [AlbumListController::class, 'refresh'])->name('lists.refresh');
     Route::put('/lists/{albumList}', [AlbumListController::class, 'update'])->name('lists.update');
     Route::delete('/lists/{albumList}', [AlbumListController::class, 'destroy'])->name('lists.destroy');
 

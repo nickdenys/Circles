@@ -5,9 +5,29 @@
             @if ($list->description)
                 <p class="mt-1 text-zinc-600 dark:text-zinc-400">{{ $list->description }}</p>
             @endif
-            <p id="album-count" class="mt-2 text-sm text-zinc-500 dark:text-zinc-400">
-                {{ $list->albums_count }} {{ str('album')->plural($list->albums_count) }}
-            </p>
+            <div class="mt-2 flex items-center gap-3">
+                <p id="album-count" class="text-sm text-zinc-500 dark:text-zinc-400">
+                    {{ $list->albums_count }} {{ str('album')->plural($list->albums_count) }}
+                </p>
+                <form id="refresh-form" method="POST" action="{{ route('lists.refresh', $list) }}" class="inline">
+                    @csrf
+                    <button
+                        type="submit"
+                        id="refresh-button"
+                        class="inline-flex items-center gap-1.5 rounded-lg border border-zinc-200 px-2.5 py-1 text-xs font-medium text-zinc-500 transition hover:border-zinc-300 hover:text-zinc-700 dark:border-zinc-700 dark:text-zinc-400 dark:hover:border-zinc-600 dark:hover:text-zinc-200"
+                        title="Refresh album data from Spotify"
+                    >
+                        <svg id="refresh-icon" class="h-3.5 w-3.5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.992 0 3.181 3.183a8.25 8.25 0 0 0 13.803-3.7M4.031 9.865a8.25 8.25 0 0 1 13.803-3.7l3.181 3.182M20.016 4.356v4.992" />
+                        </svg>
+                        <svg id="refresh-spinner" class="hidden h-3.5 w-3.5 animate-spin" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                        <span id="refresh-text">Refresh</span>
+                    </button>
+                </form>
+            </div>
         </div>
 
         @unless ($list->isSystem())
@@ -313,6 +333,24 @@
             </form>
         </div>
     </div>
+
+    <script>
+        (function () {
+            var refreshForm = document.getElementById('refresh-form');
+            var refreshBtn = document.getElementById('refresh-button');
+            var refreshIcon = document.getElementById('refresh-icon');
+            var refreshSpinner = document.getElementById('refresh-spinner');
+            var refreshText = document.getElementById('refresh-text');
+
+            refreshForm.addEventListener('submit', function () {
+                refreshBtn.disabled = true;
+                refreshBtn.classList.add('cursor-not-allowed', 'opacity-50');
+                refreshIcon.classList.add('hidden');
+                refreshSpinner.classList.remove('hidden');
+                refreshText.textContent = 'Refreshing...';
+            });
+        })();
+    </script>
 
     @unless ($list->isSystem())
         <script>

@@ -6,6 +6,7 @@ use App\Http\Requests\DestroyAlbumListRequest;
 use App\Http\Requests\StoreAlbumListRequest;
 use App\Http\Requests\UpdateAlbumListRequest;
 use App\Models\AlbumList;
+use App\Services\SpotifyService;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -124,6 +125,30 @@ class AlbumListController extends Controller
             'title' => $request->validated('title'),
             'description' => $request->validated('description'),
         ]);
+
+        return redirect()->route('lists.show', $albumList);
+    }
+
+    /**
+     * Refresh album data from Spotify for the given list.
+     */
+    public function refresh(Request $request, AlbumList $albumList): RedirectResponse
+    {
+        abort_unless($albumList->user_id === $request->user()->id, 403);
+
+        $albums = $albumList->albums()->get();
+
+        if ($albums->isNotEmpty()) {
+            $spotify = (new SpotifyService($request->user()))->bypassCache();
+
+            foreach ($albums as $album) {
+                $freshData = $spotify->getAlbum($album->spotify_id);
+
+                if ($freshData) {
+                    $album->update($freshData);
+                }
+            }
+        }
 
         return redirect()->route('lists.show', $albumList);
     }
