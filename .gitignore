@@ -12,6 +12,7 @@
 /.vscode
 /.zed
 /auth.json
+/build
 /node_modules
 /public/build
 /public/hot
@@ -22,4 +23,10 @@
 Homestead.json
 Homestead.yaml
 Thumbs.db
+/docker/data
+/.claude
+CLAUDE.md
+/.mcp.json
+/.junie
+resources/js/common/types/generated.d.ts
 .chief/
