@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 
@@ -52,10 +53,31 @@ class User extends Authenticatable
     }
 
     /**
+     * Bootstrap the model and its traits.
+     */
+    protected static function booted(): void
+    {
+        static::created(function (User $user): void {
+            $user->albumLists()->create([
+                'title' => 'Watchlist',
+                'type' => 'system',
+            ]);
+        });
+    }
+
+    /**
      * Determine if the user's Spotify token has expired.
      */
     public function isSpotifyTokenExpired(): bool
     {
         return $this->spotify_token_expires_at->isPast();
+    }
+
+    /**
+     * Get the album lists for the user.
+     */
+    public function albumLists(): HasMany
+    {
+        return $this->hasMany(AlbumList::class);
     }
 }
