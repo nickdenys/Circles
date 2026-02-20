@@ -119,6 +119,32 @@
         </div>
     @endunless
 
+    {{-- Album Search --}}
+    <div id="album-search-container" class="relative mt-6">
+        <div class="relative">
+            <svg class="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z" />
+            </svg>
+            <input
+                type="text"
+                id="album-search-input"
+                placeholder="Search for albums on Spotify..."
+                autocomplete="off"
+                class="block w-full rounded-lg border border-zinc-300 bg-white py-2 pl-10 pr-3 text-sm shadow-sm transition placeholder:text-zinc-400 focus:border-zinc-500 focus:outline-none focus:ring-1 focus:ring-zinc-500 dark:border-zinc-600 dark:bg-zinc-800 dark:placeholder:text-zinc-500 dark:focus:border-zinc-400 dark:focus:ring-zinc-400"
+            />
+        </div>
+
+        <div id="album-search-dropdown" class="absolute z-40 mt-1 hidden w-full rounded-lg border border-zinc-200 bg-white shadow-lg dark:border-zinc-700 dark:bg-zinc-900">
+            <div id="album-search-loading" class="hidden px-4 py-3 text-center text-sm text-zinc-500 dark:text-zinc-400">
+                Searching...
+            </div>
+            <div id="album-search-results" class="flex flex-col"></div>
+            <div id="album-search-empty" class="hidden px-4 py-3 text-center text-sm text-zinc-500 dark:text-zinc-400">
+                No albums found.
+            </div>
+        </div>
+    </div>
+
     <div id="albums-container" class="mt-8 flex flex-col gap-3">
         <p class="py-8 text-center text-zinc-500 dark:text-zinc-400">
             No albums yet. Search for albums above to add them to this list.
@@ -185,4 +211,132 @@
             })();
         </script>
     @endunless
+
+    <script>
+        (function () {
+            const searchInput = document.getElementById('album-search-input');
+            const dropdown = document.getElementById('album-search-dropdown');
+            const resultsContainer = document.getElementById('album-search-results');
+            const loadingEl = document.getElementById('album-search-loading');
+            const emptyEl = document.getElementById('album-search-empty');
+            const searchUrl = @json(route('spotify.search.albums'));
+
+            let debounceTimer = null;
+            let abortController = null;
+
+            function escapeHtml(text) {
+                const div = document.createElement('div');
+                div.textContent = text;
+                return div.innerHTML;
+            }
+
+            function showDropdown() {
+                dropdown.classList.remove('hidden');
+            }
+
+            function hideDropdown() {
+                dropdown.classList.add('hidden');
+                loadingEl.classList.add('hidden');
+                emptyEl.classList.add('hidden');
+                resultsContainer.innerHTML = '';
+            }
+
+            function showLoading() {
+                showDropdown();
+                loadingEl.classList.remove('hidden');
+                emptyEl.classList.add('hidden');
+                resultsContainer.innerHTML = '';
+            }
+
+            function showEmpty() {
+                loadingEl.classList.add('hidden');
+                emptyEl.classList.remove('hidden');
+                resultsContainer.innerHTML = '';
+            }
+
+            function showResults(albums) {
+                loadingEl.classList.add('hidden');
+                emptyEl.classList.add('hidden');
+                resultsContainer.innerHTML = '';
+
+                if (albums.length === 0) {
+                    showEmpty();
+                    return;
+                }
+
+                albums.forEach(function (album) {
+                    const button = document.createElement('button');
+                    button.type = 'button';
+                    button.className = 'flex items-center gap-3 px-4 py-2.5 text-left transition hover:bg-zinc-50 dark:hover:bg-zinc-800 first:rounded-t-lg last:rounded-b-lg';
+                    button.dataset.albumId = album.id;
+
+                    const imgHtml = album.image
+                        ? '<img src="' + escapeHtml(album.image) + '" alt="" class="h-10 w-10 shrink-0 rounded object-cover" />'
+                        : '<div class="flex h-10 w-10 shrink-0 items-center justify-center rounded bg-zinc-200 dark:bg-zinc-700"><svg class="h-5 w-5 text-zinc-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m9 9 10.5-3m0 6.553v3.75a2.25 2.25 0 0 1-1.632 2.163l-1.32.377a1.803 1.803 0 1 1-.99-3.467l2.31-.66a2.25 2.25 0 0 0 1.632-2.163Zm0 0V2.25L9 5.25v10.303m0 0v3.75a2.25 2.25 0 0 1-1.632 2.163l-1.32.377a1.803 1.803 0 0 1-.99-3.467l2.31-.66A2.25 2.25 0 0 0 9 15.553Z" /></svg></div>';
+
+                    button.innerHTML = imgHtml +
+                        '<div class="min-w-0">' +
+                            '<p class="truncate text-sm font-medium">' + escapeHtml(album.name) + '</p>' +
+                            '<p class="truncate text-xs text-zinc-500 dark:text-zinc-400">' + escapeHtml(album.artists) + '</p>' +
+                        '</div>';
+
+                    resultsContainer.appendChild(button);
+                });
+            }
+
+            function performSearch(query) {
+                if (abortController) {
+                    abortController.abort();
+                }
+
+                abortController = new AbortController();
+                showLoading();
+
+                fetch(searchUrl + '?q=' + encodeURIComponent(query), {
+                    headers: {
+                        'Accept': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest',
+                    },
+                    signal: abortController.signal,
+                })
+                .then(function (response) { return response.json(); })
+                .then(function (data) {
+                    showResults(data.data || []);
+                })
+                .catch(function (error) {
+                    if (error.name !== 'AbortError') {
+                        hideDropdown();
+                    }
+                });
+            }
+
+            searchInput.addEventListener('input', function () {
+                const query = searchInput.value.trim();
+
+                clearTimeout(debounceTimer);
+
+                if (query.length < 2) {
+                    hideDropdown();
+                    return;
+                }
+
+                debounceTimer = setTimeout(function () {
+                    performSearch(query);
+                }, 300);
+            });
+
+            document.addEventListener('click', function (e) {
+                if (!e.target.closest('#album-search-container')) {
+                    hideDropdown();
+                }
+            });
+
+            searchInput.addEventListener('keydown', function (e) {
+                if (e.key === 'Escape') {
+                    hideDropdown();
+                    searchInput.blur();
+                }
+            });
+        })();
+    </script>
 </x-layouts.app>
