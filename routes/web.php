@@ -3,6 +3,7 @@
 use App\Http\Controllers\AlbumListAlbumController;
 use App\Http\Controllers\AlbumListController;
 use App\Http\Controllers\Auth\SpotifyAuthController;
+use App\Http\Controllers\HomeController;
 use App\Http\Controllers\SpotifySearchController;
 use Illuminate\Support\Facades\Route;
 
@@ -15,7 +16,7 @@ Route::middleware('guest')->group(function (): void {
 Route::middleware('auth')->group(function (): void {
     Route::post('/logout', [SpotifyAuthController::class, 'logout'])->name('logout');
 
-    Route::get('/', fn () => view('home'))->name('home');
+    Route::get('/', HomeController::class)->name('home');
     Route::get('/lists', [AlbumListController::class, 'index'])->name('lists.index');
     Route::get('/lists/search', [AlbumListController::class, 'search'])->name('lists.search');
     Route::post('/lists', [AlbumListController::class, 'store'])->name('lists.store');
