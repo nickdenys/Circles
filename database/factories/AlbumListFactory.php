@@ -1,0 +1,48 @@
+<?php
+
+namespace Database\Factories;
+
+use App\Models\User;
+use Illuminate\Database\Eloquent\Factories\Factory;
+
+/**
+ * @extends \Illuminate\Database\Eloquent\Factories\Factory<\App\Models\AlbumList>
+ */
+class AlbumListFactory extends Factory
+{
+    /**
+     * Define the model's default state.
+     *
+     * @return array<string, mixed>
+     */
+    public function definition(): array
+    {
+        return [
+            'user_id' => User::factory(),
+            'title' => fake()->words(3, true),
+            'description' => fake()->sentence(),
+            'type' => 'custom',
+        ];
+    }
+
+    /**
+     * Indicate the list is a system list.
+     */
+    public function system(): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'type' => 'system',
+        ]);
+    }
+
+    /**
+     * Create a Watchlist system list.
+     */
+    public function watchlist(): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'title' => 'Watchlist',
+            'type' => 'system',
+        ]);
+    }
+}
