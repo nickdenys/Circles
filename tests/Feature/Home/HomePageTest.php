@@ -3,6 +3,7 @@
 use App\Models\Album;
 use App\Models\AlbumList;
 use App\Models\User;
+use Inertia\Testing\AssertableInertia;
 
 test('home page displays welcome greeting with user name', function () {
     $user = User::factory()->create(['name' => 'Alice']);
@@ -10,7 +11,10 @@ test('home page displays welcome greeting with user name', function () {
     $this->actingAs($user)
         ->get(route('home'))
         ->assertSuccessful()
-        ->assertSee('Welcome back, Alice');
+        ->assertInertia(fn (AssertableInertia $page) => $page
+            ->component('Home')
+            ->where('auth.user.name', 'Alice')
+        );
 });
 
 test('home page displays total lists count', function () {
@@ -20,8 +24,10 @@ test('home page displays total lists count', function () {
     $this->actingAs($user)
         ->get(route('home'))
         ->assertSuccessful()
-        ->assertSee('Total Lists')
-        ->assertViewHas('totalLists', 4); // 3 custom + 1 system Watchlist
+        ->assertInertia(fn (AssertableInertia $page) => $page
+            ->component('Home')
+            ->where('totalLists', 4) // 3 custom + 1 system Watchlist
+        );
 });
 
 test('home page displays total albums count', function () {
@@ -33,8 +39,10 @@ test('home page displays total albums count', function () {
     $this->actingAs($user)
         ->get(route('home'))
         ->assertSuccessful()
-        ->assertSee('Total Albums')
-        ->assertViewHas('totalAlbums', 5);
+        ->assertInertia(fn (AssertableInertia $page) => $page
+            ->component('Home')
+            ->where('totalAlbums', 5)
+        );
 });
 
 test('home page displays most populated list', function () {
@@ -50,19 +58,23 @@ test('home page displays most populated list', function () {
     $this->actingAs($user)
         ->get(route('home'))
         ->assertSuccessful()
-        ->assertSee('Most Populated List')
-        ->assertSee('Big List')
-        ->assertSee('5 albums');
+        ->assertInertia(fn (AssertableInertia $page) => $page
+            ->component('Home')
+            ->where('mostPopulatedList.title', 'Big List')
+            ->where('mostPopulatedList.albumsCount', 5)
+        );
 });
 
-test('home page shows dash when no albums exist', function () {
+test('home page shows most populated list with zero albums when no albums exist', function () {
     $user = User::factory()->create();
 
     $this->actingAs($user)
         ->get(route('home'))
         ->assertSuccessful()
-        ->assertSee('Most Populated List')
-        ->assertSee('&mdash;', false);
+        ->assertInertia(fn (AssertableInertia $page) => $page
+            ->component('Home')
+            ->where('mostPopulatedList.albumsCount', 0)
+        );
 });
 
 test('home page includes system list in total count', function () {
@@ -72,7 +84,10 @@ test('home page includes system list in total count', function () {
     $this->actingAs($user)
         ->get(route('home'))
         ->assertSuccessful()
-        ->assertViewHas('totalLists', 1);
+        ->assertInertia(fn (AssertableInertia $page) => $page
+            ->component('Home')
+            ->where('totalLists', 1)
+        );
 });
 
 test('home page counts albums across multiple lists', function () {
@@ -90,7 +105,10 @@ test('home page counts albums across multiple lists', function () {
     $this->actingAs($user)
         ->get(route('home'))
         ->assertSuccessful()
-        ->assertViewHas('totalAlbums', 5);
+        ->assertInertia(fn (AssertableInertia $page) => $page
+            ->component('Home')
+            ->where('totalAlbums', 5)
+        );
 });
 
 test('home page requires authentication', function () {
@@ -98,14 +116,18 @@ test('home page requires authentication', function () {
         ->assertRedirect(route('login'));
 });
 
-test('home page uses app layout with title', function () {
+test('home page returns inertia response with correct component', function () {
     $this->actingAs(User::factory()->create())
         ->get(route('home'))
         ->assertSuccessful()
-        ->assertSee('Hoopify');
+        ->assertInertia(fn (AssertableInertia $page) => $page
+            ->component('Home')
+            ->has('totalLists')
+            ->has('totalAlbums')
+        );
 });
 
-test('most populated list shows singular album for count of one', function () {
+test('most populated list shows singular count for one album', function () {
     $user = User::factory()->create();
     $list = AlbumList::factory()->for($user)->create(['title' => 'Solo List']);
     $list->albums()->attach(Album::factory()->create(), ['position' => 0]);
@@ -113,6 +135,33 @@ test('most populated list shows singular album for count of one', function () {
     $this->actingAs($user)
         ->get(route('home'))
         ->assertSuccessful()
-        ->assertSee('Solo List')
-        ->assertSee('1 album');
+        ->assertInertia(fn (AssertableInertia $page) => $page
+            ->component('Home')
+            ->where('mostPopulatedList.title', 'Solo List')
+            ->where('mostPopulatedList.albumsCount', 1)
+        );
+});
+
+test('home page shares auth user data', function () {
+    $user = User::factory()->create(['name' => 'Test User']);
+
+    $this->actingAs($user)
+        ->get(route('home'))
+        ->assertSuccessful()
+        ->assertInertia(fn (AssertableInertia $page) => $page
+            ->component('Home')
+            ->has('auth.user.id')
+            ->where('auth.user.name', 'Test User')
+        );
+});
+
+test('home page uses shadcn card components', function () {
+    // Verify the Home component imports and uses shadcn Card
+    $content = file_get_contents(resource_path('js/Pages/Home.tsx'));
+
+    expect($content)->toContain("from '@/components/ui/card'")
+        ->and($content)->toContain('<Card>')
+        ->and($content)->toContain('<CardHeader>')
+        ->and($content)->toContain('<CardContent>')
+        ->and($content)->toContain('<CardTitle');
 });
