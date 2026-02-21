@@ -11,6 +11,7 @@ import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import AlbumSearch, { type AddedAlbum } from './AlbumSearch';
+import MoveAlbumDialog from './MoveAlbumDialog';
 import RemoveAlbumDialog from './RemoveAlbumDialog';
 
 interface AlbumListDetail {
@@ -59,7 +60,7 @@ function formatAlbumType(type: string): string {
     return type.charAt(0).toUpperCase() + type.slice(1);
 }
 
-function AlbumCard({ album, onRemove }: { album: AlbumItem; onRemove: (album: { id: number; title: string }) => void }) {
+function AlbumCard({ album, onMove, onRemove }: { album: AlbumItem; onMove: (album: { id: number; title: string }) => void; onRemove: (album: { id: number; title: string }) => void }) {
     return (
         <Card
             className="album-card group relative flex items-start gap-4 px-4 py-3"
@@ -119,6 +120,7 @@ function AlbumCard({ album, onRemove }: { album: AlbumItem; onRemove: (album: { 
                     title="Move to list"
                     data-album-id={album.id}
                     data-album-title={album.title}
+                    onClick={() => onMove({ id: album.id, title: album.title })}
                 >
                     <ArrowRightLeft className="h-4 w-4" />
                 </Button>
@@ -142,6 +144,8 @@ export default function Show({ list, albums }: ShowProps) {
     const [refreshing, setRefreshing] = useState(false);
     const [addedAlbums, setAddedAlbums] = useState<AlbumItem[]>([]);
     const [albumCount, setAlbumCount] = useState(list.albumsCount);
+    const [albumToMove, setAlbumToMove] = useState<{ id: number; title: string } | null>(null);
+    const [moveDialogOpen, setMoveDialogOpen] = useState(false);
     const [albumToRemove, setAlbumToRemove] = useState<{ id: number; title: string } | null>(null);
     const [removeDialogOpen, setRemoveDialogOpen] = useState(false);
 
@@ -155,6 +159,16 @@ export default function Show({ list, albums }: ShowProps) {
     function handleAlbumAdded(album: AddedAlbum) {
         setAddedAlbums((prev) => [...prev, album]);
         setAlbumCount((prev) => prev + 1);
+    }
+
+    function handleMoveAlbum(album: { id: number; title: string }) {
+        setAlbumToMove(album);
+        setMoveDialogOpen(true);
+    }
+
+    function handleAlbumMoved(albumId: number) {
+        setAddedAlbums((prev) => prev.filter((a) => a.id !== albumId));
+        setAlbumCount((prev) => prev - 1);
     }
 
     function handleRemoveAlbum(album: { id: number; title: string }) {
@@ -248,20 +262,28 @@ export default function Show({ list, albums }: ShowProps) {
                             )}
                         >
                             {albums.data.map((album) => (
-                                <AlbumCard key={album.id} album={album} onRemove={handleRemoveAlbum} />
+                                <AlbumCard key={album.id} album={album} onMove={handleMoveAlbum} onRemove={handleRemoveAlbum} />
                             ))}
                         </InfiniteScroll>
 
                         {addedAlbums.length > 0 && (
                             <div className="mt-3 space-y-3">
                                 {addedAlbums.map((album) => (
-                                    <AlbumCard key={`added-${album.id}`} album={album} onRemove={handleRemoveAlbum} />
+                                    <AlbumCard key={`added-${album.id}`} album={album} onMove={handleMoveAlbum} onRemove={handleRemoveAlbum} />
                                 ))}
                             </div>
                         )}
                     </div>
                 )}
             </div>
+
+            <MoveAlbumDialog
+                listId={list.id}
+                album={albumToMove}
+                open={moveDialogOpen}
+                onOpenChange={setMoveDialogOpen}
+                onMoved={handleAlbumMoved}
+            />
 
             <RemoveAlbumDialog
                 listId={list.id}
