@@ -86,7 +86,7 @@ test('show page decrements album count on removal', function () {
 test('show page removes added album from local state on removal', function () {
     $content = file_get_contents(resource_path('js/Pages/Lists/Show.tsx'));
 
-    expect($content)->toContain('setAddedAlbums((prev) => prev.filter((a) => a.id !== albumId))');
+    expect($content)->toContain('setOrderedAlbums((prev) => prev.filter((a) => a.id !== albumId))');
 });
 
 test('remove album dialog calls onRemoved callback on success', function () {

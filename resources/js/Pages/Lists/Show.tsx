@@ -1,4 +1,5 @@
 import { Head, InfiniteScroll, router } from '@inertiajs/react';
+import axios from 'axios';
 import {
     GripVertical,
     Loader2,
@@ -7,7 +8,7 @@ import {
     ArrowRightLeft,
     Trash2,
 } from 'lucide-react';
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import AlbumSearch, { type AddedAlbum } from './AlbumSearch';
@@ -15,6 +16,7 @@ import DeleteListDialog from './DeleteListDialog';
 import EditListDialog from './EditListDialog';
 import MoveAlbumDialog from './MoveAlbumDialog';
 import RemoveAlbumDialog from './RemoveAlbumDialog';
+import { useDragReorder } from './useDragReorder';
 
 interface AlbumListDetail {
     id: number;
@@ -144,7 +146,7 @@ function AlbumCard({ album, onMove, onRemove }: { album: AlbumItem; onMove: (alb
 
 export default function Show({ list, albums }: ShowProps) {
     const [refreshing, setRefreshing] = useState(false);
-    const [addedAlbums, setAddedAlbums] = useState<AlbumItem[]>([]);
+    const [orderedAlbums, setOrderedAlbums] = useState<AlbumItem[]>(albums.data);
     const [albumCount, setAlbumCount] = useState(list.albumsCount);
     const [albumToMove, setAlbumToMove] = useState<{ id: number; title: string } | null>(null);
     const [moveDialogOpen, setMoveDialogOpen] = useState(false);
@@ -152,6 +154,37 @@ export default function Show({ list, albums }: ShowProps) {
     const [removeDialogOpen, setRemoveDialogOpen] = useState(false);
     const [editDialogOpen, setEditDialogOpen] = useState(false);
     const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+
+    const albumsContainerRef = useRef<HTMLDivElement>(null);
+    const syncRef = useRef({ count: albums.data.length, firstId: albums.data[0]?.id });
+
+    useEffect(() => {
+        const { count: prevCount, firstId: prevFirstId } = syncRef.current;
+        const currCount = albums.data.length;
+        const currFirstId = albums.data[0]?.id;
+
+        if (currCount > prevCount && currFirstId === prevFirstId) {
+            const newItems = albums.data.slice(prevCount);
+            setOrderedAlbums((prev) => [...prev, ...newItems]);
+        } else if (currFirstId !== prevFirstId || currCount < prevCount) {
+            setOrderedAlbums(albums.data);
+        }
+
+        syncRef.current = { count: currCount, firstId: currFirstId };
+    }, [albums.data]);
+
+    function handleReorder(albumIds: number[]) {
+        setOrderedAlbums((prev) => {
+            const albumMap = new Map(prev.map((a) => [a.id, a]));
+            return albumIds.map((id) => albumMap.get(id)!).filter(Boolean);
+        });
+
+        axios.put(`/lists/${list.id}/albums/reorder`, {
+            album_ids: albumIds,
+        });
+    }
+
+    useDragReorder(albumsContainerRef, handleReorder);
 
     function handleRefresh() {
         router.post(route('lists.refresh', list.id), {}, {
@@ -161,7 +194,7 @@ export default function Show({ list, albums }: ShowProps) {
     }
 
     function handleAlbumAdded(album: AddedAlbum) {
-        setAddedAlbums((prev) => [...prev, album]);
+        setOrderedAlbums((prev) => [...prev, album]);
         setAlbumCount((prev) => prev + 1);
     }
 
@@ -171,7 +204,7 @@ export default function Show({ list, albums }: ShowProps) {
     }
 
     function handleAlbumMoved(albumId: number) {
-        setAddedAlbums((prev) => prev.filter((a) => a.id !== albumId));
+        setOrderedAlbums((prev) => prev.filter((a) => a.id !== albumId));
         setAlbumCount((prev) => prev - 1);
     }
 
@@ -181,11 +214,11 @@ export default function Show({ list, albums }: ShowProps) {
     }
 
     function handleAlbumRemoved(albumId: number) {
-        setAddedAlbums((prev) => prev.filter((a) => a.id !== albumId));
+        setOrderedAlbums((prev) => prev.filter((a) => a.id !== albumId));
         setAlbumCount((prev) => prev - 1);
     }
 
-    const hasAlbums = albums.data.length > 0 || addedAlbums.length > 0;
+    const hasAlbums = orderedAlbums.length > 0;
 
     return (
         <>
@@ -254,7 +287,7 @@ export default function Show({ list, albums }: ShowProps) {
                         No albums yet. Search for albums above to add them to this list.
                     </p>
                 ) : (
-                    <div className="mt-6">
+                    <div className="mt-6" ref={albumsContainerRef}>
                         <InfiniteScroll
                             data="albums"
                             className="space-y-3"
@@ -267,18 +300,10 @@ export default function Show({ list, albums }: ShowProps) {
                                 </div>
                             )}
                         >
-                            {albums.data.map((album) => (
+                            {orderedAlbums.map((album) => (
                                 <AlbumCard key={album.id} album={album} onMove={handleMoveAlbum} onRemove={handleRemoveAlbum} />
                             ))}
                         </InfiniteScroll>
-
-                        {addedAlbums.length > 0 && (
-                            <div className="mt-3 space-y-3">
-                                {addedAlbums.map((album) => (
-                                    <AlbumCard key={`added-${album.id}`} album={album} onMove={handleMoveAlbum} onRemove={handleRemoveAlbum} />
-                                ))}
-                            </div>
-                        )}
                     </div>
                 )}
             </div>

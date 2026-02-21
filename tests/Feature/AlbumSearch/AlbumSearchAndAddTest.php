@@ -112,7 +112,7 @@ test('show page appends new album to the list after adding', function () {
     $component = file_get_contents(resource_path('js/Pages/Lists/Show.tsx'));
 
     expect($component)
-        ->toContain('setAddedAlbums')
+        ->toContain('setOrderedAlbums')
         ->toContain('[...prev, album]');
 });
 

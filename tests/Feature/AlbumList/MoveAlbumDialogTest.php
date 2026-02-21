@@ -150,8 +150,8 @@ test('show page removes added album from local state on move', function () {
 
     expect($content)->toContain('handleAlbumMoved');
 
-    // handleAlbumMoved filters addedAlbums
-    expect($content)->toContain('setAddedAlbums((prev) => prev.filter((a) => a.id !== albumId))');
+    // handleAlbumMoved filters orderedAlbums
+    expect($content)->toContain('setOrderedAlbums((prev) => prev.filter((a) => a.id !== albumId))');
 });
 
 test('move album dialog shows processing state during submission', function () {
