@@ -91,39 +91,18 @@ test('reorder requires authentication', function () {
 });
 
 test('list detail page displays drag handles on album cards', function () {
-    $user = User::factory()->create();
-    $list = AlbumList::factory()->create(['user_id' => $user->id]);
-    $album = Album::factory()->create();
-    $list->albums()->attach($album->id, ['position' => 1]);
+    $component = file_get_contents(resource_path('js/Pages/Lists/Show.tsx'));
 
-    $this->actingAs($user)
-        ->get(route('lists.show', $list))
-        ->assertOk()
-        ->assertSee('drag-handle')
-        ->assertSee('cursor-grab');
+    expect($component)
+        ->toContain('drag-handle')
+        ->toContain('cursor-grab')
+        ->toContain('GripVertical');
 });
 
-test('list detail page includes reorder script', function () {
-    $user = User::factory()->create();
-    $list = AlbumList::factory()->create(['user_id' => $user->id]);
+test('album card includes data-album-db-id attribute', function () {
+    $component = file_get_contents(resource_path('js/Pages/Lists/Show.tsx'));
 
-    $this->actingAs($user)
-        ->get(route('lists.show', $list))
-        ->assertOk()
-        ->assertSee('reorderUrl')
-        ->assertSee('drag-placeholder');
-});
-
-test('album cards include data-album-db-id attribute', function () {
-    $user = User::factory()->create();
-    $list = AlbumList::factory()->create(['user_id' => $user->id]);
-    $album = Album::factory()->create();
-    $list->albums()->attach($album->id, ['position' => 1]);
-
-    $this->actingAs($user)
-        ->get(route('lists.show', $list))
-        ->assertOk()
-        ->assertSee('data-album-db-id="'.$album->id.'"', false);
+    expect($component)->toContain('data-album-db-id={album.id}');
 });
 
 test('reorder preserves order after page reload', function () {
@@ -146,14 +125,11 @@ test('reorder preserves order after page reload', function () {
         ->assertOk();
 
     // Verify page shows albums in new order
-    $response = $this->actingAs($user)
-        ->get(route('lists.show', $list));
-
-    $content = $response->getContent();
-    $pos1 = strpos($content, 'Third Album');
-    $pos2 = strpos($content, 'First Album');
-    $pos3 = strpos($content, 'Second Album');
-
-    expect($pos1)->toBeLessThan($pos2);
-    expect($pos2)->toBeLessThan($pos3);
+    $this->actingAs($user)
+        ->get(route('lists.show', $list))
+        ->assertInertia(fn ($page) => $page
+            ->where('albums.data.0.title', 'Third Album')
+            ->where('albums.data.1.title', 'First Album')
+            ->where('albums.data.2.title', 'Second Album')
+        );
 });

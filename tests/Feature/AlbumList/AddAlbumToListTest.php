@@ -210,7 +210,9 @@ test('album count is displayed on the list detail page', function () {
     $this->actingAs($user)
         ->get(route('lists.show', $list))
         ->assertSuccessful()
-        ->assertSee('3 albums');
+        ->assertInertia(fn ($page) => $page
+            ->where('list.albumsCount', 3)
+        );
 });
 
 test('empty state is shown when list has no albums', function () {
@@ -220,5 +222,10 @@ test('empty state is shown when list has no albums', function () {
     $this->actingAs($user)
         ->get(route('lists.show', $list))
         ->assertSuccessful()
-        ->assertSee('No albums yet. Search for albums above to add them to this list.');
+        ->assertInertia(fn ($page) => $page
+            ->has('albums.data', 0)
+        );
+
+    $component = file_get_contents(resource_path('js/Pages/Lists/Show.tsx'));
+    expect($component)->toContain('No albums yet. Search for albums above to add them to this list.');
 });

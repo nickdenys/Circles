@@ -13,12 +13,13 @@ test('list detail page loads first 20 albums initially', function () {
         $list->albums()->attach($album->id, ['position' => $index]);
     }
 
-    $response = $this->actingAs($user)->get(route('lists.show', $list));
-
-    $response->assertSuccessful();
-    $paginator = $response->viewData('albums');
-    expect($paginator)->toHaveCount(20);
-    expect($paginator->hasMorePages())->toBeTrue();
+    $this->actingAs($user)
+        ->get(route('lists.show', $list))
+        ->assertSuccessful()
+        ->assertInertia(fn ($page) => $page
+            ->has('albums.data', 20)
+            ->where('albums.next_page_url', fn ($url) => $url !== null)
+        );
 });
 
 test('list detail page loads all albums when under 20', function () {
@@ -30,14 +31,15 @@ test('list detail page loads all albums when under 20', function () {
         $list->albums()->attach($album->id, ['position' => $index]);
     }
 
-    $response = $this->actingAs($user)->get(route('lists.show', $list));
-
-    $paginator = $response->viewData('albums');
-    expect($paginator)->toHaveCount(5);
-    expect($paginator->hasMorePages())->toBeFalse();
+    $this->actingAs($user)
+        ->get(route('lists.show', $list))
+        ->assertInertia(fn ($page) => $page
+            ->has('albums.data', 5)
+            ->where('albums.next_page_url', null)
+        );
 });
 
-test('album scroll sentinel is shown when more pages exist', function () {
+test('albums prop has next_page_url when more pages exist', function () {
     $user = User::factory()->create();
     $list = AlbumList::factory()->create(['user_id' => $user->id]);
     $albums = Album::factory()->count(25)->create();
@@ -48,11 +50,12 @@ test('album scroll sentinel is shown when more pages exist', function () {
 
     $this->actingAs($user)
         ->get(route('lists.show', $list))
-        ->assertSee('id="album-scroll-sentinel"', false)
-        ->assertSee('Loading more albums...');
+        ->assertInertia(fn ($page) => $page
+            ->where('albums.next_page_url', fn ($url) => $url !== null)
+        );
 });
 
-test('album scroll sentinel is not shown when all albums fit on one page', function () {
+test('albums prop has null next_page_url when all albums fit on one page', function () {
     $user = User::factory()->create();
     $list = AlbumList::factory()->create(['user_id' => $user->id]);
     $albums = Album::factory()->count(3)->create();
@@ -63,8 +66,9 @@ test('album scroll sentinel is not shown when all albums fit on one page', funct
 
     $this->actingAs($user)
         ->get(route('lists.show', $list))
-        ->assertDontSee('id="album-scroll-sentinel"', false)
-        ->assertDontSee('Loading more albums...');
+        ->assertInertia(fn ($page) => $page
+            ->where('albums.next_page_url', null)
+        );
 });
 
 test('json endpoint returns paginated album data', function () {
@@ -166,5 +170,7 @@ test('album count still displays correctly with pagination', function () {
 
     $this->actingAs($user)
         ->get(route('lists.show', $list))
-        ->assertSee('25 albums');
+        ->assertInertia(fn ($page) => $page
+            ->where('list.albumsCount', 25)
+        );
 });

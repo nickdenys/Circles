@@ -7,7 +7,6 @@ use App\Http\Requests\StoreAlbumListRequest;
 use App\Http\Requests\UpdateAlbumListRequest;
 use App\Models\AlbumList;
 use App\Services\SpotifyService;
-use Illuminate\Contracts\View\View;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -56,14 +55,15 @@ class AlbumListController extends Controller
     /**
      * Display the list detail page.
      */
-    public function show(Request $request, AlbumList $albumList): View|JsonResponse
+    public function show(Request $request, AlbumList $albumList): Response|JsonResponse
     {
         abort_unless($albumList->user_id === $request->user()->id, 403);
 
         $albumList->loadCount('albums');
-        $albums = $albumList->albums()->simplePaginate(20);
 
         if ($request->wantsJson()) {
+            $albums = $albumList->albums()->simplePaginate(20);
+
             return response()->json([
                 'data' => $albums->getCollection()->map(fn ($album) => [
                     'id' => $album->id,
@@ -81,7 +81,29 @@ class AlbumListController extends Controller
             ]);
         }
 
-        return view('lists.show', ['list' => $albumList, 'albums' => $albums]);
+        return Inertia::render('Lists/Show', [
+            'list' => [
+                'id' => $albumList->id,
+                'title' => $albumList->title,
+                'description' => $albumList->description,
+                'type' => $albumList->type,
+                'albumsCount' => $albumList->albums_count,
+            ],
+            'albums' => Inertia::scroll(
+                fn () => $albumList->albums()->simplePaginate(20)->through(fn ($album) => [
+                    'id' => $album->id,
+                    'spotifyId' => $album->spotify_id,
+                    'title' => $album->title,
+                    'artists' => $album->artists,
+                    'coverUrl' => $album->cover_url,
+                    'runtimeMs' => $album->runtime_ms,
+                    'albumType' => $album->album_type,
+                    'totalTracks' => $album->total_tracks,
+                    'releaseDate' => $album->release_date,
+                    'spotifyUri' => $album->spotify_uri,
+                ])
+            ),
+        ]);
     }
 
     /**

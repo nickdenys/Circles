@@ -31,24 +31,19 @@ function sampleSpotifyAlbum(array $overrides = []): array
 }
 
 test('search bar is displayed on the list detail page', function () {
-    $user = User::factory()->create();
-    $list = AlbumList::factory()->create(['user_id' => $user->id]);
+    $component = file_get_contents(resource_path('js/Pages/Lists/Show.tsx'));
 
-    $this->actingAs($user)
-        ->get(route('lists.show', $list))
-        ->assertSuccessful()
-        ->assertSee('id="album-search-input"', false)
-        ->assertSee('Search for albums on Spotify...');
+    expect($component)
+        ->toContain('id="album-search-input"')
+        ->toContain('Search for albums on Spotify...');
 });
 
 test('search dropdown container exists on the page', function () {
-    $user = User::factory()->create();
-    $list = AlbumList::factory()->create(['user_id' => $user->id]);
+    $component = file_get_contents(resource_path('js/Pages/Lists/Show.tsx'));
 
-    $this->actingAs($user)
-        ->get(route('lists.show', $list))
-        ->assertSee('id="album-search-dropdown"', false)
-        ->assertSee('id="album-search-results"', false);
+    expect($component)
+        ->toContain('id="album-search-dropdown"')
+        ->toContain('id="album-search-results"');
 });
 
 test('search endpoint returns album results from spotify', function () {
@@ -211,10 +206,16 @@ test('search endpoint handles spotify api failure gracefully', function () {
 });
 
 test('search bar is displayed on system list detail page', function () {
+    $component = file_get_contents(resource_path('js/Pages/Lists/Show.tsx'));
+
+    // Search input is not conditionally hidden based on list type
+    expect($component)->toContain('id="album-search-input"');
+
     $user = User::factory()->create();
     $list = AlbumList::factory()->system()->create(['user_id' => $user->id]);
 
     $this->actingAs($user)
         ->get(route('lists.show', $list))
-        ->assertSee('id="album-search-input"', false);
+        ->assertSuccessful()
+        ->assertInertia(fn ($page) => $page->component('Lists/Show'));
 });

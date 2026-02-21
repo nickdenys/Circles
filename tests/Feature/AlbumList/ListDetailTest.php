@@ -3,17 +3,20 @@
 use App\Models\AlbumList;
 use App\Models\User;
 
-test('list detail page displays the list title', function () {
+test('list detail page renders the Lists/Show inertia component', function () {
     $user = User::factory()->create();
     $list = AlbumList::factory()->create(['user_id' => $user->id, 'title' => 'My Favorites']);
 
     $this->actingAs($user)
         ->get(route('lists.show', $list))
         ->assertSuccessful()
-        ->assertSee('My Favorites');
+        ->assertInertia(fn ($page) => $page
+            ->component('Lists/Show')
+            ->where('list.title', 'My Favorites')
+        );
 });
 
-test('list detail page displays the list description', function () {
+test('list detail page passes the list description', function () {
     $user = User::factory()->create();
     $list = AlbumList::factory()->create([
         'user_id' => $user->id,
@@ -22,10 +25,12 @@ test('list detail page displays the list description', function () {
 
     $this->actingAs($user)
         ->get(route('lists.show', $list))
-        ->assertSee('A collection of my favorite albums');
+        ->assertInertia(fn ($page) => $page
+            ->where('list.description', 'A collection of my favorite albums')
+        );
 });
 
-test('list detail page hides description when not set', function () {
+test('list detail page passes null description when not set', function () {
     $user = User::factory()->create();
     $list = AlbumList::factory()->create([
         'user_id' => $user->id,
@@ -34,26 +39,41 @@ test('list detail page hides description when not set', function () {
 
     $this->actingAs($user)
         ->get(route('lists.show', $list))
-        ->assertSuccessful();
+        ->assertSuccessful()
+        ->assertInertia(fn ($page) => $page
+            ->where('list.description', null)
+        );
 });
 
-test('list detail page shows album count metadata', function () {
+test('list detail page passes album count', function () {
     $user = User::factory()->create();
     $list = AlbumList::factory()->create(['user_id' => $user->id]);
 
     $this->actingAs($user)
         ->get(route('lists.show', $list))
-        ->assertSee('0 albums');
+        ->assertInertia(fn ($page) => $page
+            ->where('list.albumsCount', 0)
+        );
 });
 
-test('edit and delete buttons are shown for custom lists', function () {
+test('list detail page passes list type for custom lists', function () {
     $user = User::factory()->create();
     $list = AlbumList::factory()->create(['user_id' => $user->id, 'type' => 'custom']);
 
     $this->actingAs($user)
         ->get(route('lists.show', $list))
-        ->assertSee('Edit')
-        ->assertSee('Delete');
+        ->assertInertia(fn ($page) => $page
+            ->where('list.type', 'custom')
+        );
+});
+
+test('edit and delete buttons are rendered for custom lists', function () {
+    $component = file_get_contents(resource_path('js/Pages/Lists/Show.tsx'));
+
+    expect($component)
+        ->toContain('id="edit-list-button"')
+        ->toContain('id="delete-list-button"')
+        ->toContain("list.type === 'custom'");
 });
 
 test('edit and delete buttons are hidden for system lists', function () {
@@ -62,8 +82,12 @@ test('edit and delete buttons are hidden for system lists', function () {
 
     $this->actingAs($user)
         ->get(route('lists.show', $list))
-        ->assertDontSee('id="edit-list-button"', false)
-        ->assertDontSee('id="delete-list-button"', false);
+        ->assertInertia(fn ($page) => $page
+            ->where('list.type', 'system')
+        );
+
+    $component = file_get_contents(resource_path('js/Pages/Lists/Show.tsx'));
+    expect($component)->toContain("list.type === 'custom'");
 });
 
 test('users cannot view another users list', function () {
@@ -84,19 +108,15 @@ test('unauthenticated users cannot access the list detail page', function () {
 });
 
 test('list detail page shows empty state when no albums', function () {
-    $user = User::factory()->create();
-    $list = AlbumList::factory()->create(['user_id' => $user->id]);
+    $component = file_get_contents(resource_path('js/Pages/Lists/Show.tsx'));
 
-    $this->actingAs($user)
-        ->get(route('lists.show', $list))
-        ->assertSee('No albums yet');
+    expect($component)->toContain('No albums yet. Search for albums above to add them to this list.');
 });
 
-test('list detail page uses the list title as the page title', function () {
-    $user = User::factory()->create();
-    $list = AlbumList::factory()->create(['user_id' => $user->id, 'title' => 'Rock Classics']);
+test('list detail page uses Head component with list title', function () {
+    $component = file_get_contents(resource_path('js/Pages/Lists/Show.tsx'));
 
-    $this->actingAs($user)
-        ->get(route('lists.show', $list))
-        ->assertSee('<title>Rock Classics - ', false);
+    expect($component)
+        ->toContain('<Head title={list.title}')
+        ->toContain("from '@inertiajs/react'");
 });

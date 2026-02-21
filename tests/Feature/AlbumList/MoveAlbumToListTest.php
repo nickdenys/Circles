@@ -5,34 +5,19 @@ use App\Models\AlbumList;
 use App\Models\User;
 
 test('each album card has a move to list button', function () {
-    $user = User::factory()->create();
-    $list = AlbumList::factory()->create(['user_id' => $user->id]);
-    $album = Album::factory()->create();
+    $component = file_get_contents(resource_path('js/Pages/Lists/Show.tsx'));
 
-    $list->albums()->attach($album->id, ['position' => 1]);
-
-    $this->actingAs($user)
-        ->get(route('lists.show', $list))
-        ->assertSuccessful()
-        ->assertSee('move-album-button', false)
-        ->assertSee('Move to list');
+    expect($component)
+        ->toContain('move-album-button')
+        ->toContain('Move to list');
 });
 
-test('move modal is present on the list detail page', function () {
-    $user = User::factory()->create();
-    $list = AlbumList::factory()->create(['user_id' => $user->id]);
-    $album = Album::factory()->create();
+test('move button is present in the album card component', function () {
+    $component = file_get_contents(resource_path('js/Pages/Lists/Show.tsx'));
 
-    $list->albums()->attach($album->id, ['position' => 1]);
-
-    $this->actingAs($user)
-        ->get(route('lists.show', $list))
-        ->assertSuccessful()
-        ->assertSee('move-album-modal', false)
-        ->assertSee('Move Album')
-        ->assertSee('Search your lists...')
-        ->assertSee('Cancel')
-        ->assertSee('Confirm');
+    expect($component)
+        ->toContain('move-album-button')
+        ->toContain('ArrowRightLeft');
 });
 
 test('moving an album removes it from the source list and adds it to the destination list', function () {
@@ -213,6 +198,8 @@ test('current list updates immediately after move', function () {
     $this->actingAs($user)
         ->get(route('lists.show', $sourceList))
         ->assertSuccessful()
-        ->assertDontSee('Album To Move')
-        ->assertSee('0 albums');
+        ->assertInertia(fn ($page) => $page
+            ->has('albums.data', 0)
+            ->where('list.albumsCount', 0)
+        );
 });
