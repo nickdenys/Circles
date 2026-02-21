@@ -11,6 +11,7 @@ import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import AlbumSearch, { type AddedAlbum } from './AlbumSearch';
+import DeleteListDialog from './DeleteListDialog';
 import EditListDialog from './EditListDialog';
 import MoveAlbumDialog from './MoveAlbumDialog';
 import RemoveAlbumDialog from './RemoveAlbumDialog';
@@ -150,6 +151,7 @@ export default function Show({ list, albums }: ShowProps) {
     const [albumToRemove, setAlbumToRemove] = useState<{ id: number; title: string } | null>(null);
     const [removeDialogOpen, setRemoveDialogOpen] = useState(false);
     const [editDialogOpen, setEditDialogOpen] = useState(false);
+    const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
 
     function handleRefresh() {
         router.post(route('lists.refresh', list.id), {}, {
@@ -233,6 +235,7 @@ export default function Show({ list, albums }: ShowProps) {
                                 <Button
                                     variant="outline"
                                     id="delete-list-button"
+                                    onClick={() => setDeleteDialogOpen(true)}
                                 >
                                     Delete
                                 </Button>
@@ -279,6 +282,12 @@ export default function Show({ list, albums }: ShowProps) {
                     </div>
                 )}
             </div>
+
+            <DeleteListDialog
+                listId={list.id}
+                open={deleteDialogOpen}
+                onOpenChange={setDeleteDialogOpen}
+            />
 
             <EditListDialog
                 listId={list.id}
