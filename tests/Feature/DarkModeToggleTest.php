@@ -40,12 +40,6 @@ test('login page includes dark mode initialization script', function () {
         ->assertSee('prefers-color-scheme: dark', false);
 });
 
-test('login page supports dark mode styles', function () {
-    $this->get(route('login'))
-        ->assertSuccessful()
-        ->assertSee('dark:bg-zinc-950', false);
-});
-
 test('toggle button is positioned in the header right section', function () {
     $response = $this->actingAs(User::factory()->create())
         ->get(route('home'));

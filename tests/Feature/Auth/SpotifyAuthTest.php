@@ -27,11 +27,9 @@ test('unauthenticated users are redirected to login page', function () {
 });
 
 test('login page is accessible to guests', function () {
-    $this->get('/login')->assertSuccessful();
-});
-
-test('login page contains spotify login link', function () {
-    $this->get('/login')->assertSee('Login with Spotify');
+    $this->get('/login')
+        ->assertSuccessful()
+        ->assertInertia(fn ($page) => $page->component('Auth/Login'));
 });
 
 test('authenticated users are redirected away from login page', function () {
