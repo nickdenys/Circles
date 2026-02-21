@@ -25,7 +25,7 @@ export default function DeleteListDialog({
     const [processing, setProcessing] = useState(false);
 
     function handleConfirm() {
-        router.delete(route('lists.destroy', listId), {
+        router.delete(`/lists/${listId}`, {
             onStart: () => setProcessing(true),
             onFinish: () => setProcessing(false),
         });

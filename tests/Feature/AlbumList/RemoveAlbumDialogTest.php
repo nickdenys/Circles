@@ -35,7 +35,7 @@ test('remove album dialog submits via router.delete to lists.albums.destroy', fu
     $content = file_get_contents(resource_path('js/Pages/Lists/RemoveAlbumDialog.tsx'));
 
     expect($content)->toContain('router.delete');
-    expect($content)->toContain("route('lists.albums.destroy'");
+    expect($content)->toContain('/albums/');
 });
 
 test('remove album dialog preserves scroll position on delete', function () {

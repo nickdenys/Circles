@@ -45,7 +45,7 @@ export default function EditListDialog({
     function handleSubmit(e: FormEvent) {
         e.preventDefault();
 
-        put(route('lists.update', listId), {
+        put(`/lists/${listId}`, {
             onSuccess: () => {
                 reset();
                 onOpenChange(false);

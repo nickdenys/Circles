@@ -46,7 +46,7 @@ test('edit list dialog submits via Inertia put to lists.update', function () {
     $content = file_get_contents(resource_path('js/Pages/Lists/EditListDialog.tsx'));
 
     expect($content)->toContain('useForm');
-    expect($content)->toContain("put(route('lists.update'");
+    expect($content)->toContain('put(`/lists/');
 });
 
 test('edit list dialog has Cancel and Save buttons using shadcn Button', function () {

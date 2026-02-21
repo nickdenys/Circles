@@ -187,7 +187,7 @@ export default function Show({ list, albums }: ShowProps) {
     useDragReorder(albumsContainerRef, handleReorder);
 
     function handleRefresh() {
-        router.post(route('lists.refresh', list.id), {}, {
+        router.post(`/lists/${list.id}/refresh`, {}, {
             onStart: () => setRefreshing(true),
             onFinish: () => setRefreshing(false),
         });

@@ -52,7 +52,7 @@ export default function MoveAlbumDialog({
             setSearching(true);
 
             try {
-                const response = await axios.get(route('lists.search'), {
+                const response = await axios.get('/lists/search', {
                     params: { q, exclude: listId },
                 });
                 setResults(response.data.data);
@@ -92,7 +92,7 @@ export default function MoveAlbumDialog({
         if (!album || !selectedList) return;
 
         router.post(
-            route('lists.albums.move', [listId, album.id]),
+            `/lists/${listId}/albums/${album.id}/move`,
             { destination_list_id: selectedList.id },
             {
                 preserveScroll: true,

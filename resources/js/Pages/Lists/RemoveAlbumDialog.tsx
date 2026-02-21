@@ -31,7 +31,7 @@ export default function RemoveAlbumDialog({
     function handleConfirm() {
         if (!album) return;
 
-        router.delete(route('lists.albums.destroy', [listId, album.id]), {
+        router.delete(`/lists/${listId}/albums/${album.id}`, {
             preserveScroll: true,
             onStart: () => setProcessing(true),
             onFinish: () => setProcessing(false),

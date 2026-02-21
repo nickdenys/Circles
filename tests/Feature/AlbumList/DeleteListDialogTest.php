@@ -36,14 +36,14 @@ test('delete list dialog submits via router.delete to lists.destroy', function (
     $content = file_get_contents(resource_path('js/Pages/Lists/DeleteListDialog.tsx'));
 
     expect($content)->toContain('router.delete');
-    expect($content)->toContain("route('lists.destroy'");
+    expect($content)->toContain('/lists/');
 });
 
 test('delete list dialog redirects to lists index on successful deletion', function () {
     $content = file_get_contents(resource_path('js/Pages/Lists/DeleteListDialog.tsx'));
 
     // router.delete to lists.destroy triggers server-side redirect to lists.index
-    expect($content)->toContain("router.delete(route('lists.destroy'");
+    expect($content)->toContain('router.delete(`/lists/');
 });
 
 test('delete list dialog supports controlled open state via onOpenChange', function () {

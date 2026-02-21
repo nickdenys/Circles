@@ -45,7 +45,7 @@ test('create list dialog submits via Inertia post to lists.store', function () {
     $content = file_get_contents(resource_path('js/Pages/Lists/CreateListDialog.tsx'));
 
     expect($content)->toContain('useForm');
-    expect($content)->toContain("post(route('lists.store')");
+    expect($content)->toContain("post('/lists'");
 });
 
 test('create list dialog has Cancel and Save buttons using shadcn Button', function () {

@@ -30,7 +30,7 @@ export default function CreateListDialog({
     function handleSubmit(e: FormEvent) {
         e.preventDefault();
 
-        post(route('lists.store'), {
+        post('/lists', {
             onSuccess: () => {
                 reset();
                 onOpenChange(false);

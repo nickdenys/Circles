@@ -11,6 +11,7 @@
             );
         </script>
         @inertiaHead
+        @viteReactRefresh
         @vite(['resources/css/app.css', 'resources/js/app.tsx'])
     </head>
     <body class="bg-white text-zinc-900 antialiased dark:bg-zinc-950 dark:text-white">

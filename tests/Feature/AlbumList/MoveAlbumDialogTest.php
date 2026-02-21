@@ -44,7 +44,7 @@ test('move album dialog searches via the lists.search endpoint', function () {
     $content = file_get_contents(resource_path('js/Pages/Lists/MoveAlbumDialog.tsx'));
 
     expect($content)
-        ->toContain("route('lists.search')")
+        ->toContain("'/lists/search'")
         ->toContain('axios.get');
 });
 
@@ -70,7 +70,8 @@ test('move album dialog submits via router.post to lists.albums.move', function 
 
     expect($content)
         ->toContain('router.post')
-        ->toContain("route('lists.albums.move'")
+        ->toContain('/albums/')
+        ->toContain('/move')
         ->toContain('destination_list_id: selectedList.id');
 });
 
