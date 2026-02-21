@@ -6,9 +6,10 @@ use App\Http\Controllers\Auth\SpotifyAuthController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\SpotifySearchController;
 use Illuminate\Support\Facades\Route;
+use Inertia\Inertia;
 
 Route::middleware('guest')->group(function (): void {
-    Route::get('/login', fn () => view('auth.login'))->name('login');
+    Route::get('/login', fn () => Inertia::render('Auth/Login'))->name('login');
     Route::get('/auth/spotify/redirect', [SpotifyAuthController::class, 'redirect'])->name('spotify.redirect');
     Route::get('/auth/spotify/callback', [SpotifyAuthController::class, 'callback'])->name('spotify.callback');
 });

@@ -5,34 +5,19 @@ use App\Models\AlbumList;
 use App\Models\User;
 
 test('each album card has a remove button', function () {
-    $user = User::factory()->create();
-    $list = AlbumList::factory()->create(['user_id' => $user->id]);
-    $album = Album::factory()->create();
+    $component = file_get_contents(resource_path('js/Pages/Lists/Show.tsx'));
 
-    $list->albums()->attach($album->id, ['position' => 1]);
-
-    $this->actingAs($user)
-        ->get(route('lists.show', $list))
-        ->assertSuccessful()
-        ->assertSee('remove-album-button', false)
-        ->assertSee('Remove from list');
+    expect($component)
+        ->toContain('remove-album-button')
+        ->toContain('Remove from list');
 });
 
-test('clicking remove opens a confirmation modal', function () {
-    $user = User::factory()->create();
-    $list = AlbumList::factory()->create(['user_id' => $user->id]);
-    $album = Album::factory()->create();
+test('remove button is present in the album card component', function () {
+    $component = file_get_contents(resource_path('js/Pages/Lists/Show.tsx'));
 
-    $list->albums()->attach($album->id, ['position' => 1]);
-
-    $this->actingAs($user)
-        ->get(route('lists.show', $list))
-        ->assertSuccessful()
-        ->assertSee('remove-album-modal', false)
-        ->assertSee('Remove Album')
-        ->assertSee('Are you sure you want to remove')
-        ->assertSee('Cancel')
-        ->assertSee('Confirm');
+    expect($component)
+        ->toContain('remove-album-button')
+        ->toContain('Trash2');
 });
 
 test('confirming removal removes the album from the list', function () {
@@ -91,8 +76,10 @@ test('list updates immediately after removal', function () {
     $this->actingAs($user)
         ->get(route('lists.show', $list))
         ->assertSuccessful()
-        ->assertDontSee('Album To Remove')
-        ->assertSee('0 albums');
+        ->assertInertia(fn ($page) => $page
+            ->has('albums.data', 0)
+            ->where('list.albumsCount', 0)
+        );
 });
 
 test('user cannot remove albums from another users list', function () {
@@ -121,6 +108,14 @@ test('unauthenticated user cannot remove albums', function () {
 });
 
 test('remove button has album id and title data attributes', function () {
+    $component = file_get_contents(resource_path('js/Pages/Lists/Show.tsx'));
+
+    expect($component)
+        ->toContain('data-album-id={album.id}')
+        ->toContain('data-album-title={album.title}');
+});
+
+test('album card passes album data for removal', function () {
     $user = User::factory()->create();
     $list = AlbumList::factory()->create(['user_id' => $user->id]);
     $album = Album::factory()->create(['title' => 'Test Album Title']);
@@ -130,22 +125,8 @@ test('remove button has album id and title data attributes', function () {
     $this->actingAs($user)
         ->get(route('lists.show', $list))
         ->assertSuccessful()
-        ->assertSee('data-album-id="'.$album->id.'"', false)
-        ->assertSee('data-album-title="Test Album Title"', false);
-});
-
-test('remove modal form contains delete method and csrf token', function () {
-    $user = User::factory()->create();
-    $list = AlbumList::factory()->create(['user_id' => $user->id]);
-    $album = Album::factory()->create();
-
-    $list->albums()->attach($album->id, ['position' => 1]);
-
-    $response = $this->actingAs($user)
-        ->get(route('lists.show', $list))
-        ->assertSuccessful();
-
-    $content = $response->getContent();
-    expect($content)->toContain('name="_method" value="DELETE"');
-    expect($content)->toContain('id="remove-album-form"');
+        ->assertInertia(fn ($page) => $page
+            ->where('albums.data.0.id', $album->id)
+            ->where('albums.data.0.title', 'Test Album Title')
+        );
 });

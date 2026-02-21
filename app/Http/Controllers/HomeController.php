@@ -2,15 +2,16 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Contracts\View\View;
 use Illuminate\Http\Request;
+use Inertia\Inertia;
+use Inertia\Response;
 
 class HomeController extends Controller
 {
     /**
      * Display the home page with greeting and statistics.
      */
-    public function __invoke(Request $request): View
+    public function __invoke(Request $request): Response
     {
         $user = $request->user();
 
@@ -26,10 +27,15 @@ class HomeController extends Controller
             ->orderByDesc('albums_count')
             ->first();
 
-        return view('home', [
+        return Inertia::render('Home', [
             'totalLists' => $totalLists,
             'totalAlbums' => $totalAlbums,
-            'mostPopulatedList' => $mostPopulatedList,
+            'mostPopulatedList' => $mostPopulatedList
+                ? [
+                    'title' => $mostPopulatedList->title,
+                    'albumsCount' => $mostPopulatedList->albums_count,
+                ]
+                : null,
         ]);
     }
 }

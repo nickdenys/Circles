@@ -2,20 +2,20 @@
 
 use App\Models\AlbumList;
 use App\Models\User;
+use Inertia\Testing\AssertableInertia;
 
 test('lists page loads first 20 lists initially', function () {
     $user = User::factory()->create();
     // 25 custom + 1 system watchlist = 26 total
     AlbumList::factory()->count(25)->create(['user_id' => $user->id]);
 
-    $response = $this->actingAs($user)->get(route('lists.index'));
-
-    $response->assertSuccessful();
-
-    // The paginator should only return 20 items
-    $lists = $response->viewData('lists');
-    expect($lists)->toHaveCount(20);
-    expect($lists->hasMorePages())->toBeTrue();
+    $this->actingAs($user)
+        ->get(route('lists.index'))
+        ->assertSuccessful()
+        ->assertInertia(fn (AssertableInertia $page) => $page
+            ->component('Lists/Index')
+            ->has('lists.data', 20)
+        );
 });
 
 test('lists page loads all lists when under 20', function () {
@@ -23,30 +23,50 @@ test('lists page loads all lists when under 20', function () {
     // 5 custom + 1 system watchlist = 6 total
     AlbumList::factory()->count(5)->create(['user_id' => $user->id]);
 
-    $response = $this->actingAs($user)->get(route('lists.index'));
-
-    $lists = $response->viewData('lists');
-    expect($lists)->toHaveCount(6);
-    expect($lists->hasMorePages())->toBeFalse();
+    $this->actingAs($user)
+        ->get(route('lists.index'))
+        ->assertInertia(fn (AssertableInertia $page) => $page
+            ->component('Lists/Index')
+            ->has('lists.data', 6)
+            ->where('lists.next_page_url', null)
+        );
 });
 
-test('scroll sentinel is shown when more pages exist', function () {
+test('lists prop includes next_page_url when more pages exist', function () {
     $user = User::factory()->create();
     AlbumList::factory()->count(25)->create(['user_id' => $user->id]);
 
     $this->actingAs($user)
         ->get(route('lists.index'))
-        ->assertSee('id="scroll-sentinel"', false)
-        ->assertSee('Loading more lists...');
+        ->assertInertia(fn (AssertableInertia $page) => $page
+            ->where('lists.next_page_url', fn ($url) => $url !== null)
+        );
 });
 
-test('scroll sentinel is not shown when all lists fit on one page', function () {
-    $user = User::factory()->create();
+test('page component uses InfiniteScroll from Inertia', function () {
+    $content = file_get_contents(resource_path('js/Pages/Lists/Index.tsx'));
 
-    $this->actingAs($user)
-        ->get(route('lists.index'))
-        ->assertDontSee('id="scroll-sentinel"', false)
-        ->assertDontSee('Loading more lists...');
+    expect($content)->toContain('InfiniteScroll');
+    expect($content)->toContain("from '@inertiajs/react'");
+});
+
+test('page component shows loading spinner while fetching', function () {
+    $content = file_get_contents(resource_path('js/Pages/Lists/Index.tsx'));
+
+    expect($content)->toContain('Loader2');
+    expect($content)->toContain('animate-spin');
+});
+
+test('page component renders scroll sentinel during loading', function () {
+    $content = file_get_contents(resource_path('js/Pages/Lists/Index.tsx'));
+
+    expect($content)->toContain('id="scroll-sentinel"');
+});
+
+test('InfiniteScroll component uses lists data prop', function () {
+    $content = file_get_contents(resource_path('js/Pages/Lists/Index.tsx'));
+
+    expect($content)->toContain('data="lists"');
 });
 
 test('json endpoint returns paginated lists data', function () {

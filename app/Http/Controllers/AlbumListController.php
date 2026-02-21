@@ -7,26 +7,28 @@ use App\Http\Requests\StoreAlbumListRequest;
 use App\Http\Requests\UpdateAlbumListRequest;
 use App\Models\AlbumList;
 use App\Services\SpotifyService;
-use Illuminate\Contracts\View\View;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Inertia\Inertia;
+use Inertia\Response;
 
 class AlbumListController extends Controller
 {
     /**
      * Display the lists overview page.
      */
-    public function index(Request $request): View|JsonResponse
+    public function index(Request $request): Response|JsonResponse
     {
-        $lists = $request->user()
+        $query = $request->user()
             ->albumLists()
             ->withCount('albums')
             ->orderByRaw("CASE WHEN type = 'system' THEN 0 ELSE 1 END")
-            ->orderBy('title')
-            ->simplePaginate(20);
+            ->orderBy('title');
 
         if ($request->wantsJson()) {
+            $lists = $query->simplePaginate(20);
+
             return response()->json([
                 'data' => $lists->getCollection()->map(fn ($list) => [
                     'id' => $list->id,
@@ -38,20 +40,30 @@ class AlbumListController extends Controller
             ]);
         }
 
-        return view('lists.index', ['lists' => $lists]);
+        return Inertia::render('Lists/Index', [
+            'lists' => Inertia::scroll(
+                fn () => $query->simplePaginate(20)->through(fn ($list) => [
+                    'id' => $list->id,
+                    'title' => $list->title,
+                    'albumsCount' => $list->albums_count ?? 0,
+                    'url' => route('lists.show', $list),
+                ])
+            ),
+        ]);
     }
 
     /**
      * Display the list detail page.
      */
-    public function show(Request $request, AlbumList $albumList): View|JsonResponse
+    public function show(Request $request, AlbumList $albumList): Response|JsonResponse
     {
         abort_unless($albumList->user_id === $request->user()->id, 403);
 
         $albumList->loadCount('albums');
-        $albums = $albumList->albums()->simplePaginate(20);
 
         if ($request->wantsJson()) {
+            $albums = $albumList->albums()->simplePaginate(20);
+
             return response()->json([
                 'data' => $albums->getCollection()->map(fn ($album) => [
                     'id' => $album->id,
@@ -69,7 +81,29 @@ class AlbumListController extends Controller
             ]);
         }
 
-        return view('lists.show', ['list' => $albumList, 'albums' => $albums]);
+        return Inertia::render('Lists/Show', [
+            'list' => [
+                'id' => $albumList->id,
+                'title' => $albumList->title,
+                'description' => $albumList->description,
+                'type' => $albumList->type,
+                'albumsCount' => $albumList->albums_count,
+            ],
+            'albums' => Inertia::scroll(
+                fn () => $albumList->albums()->simplePaginate(20)->through(fn ($album) => [
+                    'id' => $album->id,
+                    'spotifyId' => $album->spotify_id,
+                    'title' => $album->title,
+                    'artists' => $album->artists,
+                    'coverUrl' => $album->cover_url,
+                    'runtimeMs' => $album->runtime_ms,
+                    'albumType' => $album->album_type,
+                    'totalTracks' => $album->total_tracks,
+                    'releaseDate' => $album->release_date,
+                    'spotifyUri' => $album->spotify_uri,
+                ])
+            ),
+        ]);
     }
 
     /**

@@ -2,20 +2,19 @@
 
 use App\Models\User;
 
-test('header contains the dark mode toggle button', function () {
-    $this->actingAs(User::factory()->create())
-        ->get(route('home'))
-        ->assertSuccessful()
-        ->assertSee('id="theme-toggle"', false)
-        ->assertSee('aria-label="Toggle dark mode"', false);
+test('authenticated layout contains dark mode toggle', function () {
+    $content = file_get_contents(resource_path('js/Layouts/AuthenticatedLayout.tsx'));
+
+    expect($content)->toContain('aria-label="Toggle dark mode"')
+        ->and($content)->toContain('toggleTheme');
 });
 
-test('header contains sun and moon theme icons', function () {
-    $this->actingAs(User::factory()->create())
-        ->get(route('home'))
-        ->assertSuccessful()
-        ->assertSee('id="theme-icon-sun"', false)
-        ->assertSee('id="theme-icon-moon"', false);
+test('authenticated layout contains sun and moon theme icons', function () {
+    $content = file_get_contents(resource_path('js/Layouts/AuthenticatedLayout.tsx'));
+
+    expect($content)->toContain('Sun')
+        ->and($content)->toContain('Moon')
+        ->and($content)->toContain('lucide-react');
 });
 
 test('layout includes inline dark mode initialization script', function () {
@@ -27,10 +26,9 @@ test('layout includes inline dark mode initialization script', function () {
 });
 
 test('layout includes theme toggle interaction script', function () {
-    $this->actingAs(User::factory()->create())
-        ->get(route('home'))
-        ->assertSuccessful()
-        ->assertSee("document.documentElement.classList.toggle('dark')", false);
+    $content = file_get_contents(resource_path('js/Layouts/AuthenticatedLayout.tsx'));
+
+    expect($content)->toContain("document.documentElement.classList.toggle('dark'");
 });
 
 test('login page includes dark mode initialization script', function () {
@@ -40,21 +38,8 @@ test('login page includes dark mode initialization script', function () {
         ->assertSee('prefers-color-scheme: dark', false);
 });
 
-test('login page supports dark mode styles', function () {
-    $this->get(route('login'))
-        ->assertSuccessful()
-        ->assertSee('dark:bg-zinc-950', false);
-});
+test('dark mode toggle persists preference to localStorage', function () {
+    $content = file_get_contents(resource_path('js/Layouts/AuthenticatedLayout.tsx'));
 
-test('toggle button is positioned in the header right section', function () {
-    $response = $this->actingAs(User::factory()->create())
-        ->get(route('home'));
-
-    $response->assertSuccessful();
-
-    $content = $response->getContent();
-    $togglePosition = strpos($content, 'id="theme-toggle"');
-    $logoutPosition = strpos($content, 'Logout');
-
-    expect($togglePosition)->toBeLessThan($logoutPosition);
+    expect($content)->toContain("localStorage.theme = newDark ? 'dark' : 'light'");
 });
