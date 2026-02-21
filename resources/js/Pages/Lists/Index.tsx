@@ -1,7 +1,9 @@
 import { InfiniteScroll, Link } from '@inertiajs/react';
 import { ChevronRight, Loader2 } from 'lucide-react';
+import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
+import CreateListDialog from '@/Pages/Lists/CreateListDialog';
 
 interface AlbumListItem {
     id: number;
@@ -21,16 +23,16 @@ interface ListsIndexProps {
 }
 
 export default function Index({ lists }: ListsIndexProps) {
+    const [createDialogOpen, setCreateDialogOpen] = useState(false);
+
     return (
         <div>
             <div className="flex items-center justify-between">
                 <h1 className="text-3xl font-bold tracking-tight sm:text-4xl">
                     My Lists
                 </h1>
-                <Button asChild>
-                    <Link href="/lists" data-add-list>
-                        Add List
-                    </Link>
+                <Button onClick={() => setCreateDialogOpen(true)}>
+                    Add List
                 </Button>
             </div>
 
@@ -78,6 +80,11 @@ export default function Index({ lists }: ListsIndexProps) {
                     </InfiniteScroll>
                 </div>
             )}
+
+            <CreateListDialog
+                open={createDialogOpen}
+                onOpenChange={setCreateDialogOpen}
+            />
         </div>
     );
 }
