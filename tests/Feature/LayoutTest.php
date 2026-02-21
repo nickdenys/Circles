@@ -70,8 +70,16 @@ test('lists page uses the app layout', function () {
     $this->actingAs(User::factory()->create())
         ->get(route('lists.index'))
         ->assertSuccessful()
-        ->assertSee('Hoopify')
-        ->assertSee('My Lists');
+        ->assertInertia(fn (AssertableInertia $page) => $page
+            ->component('Lists/Index')
+        );
+
+    // Verify the layout contains branding and the page contains heading
+    $layoutContent = file_get_contents(resource_path('js/Layouts/AuthenticatedLayout.tsx'));
+    expect($layoutContent)->toContain('Hoopify');
+
+    $pageContent = file_get_contents(resource_path('js/Pages/Lists/Index.tsx'));
+    expect($pageContent)->toContain('My Lists');
 });
 
 test('unauthenticated users cannot access layout pages', function () {

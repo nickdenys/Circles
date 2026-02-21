@@ -11,13 +11,15 @@ use Illuminate\Contracts\View\View;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Inertia\Inertia;
+use Inertia\Response;
 
 class AlbumListController extends Controller
 {
     /**
      * Display the lists overview page.
      */
-    public function index(Request $request): View|JsonResponse
+    public function index(Request $request): Response|JsonResponse
     {
         $lists = $request->user()
             ->albumLists()
@@ -38,7 +40,15 @@ class AlbumListController extends Controller
             ]);
         }
 
-        return view('lists.index', ['lists' => $lists]);
+        return Inertia::render('Lists/Index', [
+            'lists' => $lists->getCollection()->map(fn ($list) => [
+                'id' => $list->id,
+                'title' => $list->title,
+                'albumsCount' => $list->albums_count ?? 0,
+                'url' => route('lists.show', $list),
+            ]),
+            'nextPageUrl' => $lists->nextPageUrl(),
+        ]);
     }
 
     /**

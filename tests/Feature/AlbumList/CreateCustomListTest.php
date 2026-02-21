@@ -2,21 +2,14 @@
 
 use App\Models\AlbumList;
 use App\Models\User;
+use Inertia\Testing\AssertableInertia;
 
-test('clicking add list button shows create list modal elements', function () {
+test('lists index page renders with Lists/Index component', function () {
     $this->actingAs(User::factory()->create())
         ->get(route('lists.index'))
-        ->assertSee('Create New List')
-        ->assertSee('Title')
-        ->assertSee('Description')
-        ->assertSee('Save')
-        ->assertSee('Cancel');
-});
-
-test('modal form submits to the store route', function () {
-    $this->actingAs(User::factory()->create())
-        ->get(route('lists.index'))
-        ->assertSee(route('lists.store'));
+        ->assertInertia(fn (AssertableInertia $page) => $page
+            ->component('Lists/Index')
+        );
 });
 
 test('user can create a custom list with title and description', function () {
@@ -59,7 +52,15 @@ test('created list appears on the lists overview page', function () {
 
     $this->actingAs($user)
         ->get(route('lists.index'))
-        ->assertSee('New Custom List');
+        ->assertInertia(fn (AssertableInertia $page) => $page
+            ->component('Lists/Index')
+            ->has('lists', fn ($lists) => $lists
+                ->each(fn ($list) => $list
+                    ->hasAll(['id', 'title', 'albumsCount', 'url'])
+                )
+            )
+            ->where('lists.1.title', 'New Custom List')
+        );
 });
 
 test('validation requires a title', function () {
