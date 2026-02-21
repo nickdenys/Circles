@@ -71,6 +71,32 @@ test('albums prop has null next_page_url when all albums fit on one page', funct
         );
 });
 
+test('show page component uses InfiniteScroll from Inertia', function () {
+    $content = file_get_contents(resource_path('js/Pages/Lists/Show.tsx'));
+
+    expect($content)->toContain('InfiniteScroll');
+    expect($content)->toContain("from '@inertiajs/react'");
+});
+
+test('show page component shows loading spinner while fetching', function () {
+    $content = file_get_contents(resource_path('js/Pages/Lists/Show.tsx'));
+
+    expect($content)->toContain('Loader2');
+    expect($content)->toContain('animate-spin');
+});
+
+test('show page component renders scroll sentinel during loading', function () {
+    $content = file_get_contents(resource_path('js/Pages/Lists/Show.tsx'));
+
+    expect($content)->toContain('id="album-scroll-sentinel"');
+});
+
+test('InfiniteScroll component uses albums data prop', function () {
+    $content = file_get_contents(resource_path('js/Pages/Lists/Show.tsx'));
+
+    expect($content)->toContain('data="albums"');
+});
+
 test('json endpoint returns paginated album data', function () {
     $user = User::factory()->create();
     $list = AlbumList::factory()->create(['user_id' => $user->id]);
