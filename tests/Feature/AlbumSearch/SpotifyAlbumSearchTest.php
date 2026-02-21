@@ -31,15 +31,18 @@ function sampleSpotifyAlbum(array $overrides = []): array
 }
 
 test('search bar is displayed on the list detail page', function () {
-    $component = file_get_contents(resource_path('js/Pages/Lists/Show.tsx'));
+    $component = file_get_contents(resource_path('js/Pages/Lists/AlbumSearch.tsx'));
 
     expect($component)
         ->toContain('id="album-search-input"')
         ->toContain('Search for albums on Spotify...');
+
+    $showComponent = file_get_contents(resource_path('js/Pages/Lists/Show.tsx'));
+    expect($showComponent)->toContain('<AlbumSearch');
 });
 
 test('search dropdown container exists on the page', function () {
-    $component = file_get_contents(resource_path('js/Pages/Lists/Show.tsx'));
+    $component = file_get_contents(resource_path('js/Pages/Lists/AlbumSearch.tsx'));
 
     expect($component)
         ->toContain('id="album-search-dropdown"')
@@ -206,7 +209,7 @@ test('search endpoint handles spotify api failure gracefully', function () {
 });
 
 test('search bar is displayed on system list detail page', function () {
-    $component = file_get_contents(resource_path('js/Pages/Lists/Show.tsx'));
+    $component = file_get_contents(resource_path('js/Pages/Lists/AlbumSearch.tsx'));
 
     // Search input is not conditionally hidden based on list type
     expect($component)->toContain('id="album-search-input"');

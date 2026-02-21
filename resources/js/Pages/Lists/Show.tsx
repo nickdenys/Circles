@@ -4,14 +4,13 @@ import {
     Loader2,
     Music,
     RefreshCw,
-    Search,
     ArrowRightLeft,
     Trash2,
 } from 'lucide-react';
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
+import AlbumSearch, { type AddedAlbum } from './AlbumSearch';
 
 interface AlbumListDetail {
     id: number;
@@ -61,12 +60,19 @@ function formatAlbumType(type: string): string {
 
 export default function Show({ list, albums }: ShowProps) {
     const [refreshing, setRefreshing] = useState(false);
+    const [localAlbums, setLocalAlbums] = useState(albums.data);
+    const [albumCount, setAlbumCount] = useState(list.albumsCount);
 
     function handleRefresh() {
         router.post(route('lists.refresh', list.id), {}, {
             onStart: () => setRefreshing(true),
             onFinish: () => setRefreshing(false),
         });
+    }
+
+    function handleAlbumAdded(album: AddedAlbum) {
+        setLocalAlbums((prev) => [...prev, album]);
+        setAlbumCount((prev) => prev + 1);
     }
 
     return (
@@ -85,8 +91,8 @@ export default function Show({ list, albums }: ShowProps) {
                             </p>
                         )}
                         <p className="mt-2 text-sm text-muted-foreground">
-                            {list.albumsCount}{' '}
-                            {list.albumsCount === 1 ? 'album' : 'albums'}
+                            {albumCount}{' '}
+                            {albumCount === 1 ? 'album' : 'albums'}
                         </p>
                     </div>
 
@@ -124,25 +130,18 @@ export default function Show({ list, albums }: ShowProps) {
                     </div>
                 </div>
 
-                <div className="relative mt-6">
-                    <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                    <Input
-                        id="album-search-input"
-                        placeholder="Search for albums on Spotify..."
-                        className="pl-9"
-                    />
-                    <div id="album-search-dropdown" className="hidden">
-                        <div id="album-search-results" />
-                    </div>
-                </div>
+                <AlbumSearch
+                    listId={list.id}
+                    onAlbumAdded={handleAlbumAdded}
+                />
 
-                {albums.data.length === 0 ? (
+                {localAlbums.length === 0 ? (
                     <p className="mt-8 text-center text-muted-foreground">
                         No albums yet. Search for albums above to add them to this list.
                     </p>
                 ) : (
                     <div className="mt-6 space-y-3">
-                        {albums.data.map((album) => (
+                        {localAlbums.map((album) => (
                             <Card
                                 key={album.id}
                                 className="album-card group relative flex items-start gap-4 px-4 py-3"
