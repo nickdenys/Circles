@@ -11,6 +11,7 @@ import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import AlbumSearch, { type AddedAlbum } from './AlbumSearch';
+import EditListDialog from './EditListDialog';
 import MoveAlbumDialog from './MoveAlbumDialog';
 import RemoveAlbumDialog from './RemoveAlbumDialog';
 
@@ -148,6 +149,7 @@ export default function Show({ list, albums }: ShowProps) {
     const [moveDialogOpen, setMoveDialogOpen] = useState(false);
     const [albumToRemove, setAlbumToRemove] = useState<{ id: number; title: string } | null>(null);
     const [removeDialogOpen, setRemoveDialogOpen] = useState(false);
+    const [editDialogOpen, setEditDialogOpen] = useState(false);
 
     function handleRefresh() {
         router.post(route('lists.refresh', list.id), {}, {
@@ -224,6 +226,7 @@ export default function Show({ list, albums }: ShowProps) {
                                 <Button
                                     variant="outline"
                                     id="edit-list-button"
+                                    onClick={() => setEditDialogOpen(true)}
                                 >
                                     Edit
                                 </Button>
@@ -276,6 +279,14 @@ export default function Show({ list, albums }: ShowProps) {
                     </div>
                 )}
             </div>
+
+            <EditListDialog
+                listId={list.id}
+                title={list.title}
+                description={list.description}
+                open={editDialogOpen}
+                onOpenChange={setEditDialogOpen}
+            />
 
             <MoveAlbumDialog
                 listId={list.id}
