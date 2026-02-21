@@ -11,6 +11,7 @@ import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import AlbumSearch, { type AddedAlbum } from './AlbumSearch';
+import RemoveAlbumDialog from './RemoveAlbumDialog';
 
 interface AlbumListDetail {
     id: number;
@@ -58,7 +59,7 @@ function formatAlbumType(type: string): string {
     return type.charAt(0).toUpperCase() + type.slice(1);
 }
 
-function AlbumCard({ album }: { album: AlbumItem }) {
+function AlbumCard({ album, onRemove }: { album: AlbumItem; onRemove: (album: { id: number; title: string }) => void }) {
     return (
         <Card
             className="album-card group relative flex items-start gap-4 px-4 py-3"
@@ -128,6 +129,7 @@ function AlbumCard({ album }: { album: AlbumItem }) {
                     title="Remove from list"
                     data-album-id={album.id}
                     data-album-title={album.title}
+                    onClick={() => onRemove({ id: album.id, title: album.title })}
                 >
                     <Trash2 className="h-4 w-4" />
                 </Button>
@@ -140,6 +142,8 @@ export default function Show({ list, albums }: ShowProps) {
     const [refreshing, setRefreshing] = useState(false);
     const [addedAlbums, setAddedAlbums] = useState<AlbumItem[]>([]);
     const [albumCount, setAlbumCount] = useState(list.albumsCount);
+    const [albumToRemove, setAlbumToRemove] = useState<{ id: number; title: string } | null>(null);
+    const [removeDialogOpen, setRemoveDialogOpen] = useState(false);
 
     function handleRefresh() {
         router.post(route('lists.refresh', list.id), {}, {
@@ -151,6 +155,16 @@ export default function Show({ list, albums }: ShowProps) {
     function handleAlbumAdded(album: AddedAlbum) {
         setAddedAlbums((prev) => [...prev, album]);
         setAlbumCount((prev) => prev + 1);
+    }
+
+    function handleRemoveAlbum(album: { id: number; title: string }) {
+        setAlbumToRemove(album);
+        setRemoveDialogOpen(true);
+    }
+
+    function handleAlbumRemoved(albumId: number) {
+        setAddedAlbums((prev) => prev.filter((a) => a.id !== albumId));
+        setAlbumCount((prev) => prev - 1);
     }
 
     const hasAlbums = albums.data.length > 0 || addedAlbums.length > 0;
@@ -234,20 +248,28 @@ export default function Show({ list, albums }: ShowProps) {
                             )}
                         >
                             {albums.data.map((album) => (
-                                <AlbumCard key={album.id} album={album} />
+                                <AlbumCard key={album.id} album={album} onRemove={handleRemoveAlbum} />
                             ))}
                         </InfiniteScroll>
 
                         {addedAlbums.length > 0 && (
                             <div className="mt-3 space-y-3">
                                 {addedAlbums.map((album) => (
-                                    <AlbumCard key={`added-${album.id}`} album={album} />
+                                    <AlbumCard key={`added-${album.id}`} album={album} onRemove={handleRemoveAlbum} />
                                 ))}
                             </div>
                         )}
                     </div>
                 )}
             </div>
+
+            <RemoveAlbumDialog
+                listId={list.id}
+                album={albumToRemove}
+                open={removeDialogOpen}
+                onOpenChange={setRemoveDialogOpen}
+                onRemoved={handleAlbumRemoved}
+            />
         </>
     );
 }
