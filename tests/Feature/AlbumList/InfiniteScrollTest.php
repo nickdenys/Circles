@@ -14,8 +14,7 @@ test('lists page loads first 20 lists initially', function () {
         ->assertSuccessful()
         ->assertInertia(fn (AssertableInertia $page) => $page
             ->component('Lists/Index')
-            ->has('lists', 20)
-            ->where('nextPageUrl', fn ($url) => $url !== null)
+            ->has('lists.data', 20)
         );
 });
 
@@ -28,23 +27,46 @@ test('lists page loads all lists when under 20', function () {
         ->get(route('lists.index'))
         ->assertInertia(fn (AssertableInertia $page) => $page
             ->component('Lists/Index')
-            ->has('lists', 6)
-            ->where('nextPageUrl', null)
+            ->has('lists.data', 6)
+            ->where('lists.next_page_url', null)
         );
 });
 
-test('scroll sentinel is rendered when more pages exist', function () {
+test('lists prop includes next_page_url when more pages exist', function () {
+    $user = User::factory()->create();
+    AlbumList::factory()->count(25)->create(['user_id' => $user->id]);
+
+    $this->actingAs($user)
+        ->get(route('lists.index'))
+        ->assertInertia(fn (AssertableInertia $page) => $page
+            ->where('lists.next_page_url', fn ($url) => $url !== null)
+        );
+});
+
+test('page component uses InfiniteScroll from Inertia', function () {
+    $content = file_get_contents(resource_path('js/Pages/Lists/Index.tsx'));
+
+    expect($content)->toContain('InfiniteScroll');
+    expect($content)->toContain("from '@inertiajs/react'");
+});
+
+test('page component shows loading spinner while fetching', function () {
+    $content = file_get_contents(resource_path('js/Pages/Lists/Index.tsx'));
+
+    expect($content)->toContain('Loader2');
+    expect($content)->toContain('animate-spin');
+});
+
+test('page component renders scroll sentinel during loading', function () {
     $content = file_get_contents(resource_path('js/Pages/Lists/Index.tsx'));
 
     expect($content)->toContain('id="scroll-sentinel"');
-    expect($content)->toContain('Loading more lists...');
 });
 
-test('scroll sentinel depends on nextPageUrl prop', function () {
+test('InfiniteScroll component uses lists data prop', function () {
     $content = file_get_contents(resource_path('js/Pages/Lists/Index.tsx'));
 
-    expect($content)->toContain('nextPageUrl');
-    expect($content)->toContain('scroll-sentinel');
+    expect($content)->toContain('data="lists"');
 });
 
 test('json endpoint returns paginated lists data', function () {

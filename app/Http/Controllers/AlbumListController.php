@@ -21,14 +21,15 @@ class AlbumListController extends Controller
      */
     public function index(Request $request): Response|JsonResponse
     {
-        $lists = $request->user()
+        $query = $request->user()
             ->albumLists()
             ->withCount('albums')
             ->orderByRaw("CASE WHEN type = 'system' THEN 0 ELSE 1 END")
-            ->orderBy('title')
-            ->simplePaginate(20);
+            ->orderBy('title');
 
         if ($request->wantsJson()) {
+            $lists = $query->simplePaginate(20);
+
             return response()->json([
                 'data' => $lists->getCollection()->map(fn ($list) => [
                     'id' => $list->id,
@@ -41,13 +42,14 @@ class AlbumListController extends Controller
         }
 
         return Inertia::render('Lists/Index', [
-            'lists' => $lists->getCollection()->map(fn ($list) => [
-                'id' => $list->id,
-                'title' => $list->title,
-                'albumsCount' => $list->albums_count ?? 0,
-                'url' => route('lists.show', $list),
-            ]),
-            'nextPageUrl' => $lists->nextPageUrl(),
+            'lists' => Inertia::scroll(
+                fn () => $query->simplePaginate(20)->through(fn ($list) => [
+                    'id' => $list->id,
+                    'title' => $list->title,
+                    'albumsCount' => $list->albums_count ?? 0,
+                    'url' => route('lists.show', $list),
+                ])
+            ),
         ]);
     }
 

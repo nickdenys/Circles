@@ -54,12 +54,12 @@ test('created list appears on the lists overview page', function () {
         ->get(route('lists.index'))
         ->assertInertia(fn (AssertableInertia $page) => $page
             ->component('Lists/Index')
-            ->has('lists', fn ($lists) => $lists
+            ->has('lists.data', fn ($lists) => $lists
                 ->each(fn ($list) => $list
                     ->hasAll(['id', 'title', 'albumsCount', 'url'])
                 )
             )
-            ->where('lists.1.title', 'New Custom List')
+            ->where('lists.data.1.title', 'New Custom List')
         );
 });
 

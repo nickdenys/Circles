@@ -24,7 +24,7 @@ test('lists page displays all user lists', function () {
         ->get(route('lists.index'))
         ->assertInertia(fn (AssertableInertia $page) => $page
             ->component('Lists/Index')
-            ->has('lists', 4)
+            ->has('lists.data', 4)
         );
 });
 
@@ -37,9 +37,9 @@ test('system lists are displayed before custom lists', function () {
         ->get(route('lists.index'))
         ->assertInertia(fn (AssertableInertia $page) => $page
             ->component('Lists/Index')
-            ->where('lists.0.title', 'Watchlist')
-            ->where('lists.1.title', 'Custom Alpha')
-            ->where('lists.2.title', 'Custom Beta')
+            ->where('lists.data.0.title', 'Watchlist')
+            ->where('lists.data.1.title', 'Custom Alpha')
+            ->where('lists.data.2.title', 'Custom Beta')
         );
 });
 
@@ -50,8 +50,8 @@ test('each list includes title and album count', function () {
         ->get(route('lists.index'))
         ->assertInertia(fn (AssertableInertia $page) => $page
             ->component('Lists/Index')
-            ->where('lists.0.title', 'Watchlist')
-            ->where('lists.0.albumsCount', 0)
+            ->where('lists.data.0.title', 'Watchlist')
+            ->where('lists.data.0.albumsCount', 0)
         );
 });
 
@@ -62,7 +62,7 @@ test('each list includes a url to the detail page', function () {
     $this->actingAs($user)
         ->get(route('lists.index'))
         ->assertInertia(fn (AssertableInertia $page) => $page
-            ->where('lists.0.url', route('lists.show', $list))
+            ->where('lists.data.0.url', route('lists.show', $list))
         );
 });
 
@@ -75,8 +75,8 @@ test('lists page only shows lists for the authenticated user', function () {
         ->get(route('lists.index'))
         ->assertInertia(fn (AssertableInertia $page) => $page
             ->component('Lists/Index')
-            ->has('lists', 1)
-            ->where('lists.0.title', 'Watchlist')
+            ->has('lists.data', 1)
+            ->where('lists.data.0.title', 'Watchlist')
         );
 });
 
@@ -88,7 +88,7 @@ test('empty state when user has no lists', function () {
         ->get(route('lists.index'))
         ->assertInertia(fn (AssertableInertia $page) => $page
             ->component('Lists/Index')
-            ->has('lists', 0)
+            ->has('lists.data', 0)
         );
 });
 

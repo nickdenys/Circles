@@ -1,5 +1,5 @@
-import { Link } from '@inertiajs/react';
-import { ChevronRight } from 'lucide-react';
+import { InfiniteScroll, Link } from '@inertiajs/react';
+import { ChevronRight, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 
@@ -10,13 +10,17 @@ interface AlbumListItem {
     url: string;
 }
 
+interface PaginatedLists {
+    data: AlbumListItem[];
+    next_page_url: string | null;
+}
+
 interface ListsIndexProps {
-    lists: AlbumListItem[];
-    nextPageUrl: string | null;
+    lists: PaginatedLists;
     [key: string]: unknown;
 }
 
-export default function Index({ lists, nextPageUrl }: ListsIndexProps) {
+export default function Index({ lists }: ListsIndexProps) {
     return (
         <div>
             <div className="flex items-center justify-between">
@@ -30,39 +34,48 @@ export default function Index({ lists, nextPageUrl }: ListsIndexProps) {
                 </Button>
             </div>
 
-            {lists.length === 0 ? (
+            {lists.data.length === 0 ? (
                 <p className="mt-8 text-center text-muted-foreground">
                     No lists yet. Create one to get started.
                 </p>
             ) : (
-                <div className="mt-8 space-y-3">
-                    {lists.map((list) => (
-                        <Link key={list.id} href={list.url} className="block">
-                            <Card className="flex items-center justify-between px-5 py-4 transition hover:bg-zinc-50 dark:hover:bg-zinc-800/50">
-                                <div>
-                                    <p className="font-medium">{list.title}</p>
-                                    <p className="mt-0.5 text-sm text-muted-foreground">
-                                        {list.albumsCount}{' '}
-                                        {list.albumsCount === 1
-                                            ? 'album'
-                                            : 'albums'}
-                                    </p>
-                                </div>
-                                <ChevronRight className="h-5 w-5 text-muted-foreground" />
-                            </Card>
-                        </Link>
-                    ))}
-
-                    {nextPageUrl && (
-                        <div
-                            id="scroll-sentinel"
-                            className="flex justify-center py-4"
-                        >
-                            <p className="text-sm text-muted-foreground">
-                                Loading more lists...
-                            </p>
-                        </div>
-                    )}
+                <div className="mt-8">
+                    <InfiniteScroll
+                        data="lists"
+                        buffer={300}
+                        className="space-y-3"
+                        loading={() => (
+                            <div
+                                id="scroll-sentinel"
+                                className="flex justify-center py-4"
+                            >
+                                <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+                            </div>
+                        )}
+                    >
+                        {lists.data.map((list) => (
+                            <Link
+                                key={list.id}
+                                href={list.url}
+                                className="block"
+                            >
+                                <Card className="flex items-center justify-between px-5 py-4 transition hover:bg-zinc-50 dark:hover:bg-zinc-800/50">
+                                    <div>
+                                        <p className="font-medium">
+                                            {list.title}
+                                        </p>
+                                        <p className="mt-0.5 text-sm text-muted-foreground">
+                                            {list.albumsCount}{' '}
+                                            {list.albumsCount === 1
+                                                ? 'album'
+                                                : 'albums'}
+                                        </p>
+                                    </div>
+                                    <ChevronRight className="h-5 w-5 text-muted-foreground" />
+                                </Card>
+                            </Link>
+                        ))}
+                    </InfiniteScroll>
                 </div>
             )}
         </div>
