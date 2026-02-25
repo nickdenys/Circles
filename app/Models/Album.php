@@ -26,7 +26,18 @@ class Album extends Model
         'total_tracks',
         'release_date',
         'spotify_uri',
+        'genres',
     ];
+
+    /**
+     * @return array<string, string>
+     */
+    protected function casts(): array
+    {
+        return [
+            'genres' => 'array',
+        ];
+    }
 
     /**
      * Get the lists that contain this album.

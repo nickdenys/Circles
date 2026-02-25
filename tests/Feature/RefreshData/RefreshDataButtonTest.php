@@ -62,6 +62,7 @@ test('clicking refresh updates album data from spotify', function () {
             'uri' => 'spotify:album:abc123',
             'tracks' => ['items' => [['duration_ms' => 300000]]],
         ]),
+        'musicbrainz.org/*' => Http::response(['release-groups' => []]),
     ]);
 
     $this->actingAs($user)
@@ -99,6 +100,7 @@ test('refresh bypasses spotify cache', function () {
                 'tracks' => ['items' => [['duration_ms' => 200000]]],
             ]);
         },
+        'musicbrainz.org/*' => Http::response(['release-groups' => []]),
     ]);
 
     // First call populates cache
@@ -196,6 +198,7 @@ test('refresh updates multiple albums in the list', function () {
             'uri' => 'spotify:album:id2',
             'tracks' => ['items' => [['duration_ms' => 180000]]],
         ]),
+        'musicbrainz.org/*' => Http::response(['release-groups' => []]),
     ]);
 
     $this->actingAs($user)

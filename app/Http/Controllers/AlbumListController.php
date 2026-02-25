@@ -76,6 +76,7 @@ class AlbumListController extends Controller
                     'total_tracks' => $album->total_tracks,
                     'release_date' => $album->release_date,
                     'spotify_uri' => $album->spotify_uri,
+                    'genres' => $album->genres ?? [],
                 ]),
                 'next_page_url' => $albums->nextPageUrl(),
             ]);
@@ -101,6 +102,7 @@ class AlbumListController extends Controller
                     'totalTracks' => $album->total_tracks,
                     'releaseDate' => $album->release_date,
                     'spotifyUri' => $album->spotify_uri,
+                    'genres' => $album->genres ?? [],
                 ])
             ),
         ]);

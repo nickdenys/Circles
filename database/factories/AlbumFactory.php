@@ -26,6 +26,7 @@ class AlbumFactory extends Factory
             'total_tracks' => fake()->numberBetween(1, 20),
             'release_date' => fake()->date(),
             'spotify_uri' => 'spotify:album:'.fake()->unique()->regexify('[a-zA-Z0-9]{22}'),
+            'genres' => fake()->randomElements(['rock', 'pop', 'hip hop', 'jazz', 'electronic', 'r&b', 'indie', 'metal', 'folk', 'classical'], fake()->numberBetween(1, 3)),
         ];
     }
 }

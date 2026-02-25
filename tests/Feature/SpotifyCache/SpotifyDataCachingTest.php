@@ -21,7 +21,7 @@ function fakeSpotifyAlbum(array $overrides = []): void
     $album = array_merge([
         'id' => '4aawyAB9vmqN3uQ7FjRGTy',
         'name' => 'Global Warming',
-        'artists' => [['name' => 'Pitbull']],
+        'artists' => [['id' => '0TnOYISbd1XYRBk9myaseg', 'name' => 'Pitbull']],
         'album_type' => 'album',
         'total_tracks' => 12,
         'release_date' => '2012-11-16',
@@ -37,6 +37,12 @@ function fakeSpotifyAlbum(array $overrides = []): void
 
     Http::fake([
         'api.spotify.com/v1/albums/*' => Http::response($album),
+        'musicbrainz.org/ws/2/release-group?*' => Http::response([
+            'release-groups' => [['id' => 'mb-test-id']],
+        ]),
+        'musicbrainz.org/ws/2/release-group/mb-test-id*' => Http::response([
+            'genres' => [['name' => 'latin pop', 'count' => 5]],
+        ]),
     ]);
 }
 
@@ -129,7 +135,8 @@ test('album data is cached after first api call', function () {
     $second = $spotify->getAlbum('4aawyAB9vmqN3uQ7FjRGTy');
 
     expect($first)->toEqual($second);
-    Http::assertSentCount(1);
+    // 3 requests on first call (Spotify album + MusicBrainz search + MusicBrainz lookup), 0 on second (cached)
+    Http::assertSentCount(3);
 });
 
 test('cached album data is used for subsequent requests', function () {
@@ -144,7 +151,7 @@ test('cached album data is used for subsequent requests', function () {
         'api.spotify.com/v1/albums/*' => Http::response([
             'id' => '4aawyAB9vmqN3uQ7FjRGTy',
             'name' => 'Updated Name',
-            'artists' => [['name' => 'Pitbull']],
+            'artists' => [['id' => '0TnOYISbd1XYRBk9myaseg', 'name' => 'Pitbull']],
             'album_type' => 'album',
             'total_tracks' => 12,
             'release_date' => '2012-11-16',
@@ -152,6 +159,7 @@ test('cached album data is used for subsequent requests', function () {
             'uri' => 'spotify:album:4aawyAB9vmqN3uQ7FjRGTy',
             'tracks' => ['items' => []],
         ]),
+        'musicbrainz.org/*' => Http::response(['release-groups' => []]),
     ]);
 
     $cached = $spotify->getAlbum('4aawyAB9vmqN3uQ7FjRGTy');
@@ -219,7 +227,7 @@ test('bypass cache forces fresh album api call', function () {
             return Http::response([
                 'id' => '4aawyAB9vmqN3uQ7FjRGTy',
                 'name' => 'Album v'.$callCount,
-                'artists' => [['name' => 'Pitbull']],
+                'artists' => [['id' => '0TnOYISbd1XYRBk9myaseg', 'name' => 'Pitbull']],
                 'album_type' => 'album',
                 'total_tracks' => $callCount * 10,
                 'release_date' => '2012-11-16',
@@ -228,6 +236,12 @@ test('bypass cache forces fresh album api call', function () {
                 'tracks' => ['items' => [['duration_ms' => 200000]]],
             ]);
         },
+        'musicbrainz.org/ws/2/release-group?*' => Http::response([
+            'release-groups' => [['id' => 'mb-test-id']],
+        ]),
+        'musicbrainz.org/ws/2/release-group/mb-test-id*' => Http::response([
+            'genres' => [['name' => 'latin pop', 'count' => 5]],
+        ]),
     ]);
 
     $spotify = new SpotifyService($user);

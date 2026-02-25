@@ -126,5 +126,6 @@ test('added album callback maps snake_case response to camelCase props', functio
         ->toContain('albumType: data.album_type')
         ->toContain('totalTracks: data.total_tracks')
         ->toContain('releaseDate: data.release_date')
-        ->toContain('spotifyUri: data.spotify_uri');
+        ->toContain('spotifyUri: data.spotify_uri')
+        ->toContain('genres: data.genres');
 });

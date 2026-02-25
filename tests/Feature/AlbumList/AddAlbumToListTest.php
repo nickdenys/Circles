@@ -5,13 +5,13 @@ use App\Models\AlbumList;
 use App\Models\User;
 use Illuminate\Support\Facades\Http;
 
-function fakeSpotifyAlbumResponse(array $overrides = []): void
+function fakeSpotifyAlbumResponse(array $overrides = [], array $musicBrainzGenres = [['name' => 'latin pop', 'count' => 5], ['name' => 'miami hip hop', 'count' => 3]]): void
 {
     $album = array_merge([
         'id' => '4aawyAB9vmqN3uQ7FjRGTy',
         'name' => 'Global Warming',
         'artists' => [
-            ['name' => 'Pitbull'],
+            ['id' => '0TnOYISbd1XYRBk9myaseg', 'name' => 'Pitbull'],
         ],
         'album_type' => 'album',
         'total_tracks' => 12,
@@ -31,6 +31,12 @@ function fakeSpotifyAlbumResponse(array $overrides = []): void
 
     Http::fake([
         'api.spotify.com/v1/albums/*' => Http::response($album),
+        'musicbrainz.org/ws/2/release-group?*' => Http::response([
+            'release-groups' => [['id' => 'mb-test-id']],
+        ]),
+        'musicbrainz.org/ws/2/release-group/mb-test-id*' => Http::response([
+            'genres' => $musicBrainzGenres,
+        ]),
     ]);
 }
 
@@ -72,7 +78,8 @@ test('album spotify data is stored in the database', function () {
         ->album_type->toBe('album')
         ->total_tracks->toBe(12)
         ->release_date->toBe('2012-11-16')
-        ->spotify_uri->toBe('spotify:album:4aawyAB9vmqN3uQ7FjRGTy');
+        ->spotify_uri->toBe('spotify:album:4aawyAB9vmqN3uQ7FjRGTy')
+        ->genres->toBe(['latin pop', 'miami hip hop']);
 });
 
 test('duplicate albums in the same list are prevented', function () {
@@ -106,7 +113,7 @@ test('album appears in the list immediately after being added', function () {
 
     $data = $response->json('data');
     expect($data)
-        ->toHaveKeys(['id', 'spotify_id', 'title', 'artists', 'cover_url', 'runtime_ms', 'album_type', 'total_tracks', 'release_date', 'spotify_uri']);
+        ->toHaveKeys(['id', 'spotify_id', 'title', 'artists', 'cover_url', 'runtime_ms', 'album_type', 'total_tracks', 'release_date', 'spotify_uri', 'genres']);
 });
 
 test('existing album record is reused when adding to a different list', function () {

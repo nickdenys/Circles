@@ -75,7 +75,7 @@ class SpotifyService
     /**
      * Get a single album from Spotify by its ID.
      *
-     * @return array{spotify_id: string, title: string, artists: string, cover_url: string|null, runtime_ms: int, album_type: string, total_tracks: int, release_date: string, spotify_uri: string}|null
+     * @return array{spotify_id: string, title: string, artists: string, cover_url: string|null, runtime_ms: int, album_type: string, total_tracks: int, release_date: string, spotify_uri: string, genres: list<string>}|null
      */
     public function getAlbum(string $spotifyId): ?array
     {
@@ -98,6 +98,9 @@ class SpotifyService
         $runtimeMs = collect($album['tracks']['items'] ?? [])
             ->sum('duration_ms');
 
+        $artistName = $album['artists'][0]['name'] ?? '';
+        $genres = (new MusicBrainzService)->getAlbumGenres($album['name'], $artistName);
+
         $data = [
             'spotify_id' => $album['id'],
             'title' => $album['name'],
@@ -108,6 +111,7 @@ class SpotifyService
             'total_tracks' => $album['total_tracks'],
             'release_date' => $album['release_date'],
             'spotify_uri' => $album['uri'],
+            'genres' => $genres,
         ];
 
         Cache::put($cacheKey, $data, self::ALBUM_CACHE_TTL);

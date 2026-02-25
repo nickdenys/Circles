@@ -28,6 +28,7 @@ export interface AddedAlbum {
     totalTracks: number;
     releaseDate: string;
     spotifyUri: string;
+    genres: string[];
 }
 
 export default function AlbumSearch({ listId, onAlbumAdded }: AlbumSearchProps) {
@@ -104,6 +105,7 @@ export default function AlbumSearch({ listId, onAlbumAdded }: AlbumSearchProps) 
                 totalTracks: data.total_tracks,
                 releaseDate: data.release_date,
                 spotifyUri: data.spotify_uri,
+                genres: data.genres,
             });
 
             setQuery('');

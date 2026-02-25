@@ -28,6 +28,7 @@ import {
     ExternalLink,
 } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -57,6 +58,7 @@ interface AlbumItem {
     totalTracks: number;
     releaseDate: string;
     spotifyUri: string;
+    genres: string[];
 }
 
 interface PaginatedAlbums {
@@ -130,6 +132,15 @@ function AlbumCardContent({ album, onMove, onRemove, dragHandleProps }: {
                             {formatRuntime(album.runtimeMs)}
                         </p>
                     </div>
+                    {album.genres.length > 0 && (
+                        <div className="mt-2 flex flex-wrap gap-1">
+                            {album.genres.map((genre) => (
+                                <Badge key={genre} variant="secondary">
+                                    {genre}
+                                </Badge>
+                            ))}
+                        </div>
+                    )}
                 </div>
             </div>
 
