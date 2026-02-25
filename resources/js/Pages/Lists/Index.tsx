@@ -1,5 +1,5 @@
 import { InfiniteScroll, Link } from '@inertiajs/react';
-import { ChevronRight, Loader2 } from 'lucide-react';
+import { Loader2 } from 'lucide-react';
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -45,7 +45,7 @@ export default function Index({ lists }: ListsIndexProps) {
                     <InfiniteScroll
                         data="lists"
                         buffer={300}
-                        className="space-y-3"
+                        className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3"
                         loading={() => (
                             <div
                                 id="scroll-sentinel"
@@ -73,7 +73,6 @@ export default function Index({ lists }: ListsIndexProps) {
                                                 : 'albums'}
                                         </p>
                                     </div>
-                                    <ChevronRight className="h-5 w-5 text-muted-foreground" />
                                 </Card>
                             </Link>
                         ))}
