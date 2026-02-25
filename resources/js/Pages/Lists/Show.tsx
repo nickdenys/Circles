@@ -29,6 +29,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import AlbumSearch, { type AddedAlbum } from './AlbumSearch';
 import DeleteListDialog from './DeleteListDialog';
 import EditListDialog from './EditListDialog';
@@ -131,39 +132,51 @@ function AlbumCardContent({ album, onMove, onRemove, dragHandleProps }: {
             </div>
 
             <div className="flex shrink-0 items-center gap-1">
-                <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-8 w-8"
-                    title="Open in Spotify"
-                    asChild
-                >
-                    <a href={album.spotifyUri}>
-                        <ExternalLink className="h-4 w-4" />
-                    </a>
-                </Button>
-                <Button
-                    variant="ghost"
-                    size="icon"
-                    className="move-album-button h-8 w-8"
-                    title="Move to list"
-                    data-album-id={album.id}
-                    data-album-title={album.title}
-                    onClick={() => onMove({ id: album.id, title: album.title })}
-                >
-                    <ArrowRightLeft className="h-4 w-4" />
-                </Button>
-                <Button
-                    variant="ghost"
-                    size="icon"
-                    className="remove-album-button h-8 w-8 text-destructive hover:text-destructive"
-                    title="Remove from list"
-                    data-album-id={album.id}
-                    data-album-title={album.title}
-                    onClick={() => onRemove({ id: album.id, title: album.title })}
-                >
-                    <Trash2 className="h-4 w-4" />
-                </Button>
+                <Tooltip>
+                    <TooltipTrigger asChild>
+                        <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8"
+                            asChild
+                        >
+                            <a href={album.spotifyUri}>
+                                <ExternalLink className="h-4 w-4" />
+                            </a>
+                        </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>Open in Spotify</TooltipContent>
+                </Tooltip>
+                <Tooltip>
+                    <TooltipTrigger asChild>
+                        <Button
+                            variant="ghost"
+                            size="icon"
+                            className="move-album-button h-8 w-8"
+                            data-album-id={album.id}
+                            data-album-title={album.title}
+                            onClick={() => onMove({ id: album.id, title: album.title })}
+                        >
+                            <ArrowRightLeft className="h-4 w-4" />
+                        </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>Move to list</TooltipContent>
+                </Tooltip>
+                <Tooltip>
+                    <TooltipTrigger asChild>
+                        <Button
+                            variant="ghost"
+                            size="icon"
+                            className="remove-album-button h-8 w-8 text-destructive hover:text-destructive"
+                            data-album-id={album.id}
+                            data-album-title={album.title}
+                            onClick={() => onRemove({ id: album.id, title: album.title })}
+                        >
+                            <Trash2 className="h-4 w-4" />
+                        </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>Remove from list</TooltipContent>
+                </Tooltip>
             </div>
         </Card>
     );
@@ -395,11 +408,6 @@ export default function Show({ list, albums }: ShowProps) {
                     </div>
                 </div>
 
-                <AlbumSearch
-                    listId={list.id}
-                    onAlbumAdded={handleAlbumAdded}
-                />
-
                 {hasAlbums && (
                     <div className="mt-4 flex items-center gap-2">
                         <Select value={viewMode} onValueChange={(v) => setViewMode(v as ViewMode)}>
@@ -413,6 +421,11 @@ export default function Show({ list, albums }: ShowProps) {
                         </Select>
                     </div>
                 )}
+
+                <AlbumSearch
+                    listId={list.id}
+                    onAlbumAdded={handleAlbumAdded}
+                />
 
                 {!hasAlbums ? (
                     <p className="mt-8 text-center text-muted-foreground">

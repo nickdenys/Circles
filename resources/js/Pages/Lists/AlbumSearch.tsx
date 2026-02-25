@@ -2,6 +2,7 @@ import axios from 'axios';
 import { Search, Loader2, Music } from 'lucide-react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Input } from '@/components/ui/input';
+import { Popover, PopoverAnchor, PopoverContent } from '@/components/ui/popover';
 
 interface SearchResult {
     id: string;
@@ -36,8 +37,8 @@ export default function AlbumSearch({ listId, onAlbumAdded }: AlbumSearchProps) 
     const [searching, setSearching] = useState(false);
     const [adding, setAdding] = useState<string | null>(null);
     const [error, setError] = useState<string | null>(null);
-    const containerRef = useRef<HTMLDivElement>(null);
     const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const inputRef = useRef<HTMLInputElement>(null);
 
     const search = useCallback(async (q: string) => {
         if (q.length < 2) {
@@ -120,23 +121,6 @@ export default function AlbumSearch({ listId, onAlbumAdded }: AlbumSearchProps) 
     }
 
     useEffect(() => {
-        function handleClickOutside(e: MouseEvent) {
-            if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
-                setIsOpen(false);
-            }
-        }
-
-        document.addEventListener('mousedown', handleClickOutside);
-        return () => document.removeEventListener('mousedown', handleClickOutside);
-    }, []);
-
-    function handleKeyDown(e: React.KeyboardEvent) {
-        if (e.key === 'Escape') {
-            setIsOpen(false);
-        }
-    }
-
-    useEffect(() => {
         return () => {
             if (debounceRef.current) {
                 clearTimeout(debounceRef.current);
@@ -145,68 +129,73 @@ export default function AlbumSearch({ listId, onAlbumAdded }: AlbumSearchProps) 
     }, []);
 
     return (
-        <div ref={containerRef} className="relative mt-6" onKeyDown={handleKeyDown}>
-            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-            <Input
-                id="album-search-input"
-                placeholder="Add an album from Spotify"
-                className="pl-9"
-                value={query}
-                onChange={(e) => handleInputChange(e.target.value)}
-            />
-            {searching && (
-                <Loader2 className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 animate-spin text-muted-foreground" />
-            )}
-
-            {isOpen && (
-                <div
-                    id="album-search-dropdown"
-                    className="absolute z-50 mt-1 w-full rounded-md border bg-popover shadow-lg"
-                >
-                    <div id="album-search-results">
-                        {error && (
-                            <p className="px-4 py-3 text-sm text-destructive">{error}</p>
-                        )}
-                        {!error && results.length === 0 && !searching && (
-                            <p className="px-4 py-3 text-sm text-muted-foreground">
-                                No results found.
-                            </p>
-                        )}
-                        {results.map((result) => (
-                            <button
-                                key={result.id}
-                                type="button"
-                                className="album-search-result flex w-full items-center gap-3 px-4 py-2 text-left transition hover:bg-accent disabled:opacity-50"
-                                onClick={() => handleAdd(result)}
-                                disabled={adding !== null}
-                            >
-                                {result.image ? (
-                                    <img
-                                        src={result.image}
-                                        alt={result.name}
-                                        className="h-10 w-10 shrink-0 rounded object-cover"
-                                    />
-                                ) : (
-                                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded bg-zinc-100 dark:bg-zinc-800">
-                                        <Music className="h-4 w-4 text-muted-foreground" />
-                                    </div>
-                                )}
-                                <div className="min-w-0 flex-1">
-                                    <p className="truncate text-sm font-medium">
-                                        {result.name}
-                                    </p>
-                                    <p className="truncate text-xs text-muted-foreground">
-                                        {result.artists}
-                                    </p>
-                                </div>
-                                {adding === result.id && (
-                                    <Loader2 className="h-4 w-4 shrink-0 animate-spin text-muted-foreground" />
-                                )}
-                            </button>
-                        ))}
-                    </div>
+        <Popover open={isOpen} onOpenChange={setIsOpen}>
+            <PopoverAnchor asChild>
+                <div className="relative mt-6">
+                    <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                    <Input
+                        ref={inputRef}
+                        id="album-search-input"
+                        placeholder="Add an album from Spotify"
+                        className="pl-9"
+                        value={query}
+                        onChange={(e) => handleInputChange(e.target.value)}
+                        onKeyDown={(e) => e.key === 'Escape' && setIsOpen(false)}
+                    />
+                    {searching && (
+                        <Loader2 className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 animate-spin text-muted-foreground" />
+                    )}
                 </div>
-            )}
-        </div>
+            </PopoverAnchor>
+
+            <PopoverContent
+                id="album-search-dropdown"
+                className="w-[var(--radix-popover-trigger-width)] p-0"
+                onOpenAutoFocus={(e) => e.preventDefault()}
+            >
+                <div id="album-search-results">
+                    {error && (
+                        <p className="px-4 py-3 text-sm text-destructive">{error}</p>
+                    )}
+                    {!error && results.length === 0 && !searching && (
+                        <p className="px-4 py-3 text-sm text-muted-foreground">
+                            No results found.
+                        </p>
+                    )}
+                    {results.map((result) => (
+                        <button
+                            key={result.id}
+                            type="button"
+                            className="album-search-result flex w-full items-center gap-3 px-4 py-2 text-left transition hover:bg-accent disabled:opacity-50"
+                            onClick={() => handleAdd(result)}
+                            disabled={adding !== null}
+                        >
+                            {result.image ? (
+                                <img
+                                    src={result.image}
+                                    alt={result.name}
+                                    className="h-10 w-10 shrink-0 rounded object-cover"
+                                />
+                            ) : (
+                                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded bg-zinc-100 dark:bg-zinc-800">
+                                    <Music className="h-4 w-4 text-muted-foreground" />
+                                </div>
+                            )}
+                            <div className="min-w-0 flex-1">
+                                <p className="truncate text-sm font-medium">
+                                    {result.name}
+                                </p>
+                                <p className="truncate text-xs text-muted-foreground">
+                                    {result.artists}
+                                </p>
+                            </div>
+                            {adding === result.id && (
+                                <Loader2 className="h-4 w-4 shrink-0 animate-spin text-muted-foreground" />
+                            )}
+                        </button>
+                    ))}
+                </div>
+            </PopoverContent>
+        </Popover>
     );
 }

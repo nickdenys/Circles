@@ -13,6 +13,7 @@ import {
     DialogTitle,
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
+import { Popover, PopoverAnchor, PopoverContent } from '@/components/ui/popover';
 
 interface ListResult {
     id: number;
@@ -37,6 +38,7 @@ export default function MoveAlbumDialog({
 }: MoveAlbumDialogProps) {
     const [query, setQuery] = useState('');
     const [results, setResults] = useState<ListResult[]>([]);
+    const [isOpen, setIsOpen] = useState(false);
     const [searching, setSearching] = useState(false);
     const [selectedList, setSelectedList] = useState<ListResult | null>(null);
     const [processing, setProcessing] = useState(false);
@@ -46,6 +48,7 @@ export default function MoveAlbumDialog({
         async (q: string) => {
             if (q.length < 1) {
                 setResults([]);
+                setIsOpen(false);
                 return;
             }
 
@@ -56,6 +59,7 @@ export default function MoveAlbumDialog({
                     params: { q, exclude: listId },
                 });
                 setResults(response.data.data);
+                setIsOpen(true);
             } catch {
                 setResults([]);
             } finally {
@@ -74,6 +78,7 @@ export default function MoveAlbumDialog({
 
         if (value.length < 1) {
             setResults([]);
+            setIsOpen(false);
             return;
         }
 
@@ -86,10 +91,11 @@ export default function MoveAlbumDialog({
         setSelectedList(list);
         setQuery('');
         setResults([]);
+        setIsOpen(false);
     }
 
     function handleConfirm() {
-        if (!album || !selectedList) return;
+        if (!album || !selectedList) { return; }
 
         router.post(
             `/lists/${listId}/albums/${album.id}/move`,
@@ -111,6 +117,7 @@ export default function MoveAlbumDialog({
             setQuery('');
             setResults([]);
             setSelectedList(null);
+            setIsOpen(false);
         }
         onOpenChange(value);
     }
@@ -138,24 +145,28 @@ export default function MoveAlbumDialog({
                 </DialogHeader>
 
                 <div className="space-y-3">
-                    <div className="relative">
-                        <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                        <Input
-                            id="list-search-input"
-                            placeholder="Search for a list..."
-                            className="pl-9"
-                            value={query}
-                            onChange={(e) => handleInputChange(e.target.value)}
-                        />
-                        {searching && (
-                            <Loader2 className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 animate-spin text-muted-foreground" />
-                        )}
-                    </div>
+                    <Popover open={isOpen} onOpenChange={setIsOpen}>
+                        <PopoverAnchor asChild>
+                            <div className="relative">
+                                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                                <Input
+                                    id="list-search-input"
+                                    placeholder="Search for a list..."
+                                    className="pl-9"
+                                    value={query}
+                                    onChange={(e) => handleInputChange(e.target.value)}
+                                    onKeyDown={(e) => e.key === 'Escape' && setIsOpen(false)}
+                                />
+                                {searching && (
+                                    <Loader2 className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 animate-spin text-muted-foreground" />
+                                )}
+                            </div>
+                        </PopoverAnchor>
 
-                    {results.length > 0 && (
-                        <div
+                        <PopoverContent
                             id="list-search-results"
-                            className="max-h-48 overflow-y-auto rounded-md border"
+                            className="w-[var(--radix-popover-trigger-width)] max-h-48 overflow-y-auto p-0"
+                            onOpenAutoFocus={(e) => e.preventDefault()}
                         >
                             {results.map((list) => (
                                 <button
@@ -167,8 +178,8 @@ export default function MoveAlbumDialog({
                                     {list.title}
                                 </button>
                             ))}
-                        </div>
-                    )}
+                        </PopoverContent>
+                    </Popover>
 
                     {selectedList && (
                         <div className="flex items-center gap-2">
