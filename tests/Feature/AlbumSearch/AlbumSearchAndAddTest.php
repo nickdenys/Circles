@@ -5,7 +5,7 @@ test('album search component is rendered on the list detail page', function () {
 
     expect($component)
         ->toContain('id="album-search-input"')
-        ->toContain('Search for albums on Spotify...');
+        ->toContain('Add an album from Spotify');
 });
 
 test('album search uses debounced input with 300ms delay', function () {

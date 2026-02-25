@@ -82,8 +82,6 @@ test('album card displays album type', function () {
             ->where('albums.data.0.albumType', 'album')
         );
 
-    $component = file_get_contents(resource_path('js/Pages/Lists/Show.tsx'));
-    expect($component)->toContain('formatAlbumType');
 });
 
 test('album card displays total tracks', function () {

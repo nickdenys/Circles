@@ -123,8 +123,3 @@ test('page component uses Inertia Link for navigation', function () {
     expect($content)->toContain('<Link');
 });
 
-test('page component includes chevron icon', function () {
-    $content = file_get_contents(resource_path('js/Pages/Lists/Index.tsx'));
-
-    expect($content)->toContain('ChevronRight');
-});

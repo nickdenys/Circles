@@ -135,88 +135,13 @@ test('reorder preserves order after page reload', function () {
         );
 });
 
-test('show page imports and uses the useDragReorder hook', function () {
+test('show page uses dnd-kit for drag and drop reordering', function () {
     $component = file_get_contents(resource_path('js/Pages/Lists/Show.tsx'));
 
     expect($component)
-        ->toContain("import { useDragReorder } from './useDragReorder'")
-        ->toContain('useDragReorder(albumsContainerRef, handleReorder)');
-});
-
-test('useDragReorder hook handles mouse drag events', function () {
-    $hook = file_get_contents(resource_path('js/Pages/Lists/useDragReorder.ts'));
-
-    expect($hook)
-        ->toContain("container.addEventListener('mousedown', handleMouseDown)")
-        ->toContain("document.addEventListener('mousemove', handleMouseMove)")
-        ->toContain("document.addEventListener('mouseup', handleMouseUp)");
-});
-
-test('useDragReorder hook handles touch drag events with 200ms long press', function () {
-    $hook = file_get_contents(resource_path('js/Pages/Lists/useDragReorder.ts'));
-
-    expect($hook)
-        ->toContain("container.addEventListener('touchstart', handleTouchStart")
-        ->toContain("container.addEventListener('touchmove', handleTouchMove")
-        ->toContain("container.addEventListener('touchend', handleTouchEnd)")
-        ->toContain("container.addEventListener('touchcancel', handleTouchEnd)")
-        ->toContain('setTimeout(')
-        ->toContain('200');
-});
-
-test('useDragReorder creates a dashed placeholder for the drop position', function () {
-    $hook = file_get_contents(resource_path('js/Pages/Lists/useDragReorder.ts'));
-
-    expect($hook)
-        ->toContain('drag-placeholder')
-        ->toContain('border-dashed')
-        ->toContain('border-2');
-});
-
-test('useDragReorder applies shadow and opacity to dragged card', function () {
-    $hook = file_get_contents(resource_path('js/Pages/Lists/useDragReorder.ts'));
-
-    expect($hook)
-        ->toContain("card.style.opacity = '0.9'")
-        ->toContain("card.style.boxShadow = '0 10px 25px -5px rgba(0,0,0,0.2)'")
-        ->toContain("card.style.position = 'fixed'");
-});
-
-test('useDragReorder prevents text selection during drag', function () {
-    $hook = file_get_contents(resource_path('js/Pages/Lists/useDragReorder.ts'));
-
-    expect($hook)
-        ->toContain("document.body.style.userSelect = 'none'")
-        ->toContain('webkitUserSelect');
-});
-
-test('useDragReorder adds cursor-grabbing class during drag', function () {
-    $hook = file_get_contents(resource_path('js/Pages/Lists/useDragReorder.ts'));
-
-    expect($hook)
-        ->toContain("classList.add('cursor-grabbing')")
-        ->toContain("classList.remove('cursor-grabbing')");
-});
-
-test('useDragReorder reads album order from DOM and calls onReorder callback', function () {
-    $hook = file_get_contents(resource_path('js/Pages/Lists/useDragReorder.ts'));
-
-    expect($hook)
-        ->toContain('card.dataset.albumDbId')
-        ->toContain('onReorderRef.current(albumIds)');
-});
-
-test('useDragReorder cleans up event listeners on unmount', function () {
-    $hook = file_get_contents(resource_path('js/Pages/Lists/useDragReorder.ts'));
-
-    expect($hook)
-        ->toContain("container.removeEventListener('mousedown', handleMouseDown)")
-        ->toContain("document.removeEventListener('mousemove', handleMouseMove)")
-        ->toContain("document.removeEventListener('mouseup', handleMouseUp)")
-        ->toContain("container.removeEventListener('touchstart', handleTouchStart)")
-        ->toContain("container.removeEventListener('touchmove', handleTouchMove)")
-        ->toContain("container.removeEventListener('touchend', handleTouchEnd)")
-        ->toContain("container.removeEventListener('touchcancel', handleTouchEnd)");
+        ->toContain("from '@dnd-kit/core'")
+        ->toContain('DndContext')
+        ->toContain('SortableContext');
 });
 
 test('show page saves reorder via axios PUT to the reorder endpoint', function () {
@@ -225,15 +150,15 @@ test('show page saves reorder via axios PUT to the reorder endpoint', function (
     expect($component)
         ->toContain("import axios from 'axios'")
         ->toContain('axios.put(`/lists/${list.id}/albums/reorder`')
-        ->toContain('album_ids: albumIds');
+        ->toContain('album_ids: reordered.map');
 });
 
-test('show page wraps album list in a container ref for drag reorder', function () {
+test('show page uses sortable context for drag reorder', function () {
     $component = file_get_contents(resource_path('js/Pages/Lists/Show.tsx'));
 
     expect($component)
-        ->toContain('albumsContainerRef = useRef<HTMLDivElement>(null)')
-        ->toContain('ref={albumsContainerRef}');
+        ->toContain('SortableContext')
+        ->toContain('useSortable');
 });
 
 test('show page manages ordered albums state for drag reorder consistency', function () {
@@ -244,18 +169,3 @@ test('show page manages ordered albums state for drag reorder consistency', func
         ->toContain('orderedAlbums.map((album)');
 });
 
-test('useDragReorder cancels touch hold timer if user scrolls more than 10px', function () {
-    $hook = file_get_contents(resource_path('js/Pages/Lists/useDragReorder.ts'));
-
-    expect($hook)
-        ->toContain('Math.abs(touch.clientY - state.startY) > 10')
-        ->toContain('clearTimeout(state.holdTimer)');
-});
-
-test('useDragReorder moves placeholder based on cursor position relative to cards', function () {
-    $hook = file_get_contents(resource_path('js/Pages/Lists/useDragReorder.ts'));
-
-    expect($hook)
-        ->toContain('const midY = rect.top + rect.height / 2')
-        ->toContain('card.parentNode!.insertBefore(state.placeholder, card)');
-});

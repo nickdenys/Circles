@@ -212,5 +212,5 @@ test('refresh updates multiple albums in the list', function () {
 test('refresh button uses router.post to the refresh route', function () {
     $component = file_get_contents(resource_path('js/Pages/Lists/Show.tsx'));
 
-    expect($component)->toContain("route('lists.refresh'");
+    expect($component)->toContain('/lists/${list.id}/refresh');
 });

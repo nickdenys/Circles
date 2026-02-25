@@ -35,7 +35,7 @@ test('search bar is displayed on the list detail page', function () {
 
     expect($component)
         ->toContain('id="album-search-input"')
-        ->toContain('Search for albums on Spotify...');
+        ->toContain('Add an album from Spotify');
 
     $showComponent = file_get_contents(resource_path('js/Pages/Lists/Show.tsx'));
     expect($showComponent)->toContain('<AlbumSearch');
