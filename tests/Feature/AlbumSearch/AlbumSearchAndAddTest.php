@@ -67,13 +67,13 @@ test('search input is cleared and dropdown closes after adding an album', functi
         ->toContain('setIsOpen(false)');
 });
 
-test('dropdown closes on click outside', function () {
+test('dropdown closes on click outside via popover', function () {
     $component = file_get_contents(resource_path('js/Pages/Lists/AlbumSearch.tsx'));
 
     expect($component)
-        ->toContain('handleClickOutside')
-        ->toContain('mousedown')
-        ->toContain('containerRef');
+        ->toContain('Popover')
+        ->toContain('onOpenChange')
+        ->toContain('PopoverContent');
 });
 
 test('dropdown closes on escape key', function () {
