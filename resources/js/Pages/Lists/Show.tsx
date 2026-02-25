@@ -15,6 +15,8 @@ import { arrayMove, rectSortingStrategy, SortableContext, useSortable, verticalL
 import { CSS } from '@dnd-kit/utilities';
 import {
     GripVertical,
+    LayoutGrid,
+    List,
     Loader2,
     Music,
     RefreshCw,
@@ -415,8 +417,12 @@ export default function Show({ list, albums }: ShowProps) {
                                 <SelectValue />
                             </SelectTrigger>
                             <SelectContent>
-                                <SelectItem value="list">List</SelectItem>
-                                <SelectItem value="grid">Grid</SelectItem>
+                                <SelectItem value="list">
+                                    <span className="flex items-center gap-2"><List className="h-4 w-4" />List</span>
+                                </SelectItem>
+                                <SelectItem value="grid">
+                                    <span className="flex items-center gap-2"><LayoutGrid className="h-4 w-4" />Grid</span>
+                                </SelectItem>
                             </SelectContent>
                         </Select>
                     </div>
