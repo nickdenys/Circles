@@ -121,7 +121,7 @@ test('json endpoint returns empty data when no lists exist', function () {
 
 test('system lists appear first across paginated results', function () {
     $user = User::factory()->create();
-    // Create 25 custom lists that alphabetically come before "Watchlist"
+    // Create 25 custom lists that alphabetically come before "Listen Later"
     AlbumList::factory()->count(25)->create([
         'user_id' => $user->id,
         'title' => fn () => 'Z '.fake()->unique()->word(),
@@ -131,6 +131,6 @@ test('system lists appear first across paginated results', function () {
         ->getJson(route('lists.index'));
 
     $data = $response->json('data');
-    // Watchlist (system) should be first
-    expect($data[0]['title'])->toBe('Watchlist');
+    // Listen Later (system) should be first
+    expect($data[0]['title'])->toBe('Listen Later');
 });

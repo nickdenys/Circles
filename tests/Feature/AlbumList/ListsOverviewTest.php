@@ -37,7 +37,7 @@ test('system lists are displayed before custom lists', function () {
         ->get(route('lists.index'))
         ->assertInertia(fn (AssertableInertia $page) => $page
             ->component('Lists/Index')
-            ->where('lists.data.0.title', 'Watchlist')
+            ->where('lists.data.0.title', 'Listen Later')
             ->where('lists.data.1.title', 'Custom Alpha')
             ->where('lists.data.2.title', 'Custom Beta')
         );
@@ -50,7 +50,7 @@ test('each list includes title and album count', function () {
         ->get(route('lists.index'))
         ->assertInertia(fn (AssertableInertia $page) => $page
             ->component('Lists/Index')
-            ->where('lists.data.0.title', 'Watchlist')
+            ->where('lists.data.0.title', 'Listen Later')
             ->where('lists.data.0.albumsCount', 0)
         );
 });
@@ -76,7 +76,7 @@ test('lists page only shows lists for the authenticated user', function () {
         ->assertInertia(fn (AssertableInertia $page) => $page
             ->component('Lists/Index')
             ->has('lists.data', 1)
-            ->where('lists.data.0.title', 'Watchlist')
+            ->where('lists.data.0.title', 'Listen Later')
         );
 });
 

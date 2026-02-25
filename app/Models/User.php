@@ -59,7 +59,7 @@ class User extends Authenticatable
     {
         static::created(function (User $user): void {
             $user->albumLists()->create([
-                'title' => 'Watchlist',
+                'title' => 'Listen Later',
                 'type' => 'system',
             ]);
         });

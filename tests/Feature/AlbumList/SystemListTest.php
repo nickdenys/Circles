@@ -10,7 +10,7 @@ test('watchlist is created automatically when a new user registers', function ()
 
     expect($user->albumLists)->toHaveCount(1);
     expect($user->albumLists->first())
-        ->title->toBe('Watchlist')
+        ->title->toBe('Listen Later')
         ->type->toBe('system');
 });
 
@@ -39,7 +39,7 @@ test('watchlist is created via spotify oauth callback', function () {
 
     expect($user->albumLists)->toHaveCount(1);
     expect($user->albumLists->first())
-        ->title->toBe('Watchlist')
+        ->title->toBe('Listen Later')
         ->type->toBe('system');
 });
 

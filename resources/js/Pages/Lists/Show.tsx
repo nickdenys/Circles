@@ -1,12 +1,29 @@
 import { Head, InfiniteScroll, router } from '@inertiajs/react';
 import axios from 'axios';
 import {
+    closestCenter,
+    DndContext,
+    DragEndEvent,
+    DragOverlay,
+    DragStartEvent,
+    PointerSensor,
+    TouchSensor,
+    useSensor,
+    useSensors,
+} from '@dnd-kit/core';
+import { arrayMove, SortableContext, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
+import {
     GripVertical,
     Loader2,
     Music,
     RefreshCw,
     ArrowRightLeft,
     Trash2,
+    ListMusic,
+    Clock,
+    Calendar,
+    ExternalLink,
 } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { Button } from '@/components/ui/button';
@@ -16,7 +33,6 @@ import DeleteListDialog from './DeleteListDialog';
 import EditListDialog from './EditListDialog';
 import MoveAlbumDialog from './MoveAlbumDialog';
 import RemoveAlbumDialog from './RemoveAlbumDialog';
-import { useDragReorder } from './useDragReorder';
 
 interface AlbumListDetail {
     id: number;
@@ -60,63 +76,71 @@ function formatRuntime(ms: number): string {
     return `${totalMinutes} min`;
 }
 
-function formatAlbumType(type: string): string {
-    return type.charAt(0).toUpperCase() + type.slice(1);
-}
-
-function AlbumCard({ album, onMove, onRemove }: { album: AlbumItem; onMove: (album: { id: number; title: string }) => void; onRemove: (album: { id: number; title: string }) => void }) {
+function AlbumCardContent({ album, onMove, onRemove, dragHandleProps }: {
+    album: AlbumItem;
+    onMove: (album: { id: number; title: string }) => void;
+    onRemove: (album: { id: number; title: string }) => void;
+    dragHandleProps?: React.HTMLAttributes<HTMLDivElement>;
+}) {
     return (
         <Card
-            className="album-card group relative flex items-start gap-4 px-4 py-3"
+            className="album-card relative flex flex-row items-center gap-3 px-4 py-3"
             data-album-db-id={album.id}
         >
-            <div className="drag-handle flex cursor-grab items-center self-stretch text-muted-foreground">
+            <div
+                className="drag-handle flex cursor-grab items-center self-stretch text-muted-foreground"
+                {...dragHandleProps}
+            >
                 <GripVertical className="h-5 w-5" />
             </div>
 
-            <a
-                href={album.spotifyUri}
-                className="shrink-0"
-            >
-                {album.coverUrl ? (
-                    <img
-                        src={album.coverUrl}
-                        alt={album.title}
-                        className="h-16 w-16 rounded object-cover"
-                    />
-                ) : (
-                    <div className="flex h-16 w-16 items-center justify-center rounded bg-zinc-100 dark:bg-zinc-800">
-                        <Music className="h-6 w-6 text-muted-foreground" />
-                    </div>
-                )}
-            </a>
+            <div className="flex min-w-0 flex-1 items-center gap-5">
+                <div className="shrink-0">
+                    {album.coverUrl ? (
+                        <img
+                            src={album.coverUrl}
+                            alt={album.title}
+                            className="h-24 w-24 rounded object-cover"
+                        />
+                    ) : (
+                        <div className="flex h-24 w-24 items-center justify-center rounded bg-zinc-100 dark:bg-zinc-800">
+                            <Music className="h-6 w-6 text-muted-foreground" />
+                        </div>
+                    )}
+                </div>
 
-            <div className="min-w-0 flex-1">
-                <a
-                    href={album.spotifyUri}
-                    className="font-medium hover:underline"
-                >
-                    {album.title}
-                </a>
-                <p className="text-sm text-muted-foreground">
-                    {album.artists}
-                </p>
-                <p className="mt-1 text-xs text-muted-foreground">
-                    {formatAlbumType(album.albumType)}
-                    {' · '}
-                    {album.totalTracks}{' '}
-                    {album.totalTracks === 1
-                        ? 'track'
-                        : 'tracks'}
-                    {' · '}
-                    {formatRuntime(album.runtimeMs)}
-                </p>
-                <p className="text-xs text-muted-foreground">
-                    {album.releaseDate}
-                </p>
+                <div className="min-w-0 flex-1">
+                    <p className="font-medium">{album.title}</p>
+                    <p className="text-sm text-muted-foreground">{album.artists}</p>
+                    <div className="mt-2 flex flex-col gap-0.5">
+                        <p className="flex items-center gap-1 text-xs text-muted-foreground">
+                            <Calendar className="h-3 w-3 shrink-0" />
+                            {album.releaseDate.slice(0, 4)}
+                        </p>
+                        <p className="flex items-center gap-1 text-xs text-muted-foreground">
+                            <ListMusic className="h-3 w-3 shrink-0" />
+                            {album.totalTracks} {album.totalTracks === 1 ? 'track' : 'tracks'}
+                        </p>
+                        <p className="flex items-center gap-1 text-xs text-muted-foreground">
+                            <Clock className="h-3 w-3 shrink-0" />
+                            {formatRuntime(album.runtimeMs)}
+                        </p>
+                    </div>
+                </div>
             </div>
 
-            <div className="flex shrink-0 items-center gap-1 opacity-0 transition group-hover:opacity-100">
+            <div className="flex shrink-0 items-center gap-1">
+                <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-8 w-8"
+                    title="Open in Spotify"
+                    asChild
+                >
+                    <a href={album.spotifyUri}>
+                        <ExternalLink className="h-4 w-4" />
+                    </a>
+                </Button>
                 <Button
                     variant="ghost"
                     size="icon"
@@ -144,6 +168,32 @@ function AlbumCard({ album, onMove, onRemove }: { album: AlbumItem; onMove: (alb
     );
 }
 
+function AlbumCard({ album, onMove, onRemove }: {
+    album: AlbumItem;
+    onMove: (album: { id: number; title: string }) => void;
+    onRemove: (album: { id: number; title: string }) => void;
+}) {
+    const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: album.id });
+
+    return (
+        <div
+            ref={setNodeRef}
+            style={{
+                transform: CSS.Transform.toString(transform),
+                transition,
+                opacity: isDragging ? 0.35 : 1,
+            }}
+        >
+            <AlbumCardContent
+                album={album}
+                onMove={onMove}
+                onRemove={onRemove}
+                dragHandleProps={{ ...attributes, ...listeners }}
+            />
+        </div>
+    );
+}
+
 export default function Show({ list, albums }: ShowProps) {
     const [refreshing, setRefreshing] = useState(false);
     const [orderedAlbums, setOrderedAlbums] = useState<AlbumItem[]>(albums.data);
@@ -154,9 +204,18 @@ export default function Show({ list, albums }: ShowProps) {
     const [removeDialogOpen, setRemoveDialogOpen] = useState(false);
     const [editDialogOpen, setEditDialogOpen] = useState(false);
     const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+    const [activeAlbum, setActiveAlbum] = useState<AlbumItem | null>(null);
 
-    const albumsContainerRef = useRef<HTMLDivElement>(null);
     const syncRef = useRef({ count: albums.data.length, firstId: albums.data[0]?.id });
+
+    const sensors = useSensors(
+        useSensor(PointerSensor, {
+            activationConstraint: { distance: 5 },
+        }),
+        useSensor(TouchSensor, {
+            activationConstraint: { delay: 150, tolerance: 5 },
+        }),
+    );
 
     useEffect(() => {
         const { count: prevCount, firstId: prevFirstId } = syncRef.current;
@@ -173,18 +232,31 @@ export default function Show({ list, albums }: ShowProps) {
         syncRef.current = { count: currCount, firstId: currFirstId };
     }, [albums.data]);
 
-    function handleReorder(albumIds: number[]) {
-        setOrderedAlbums((prev) => {
-            const albumMap = new Map(prev.map((a) => [a.id, a]));
-            return albumIds.map((id) => albumMap.get(id)!).filter(Boolean);
-        });
-
-        axios.put(`/lists/${list.id}/albums/reorder`, {
-            album_ids: albumIds,
-        });
+    function handleDragStart(event: DragStartEvent) {
+        const album = orderedAlbums.find((a) => a.id === event.active.id);
+        setActiveAlbum(album ?? null);
     }
 
-    useDragReorder(albumsContainerRef, handleReorder);
+    function handleDragEnd(event: DragEndEvent) {
+        setActiveAlbum(null);
+
+        const { active, over } = event;
+        if (!over || active.id === over.id) {
+            return;
+        }
+
+        setOrderedAlbums((prev) => {
+            const oldIndex = prev.findIndex((a) => a.id === active.id);
+            const newIndex = prev.findIndex((a) => a.id === over.id);
+            const reordered = arrayMove(prev, oldIndex, newIndex);
+
+            axios.put(`/lists/${list.id}/albums/reorder`, {
+                album_ids: reordered.map((a) => a.id),
+            });
+
+            return reordered;
+        });
+    }
 
     function handleRefresh() {
         router.post(`/lists/${list.id}/refresh`, {}, {
@@ -287,23 +359,52 @@ export default function Show({ list, albums }: ShowProps) {
                         No albums yet. Search for albums above to add them to this list.
                     </p>
                 ) : (
-                    <div className="mt-6" ref={albumsContainerRef}>
-                        <InfiniteScroll
-                            data="albums"
-                            className="space-y-3"
-                            loading={() => (
-                                <div
-                                    id="album-scroll-sentinel"
-                                    className="flex justify-center py-4"
-                                >
-                                    <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
-                                </div>
-                            )}
+                    <div className="mt-6">
+                        <DndContext
+                            sensors={sensors}
+                            collisionDetection={closestCenter}
+                            onDragStart={handleDragStart}
+                            onDragEnd={handleDragEnd}
                         >
-                            {orderedAlbums.map((album) => (
-                                <AlbumCard key={album.id} album={album} onMove={handleMoveAlbum} onRemove={handleRemoveAlbum} />
-                            ))}
-                        </InfiniteScroll>
+                            <SortableContext
+                                items={orderedAlbums.map((a) => a.id)}
+                                strategy={verticalListSortingStrategy}
+                            >
+                                <InfiniteScroll
+                                    data="albums"
+                                    className="space-y-3"
+                                    loading={() => (
+                                        <div
+                                            id="album-scroll-sentinel"
+                                            className="flex justify-center py-4"
+                                        >
+                                            <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+                                        </div>
+                                    )}
+                                >
+                                    {orderedAlbums.map((album) => (
+                                        <AlbumCard
+                                            key={album.id}
+                                            album={album}
+                                            onMove={handleMoveAlbum}
+                                            onRemove={handleRemoveAlbum}
+                                        />
+                                    ))}
+                                </InfiniteScroll>
+                            </SortableContext>
+
+                            <DragOverlay>
+                                {activeAlbum && (
+                                    <div className="scale-[1.03] cursor-grabbing rounded-xl shadow-2xl">
+                                        <AlbumCardContent
+                                            album={activeAlbum}
+                                            onMove={handleMoveAlbum}
+                                            onRemove={handleRemoveAlbum}
+                                        />
+                                    </div>
+                                )}
+                            </DragOverlay>
+                        </DndContext>
                     </div>
                 )}
             </div>

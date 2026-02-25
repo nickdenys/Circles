@@ -112,16 +112,16 @@ test('validation rejects a description longer than 1000 characters when updating
 test('system lists cannot be edited', function () {
     $user = User::factory()->create();
     $list = AlbumList::factory()->system()->for($user)->create([
-        'title' => 'Watchlist',
+        'title' => 'Listen Later',
     ]);
 
     $this->actingAs($user)
         ->put(route('lists.update', $list), [
-            'title' => 'Renamed Watchlist',
+            'title' => 'Renamed Listen Later',
         ])
         ->assertForbidden();
 
-    expect($list->refresh()->title)->toBe('Watchlist');
+    expect($list->refresh()->title)->toBe('Listen Later');
 });
 
 test('edit button is not shown for system lists', function () {

@@ -36,12 +36,12 @@ class AlbumListFactory extends Factory
     }
 
     /**
-     * Create a Watchlist system list.
+     * Create a Listen Later system list.
      */
     public function watchlist(): static
     {
         return $this->state(fn (array $attributes) => [
-            'title' => 'Watchlist',
+            'title' => 'Listen Later',
             'type' => 'system',
         ]);
     }

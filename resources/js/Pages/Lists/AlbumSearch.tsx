@@ -149,7 +149,7 @@ export default function AlbumSearch({ listId, onAlbumAdded }: AlbumSearchProps) 
             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             <Input
                 id="album-search-input"
-                placeholder="Search for albums on Spotify..."
+                placeholder="Add an album from Spotify"
                 className="pl-9"
                 value={query}
                 onChange={(e) => handleInputChange(e.target.value)}
