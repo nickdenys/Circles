@@ -11,7 +11,7 @@ import {
     useSensor,
     useSensors,
 } from '@dnd-kit/core';
-import { arrayMove, SortableContext, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable';
+import { arrayMove, rectSortingStrategy, SortableContext, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import {
     GripVertical,
@@ -28,6 +28,7 @@ import {
 import { useEffect, useRef, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import AlbumSearch, { type AddedAlbum } from './AlbumSearch';
 import DeleteListDialog from './DeleteListDialog';
 import EditListDialog from './EditListDialog';
@@ -194,8 +195,53 @@ function AlbumCard({ album, onMove, onRemove }: {
     );
 }
 
+type ViewMode = 'list' | 'grid';
+
+function AlbumGridItemContent({ album }: { album: AlbumItem }) {
+    return (
+        <div className="flex flex-col gap-2">
+            {album.coverUrl ? (
+                <img
+                    src={album.coverUrl}
+                    alt={album.title}
+                    className="aspect-square w-full rounded-md object-cover"
+                />
+            ) : (
+                <div className="flex aspect-square w-full items-center justify-center rounded-md bg-zinc-100 dark:bg-zinc-800">
+                    <Music className="h-8 w-8 text-muted-foreground" />
+                </div>
+            )}
+            <div className="min-w-0">
+                <p className="truncate text-sm font-medium">{album.title}</p>
+                <p className="truncate text-xs text-muted-foreground">{album.artists}</p>
+            </div>
+        </div>
+    );
+}
+
+function AlbumGridItem({ album }: { album: AlbumItem }) {
+    const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: album.id });
+
+    return (
+        <div
+            ref={setNodeRef}
+            style={{
+                transform: CSS.Transform.toString(transform),
+                transition,
+                opacity: isDragging ? 0.35 : 1,
+            }}
+            className="cursor-grab touch-none"
+            {...attributes}
+            {...listeners}
+        >
+            <AlbumGridItemContent album={album} />
+        </div>
+    );
+}
+
 export default function Show({ list, albums }: ShowProps) {
     const [refreshing, setRefreshing] = useState(false);
+    const [viewMode, setViewMode] = useState<ViewMode>('list');
     const [orderedAlbums, setOrderedAlbums] = useState<AlbumItem[]>(albums.data);
     const [albumCount, setAlbumCount] = useState(list.albumsCount);
     const [albumToMove, setAlbumToMove] = useState<{ id: number; title: string } | null>(null);
@@ -354,10 +400,63 @@ export default function Show({ list, albums }: ShowProps) {
                     onAlbumAdded={handleAlbumAdded}
                 />
 
+                {hasAlbums && (
+                    <div className="mt-4 flex items-center gap-2">
+                        <Select value={viewMode} onValueChange={(v) => setViewMode(v as ViewMode)}>
+                            <SelectTrigger id="view-mode">
+                                <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="list">List</SelectItem>
+                                <SelectItem value="grid">Grid</SelectItem>
+                            </SelectContent>
+                        </Select>
+                    </div>
+                )}
+
                 {!hasAlbums ? (
                     <p className="mt-8 text-center text-muted-foreground">
                         No albums yet. Search for albums above to add them to this list.
                     </p>
+                ) : viewMode === 'grid' ? (
+                    <div className="mt-6">
+                        <DndContext
+                            sensors={sensors}
+                            collisionDetection={closestCenter}
+                            onDragStart={handleDragStart}
+                            onDragEnd={handleDragEnd}
+                        >
+                            <SortableContext
+                                items={orderedAlbums.map((a) => a.id)}
+                                strategy={rectSortingStrategy}
+                            >
+                                <InfiniteScroll
+                                    data="albums"
+                                    className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5"
+                                    loading={() => (
+                                        <div
+                                            id="album-scroll-sentinel"
+                                            className="col-span-full flex justify-center py-4"
+                                        >
+                                            <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+                                        </div>
+                                    )}
+                                >
+                                    {orderedAlbums.map((album) => (
+                                        <AlbumGridItem key={album.id} album={album} />
+                                    ))}
+                                </InfiniteScroll>
+                            </SortableContext>
+
+                            <DragOverlay>
+                                {activeAlbum && (
+                                    <div className="w-40 scale-[1.05] cursor-grabbing rounded-md shadow-2xl">
+                                        <AlbumGridItemContent album={activeAlbum} />
+                                    </div>
+                                )}
+                            </DragOverlay>
+                        </DndContext>
+                    </div>
                 ) : (
                     <div className="mt-6">
                         <DndContext
