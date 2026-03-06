@@ -53,16 +53,18 @@ function PopoverContent({
   align = "start",
   sideOffset = 4,
   onOpenAutoFocus,
+  container,
   ...props
 }: React.ComponentProps<typeof PopoverPrimitive.Popup> & {
   align?: "start" | "center" | "end"
   sideOffset?: number
   onOpenAutoFocus?: (e: Event) => void
+  container?: React.ComponentProps<typeof PopoverPrimitive.Portal>["container"]
 }) {
   const anchorRef = React.useContext(AnchorContext)
 
   return (
-    <PopoverPrimitive.Portal>
+    <PopoverPrimitive.Portal container={container}>
       <PopoverPrimitive.Positioner
         anchor={anchorRef}
         align={align}
