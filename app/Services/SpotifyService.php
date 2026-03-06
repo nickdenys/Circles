@@ -98,9 +98,6 @@ class SpotifyService
         $runtimeMs = collect($album['tracks']['items'] ?? [])
             ->sum('duration_ms');
 
-        $artistName = $album['artists'][0]['name'] ?? '';
-        $genres = (new MusicBrainzService)->getAlbumGenres($album['name'], $artistName);
-
         $data = [
             'spotify_id' => $album['id'],
             'title' => $album['name'],
@@ -111,7 +108,7 @@ class SpotifyService
             'total_tracks' => $album['total_tracks'],
             'release_date' => $album['release_date'],
             'spotify_uri' => $album['uri'],
-            'genres' => $genres,
+            'genres' => [],
         ];
 
         Cache::put($cacheKey, $data, self::ALBUM_CACHE_TTL);

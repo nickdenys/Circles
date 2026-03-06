@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Jobs\FetchAlbumGenres;
 use App\Models\Album;
 use App\Models\AlbumList;
 use App\Services\SpotifyService;
@@ -39,6 +40,7 @@ class AlbumListAlbumController extends Controller
             }
 
             $album = Album::create($albumData);
+            FetchAlbumGenres::dispatch($album);
         }
 
         $maxPosition = $albumList->albums()->max('album_album_list.position') ?? 0;

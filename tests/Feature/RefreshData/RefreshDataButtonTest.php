@@ -1,9 +1,11 @@
 <?php
 
+use App\Jobs\FetchAlbumGenres;
 use App\Models\Album;
 use App\Models\AlbumList;
 use App\Models\User;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Queue;
 
 test('refresh button is displayed on the list detail page', function () {
     $component = file_get_contents(resource_path('js/Pages/Lists/Show.tsx'));
@@ -39,6 +41,8 @@ test('refresh button has a loading state with spinner', function () {
 });
 
 test('clicking refresh updates album data from spotify', function () {
+    Queue::fake();
+
     $user = User::factory()->create();
     $list = AlbumList::factory()->create(['user_id' => $user->id]);
 
@@ -62,7 +66,6 @@ test('clicking refresh updates album data from spotify', function () {
             'uri' => 'spotify:album:abc123',
             'tracks' => ['items' => [['duration_ms' => 300000]]],
         ]),
-        'musicbrainz.org/*' => Http::response(['release-groups' => []]),
     ]);
 
     $this->actingAs($user)
@@ -73,9 +76,15 @@ test('clicking refresh updates album data from spotify', function () {
     expect($album->title)->toBe('Updated Title');
     expect($album->artists)->toBe('Updated Artist');
     expect($album->total_tracks)->toBe(15);
+
+    Queue::assertPushed(FetchAlbumGenres::class, function (FetchAlbumGenres $job) use ($album) {
+        return $job->album->id === $album->id && $job->bypassCache === true;
+    });
 });
 
 test('refresh bypasses spotify cache', function () {
+    Queue::fake();
+
     $user = User::factory()->create();
     $list = AlbumList::factory()->create(['user_id' => $user->id]);
 
@@ -100,7 +109,6 @@ test('refresh bypasses spotify cache', function () {
                 'tracks' => ['items' => [['duration_ms' => 200000]]],
             ]);
         },
-        'musicbrainz.org/*' => Http::response(['release-groups' => []]),
     ]);
 
     // First call populates cache
@@ -167,6 +175,8 @@ test('unauthenticated users cannot refresh a list', function () {
 });
 
 test('refresh updates multiple albums in the list', function () {
+    Queue::fake();
+
     $user = User::factory()->create();
     $list = AlbumList::factory()->create(['user_id' => $user->id]);
 
@@ -198,7 +208,6 @@ test('refresh updates multiple albums in the list', function () {
             'uri' => 'spotify:album:id2',
             'tracks' => ['items' => [['duration_ms' => 180000]]],
         ]),
-        'musicbrainz.org/*' => Http::response(['release-groups' => []]),
     ]);
 
     $this->actingAs($user)
@@ -210,6 +219,39 @@ test('refresh updates multiple albums in the list', function () {
     expect($album1->title)->toBe('New Title 1');
     expect($album2->title)->toBe('New Title 2');
     expect($album2->album_type)->toBe('single');
+
+    Queue::assertPushed(FetchAlbumGenres::class, 2);
+});
+
+test('refresh dispatches genre job with cache bypass', function () {
+    Queue::fake();
+
+    $user = User::factory()->create();
+    $list = AlbumList::factory()->create(['user_id' => $user->id]);
+
+    $album = Album::factory()->create(['spotify_id' => 'abc123']);
+    $list->albums()->attach($album->id, ['position' => 1]);
+
+    Http::fake([
+        'api.spotify.com/v1/albums/*' => Http::response([
+            'id' => 'abc123',
+            'name' => 'Test Album',
+            'artists' => [['name' => 'Test Artist']],
+            'album_type' => 'album',
+            'total_tracks' => 10,
+            'release_date' => '2025-01-01',
+            'images' => [['url' => 'https://i.scdn.co/image/cover']],
+            'uri' => 'spotify:album:abc123',
+            'tracks' => ['items' => [['duration_ms' => 200000]]],
+        ]),
+    ]);
+
+    $this->actingAs($user)
+        ->post(route('lists.refresh', $list));
+
+    Queue::assertPushed(FetchAlbumGenres::class, function (FetchAlbumGenres $job) use ($album) {
+        return $job->album->id === $album->id && $job->bypassCache === true;
+    });
 });
 
 test('refresh button uses router.post to the refresh route', function () {

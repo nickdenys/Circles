@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Http\Requests\DestroyAlbumListRequest;
 use App\Http\Requests\StoreAlbumListRequest;
 use App\Http\Requests\UpdateAlbumListRequest;
+use App\Jobs\FetchAlbumGenres;
 use App\Models\AlbumList;
 use App\Services\SpotifyService;
 use Illuminate\Http\JsonResponse;
@@ -167,7 +168,7 @@ class AlbumListController extends Controller
     }
 
     /**
-     * Refresh album data from Spotify for the given list.
+     * Refresh album data from external APIs for the given list.
      */
     public function refresh(Request $request, AlbumList $albumList): RedirectResponse
     {
@@ -183,6 +184,7 @@ class AlbumListController extends Controller
 
                 if ($freshData) {
                     $album->update($freshData);
+                    FetchAlbumGenres::dispatch($album, bypassCache: true);
                 }
             }
         }

@@ -37,8 +37,8 @@ test('search bar is displayed on the list detail page', function () {
         ->toContain('id="album-search-input"')
         ->toContain('Add an album from Spotify');
 
-    $showComponent = file_get_contents(resource_path('js/Pages/Lists/Show.tsx'));
-    expect($showComponent)->toContain('<AlbumSearch');
+    $dialogComponent = file_get_contents(resource_path('js/Pages/Lists/AddAlbumDialog.tsx'));
+    expect($dialogComponent)->toContain('<AlbumSearch');
 });
 
 test('search dropdown container exists on the page', function () {
