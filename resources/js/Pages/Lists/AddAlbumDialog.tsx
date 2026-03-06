@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import {
     Dialog,
     DialogContent,
@@ -23,10 +23,11 @@ export default function AddAlbumDialog({
 }: AddAlbumDialogProps) {
     const [keepOpen, setKeepOpen] = useState(false);
     const [searchKey, setSearchKey] = useState(0);
+    const contentRef = useRef<HTMLDivElement>(null);
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent>
+            <DialogContent ref={contentRef} className="overflow-visible">
                 <DialogHeader>
                     <DialogTitle>Add an Album</DialogTitle>
                     <DialogDescription>
@@ -37,6 +38,7 @@ export default function AddAlbumDialog({
                 <AlbumSearch
                     key={searchKey}
                     listId={listId}
+                    popoverContainer={contentRef}
                     onAlbumAdded={(album) => {
                         onAlbumAdded(album);
                         if (keepOpen) {

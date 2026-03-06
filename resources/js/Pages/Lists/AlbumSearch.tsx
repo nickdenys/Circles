@@ -15,6 +15,7 @@ interface SearchResult {
 interface AlbumSearchProps {
     listId: number;
     onAlbumAdded: (album: AddedAlbum) => void;
+    popoverContainer?: React.RefObject<HTMLElement | null>;
 }
 
 export interface AddedAlbum {
@@ -31,7 +32,7 @@ export interface AddedAlbum {
     genres: string[];
 }
 
-export default function AlbumSearch({ listId, onAlbumAdded }: AlbumSearchProps) {
+export default function AlbumSearch({ listId, onAlbumAdded, popoverContainer }: AlbumSearchProps) {
     const [query, setQuery] = useState('');
     const [results, setResults] = useState<SearchResult[]>([]);
     const [isOpen, setIsOpen] = useState(false);
@@ -152,8 +153,9 @@ export default function AlbumSearch({ listId, onAlbumAdded }: AlbumSearchProps) 
 
             <PopoverContent
                 id="album-search-dropdown"
-                className="w-[var(--radix-popover-trigger-width)] p-0"
+                className="w-[var(--anchor-width)] p-0"
                 onOpenAutoFocus={(e) => e.preventDefault()}
+                container={popoverContainer}
             >
                 <div id="album-search-results">
                     {error && (

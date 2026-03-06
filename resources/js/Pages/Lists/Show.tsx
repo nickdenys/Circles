@@ -379,7 +379,7 @@ export default function Show({ list, albums }: ShowProps) {
             <Head title={list.title} />
 
             <div>
-                <div className="flex items-start justify-between gap-4">
+                <div className="flex justify-between gap-4">
                     <div className="min-w-0">
                         <h1 className="text-3xl font-bold tracking-tight sm:text-4xl">
                             {list.title}
@@ -395,7 +395,8 @@ export default function Show({ list, albums }: ShowProps) {
                         </p>
                     </div>
 
-                    <div className="flex shrink-0 items-center gap-2">
+                    <div className="flex shrink-0 flex-col items-end gap-8">
+                        <div className="flex items-center gap-2">
                         <Button
                             variant="outline"
                             onClick={handleRefresh}
@@ -436,33 +437,34 @@ export default function Show({ list, albums }: ShowProps) {
                                 </Button>
                             </>
                         )}
+                        </div>
+
+                        {hasAlbums && (
+                            <div className="inline-flex items-center rounded-md border">
+                                <Button
+                                    variant={viewMode === 'list' ? 'default' : 'ghost'}
+                                    size="sm"
+                                    className="rounded-r-none border-0"
+                                    onClick={() => changeViewMode('list')}
+                                    id="view-mode-list"
+                                >
+                                    <List className="mr-1.5 h-4 w-4" />
+                                    List
+                                </Button>
+                                <Button
+                                    variant={viewMode === 'grid' ? 'default' : 'ghost'}
+                                    size="sm"
+                                    className="rounded-l-none border-0"
+                                    onClick={() => changeViewMode('grid')}
+                                    id="view-mode-grid"
+                                >
+                                    <LayoutGrid className="mr-1.5 h-4 w-4" />
+                                    Grid
+                                </Button>
+                            </div>
+                        )}
                     </div>
                 </div>
-
-                {hasAlbums && (
-                    <div className="mt-4 inline-flex items-center rounded-md border">
-                        <Button
-                            variant={viewMode === 'list' ? 'default' : 'ghost'}
-                            size="sm"
-                            className="rounded-r-none border-0"
-                            onClick={() => changeViewMode('list')}
-                            id="view-mode-list"
-                        >
-                            <List className="mr-1.5 h-4 w-4" />
-                            List
-                        </Button>
-                        <Button
-                            variant={viewMode === 'grid' ? 'default' : 'ghost'}
-                            size="sm"
-                            className="rounded-l-none border-0"
-                            onClick={() => changeViewMode('grid')}
-                            id="view-mode-grid"
-                        >
-                            <LayoutGrid className="mr-1.5 h-4 w-4" />
-                            Grid
-                        </Button>
-                    </div>
-                )}
 
                 {!hasAlbums ? (
                     <p className="mt-8 text-center text-muted-foreground">

@@ -165,7 +165,7 @@ export default function MoveAlbumDialog({
 
                         <PopoverContent
                             id="list-search-results"
-                            className="w-[var(--radix-popover-trigger-width)] max-h-48 overflow-y-auto p-0"
+                            className="w-[var(--anchor-width)] max-h-48 overflow-y-auto p-0"
                             onOpenAutoFocus={(e) => e.preventDefault()}
                         >
                             {results.map((list) => (
