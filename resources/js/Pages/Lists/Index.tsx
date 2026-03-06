@@ -9,6 +9,7 @@ interface AlbumListItem {
     id: number;
     title: string;
     albumsCount: number;
+    previewCovers: string[];
     url: string;
 }
 
@@ -73,6 +74,20 @@ export default function Index({ lists }: ListsIndexProps) {
                                                 : 'albums'}
                                         </p>
                                     </div>
+                                    {list.previewCovers.length > 0 && (
+                                        <div className="flex -space-x-3">
+                                            {list.previewCovers.map(
+                                                (cover, index) => (
+                                                    <img
+                                                        key={index}
+                                                        src={cover}
+                                                        alt=""
+                                                        className="size-10 rounded-md border-2 border-white object-cover shadow-sm dark:border-zinc-900"
+                                                    />
+                                                ),
+                                            )}
+                                        </div>
+                                    )}
                                 </Card>
                             </Link>
                         ))}

@@ -24,6 +24,7 @@ class AlbumListController extends Controller
         $query = $request->user()
             ->albumLists()
             ->withCount('albums')
+            ->with(['albums' => fn ($q) => $q->orderBy('position')->limit(3)])
             ->orderByRaw("CASE WHEN type = 'system' THEN 0 ELSE 1 END")
             ->orderBy('title');
 
@@ -35,6 +36,7 @@ class AlbumListController extends Controller
                     'id' => $list->id,
                     'title' => $list->title,
                     'albums_count' => $list->albums_count ?? 0,
+                    'preview_covers' => $list->albums->pluck('cover_url')->values()->all(),
                     'url' => route('lists.show', $list),
                 ]),
                 'next_page_url' => $lists->nextPageUrl(),
@@ -47,6 +49,7 @@ class AlbumListController extends Controller
                     'id' => $list->id,
                     'title' => $list->title,
                     'albumsCount' => $list->albums_count ?? 0,
+                    'previewCovers' => $list->albums->pluck('cover_url')->values()->all(),
                     'url' => route('lists.show', $list),
                 ])
             ),

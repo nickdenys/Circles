@@ -92,6 +92,33 @@ test('empty state when user has no lists', function () {
         );
 });
 
+test('each list includes preview covers from the first 3 albums', function () {
+    $user = User::factory()->create();
+    $list = $user->albumLists->first();
+
+    $albums = \App\Models\Album::factory()->count(4)->create();
+    $list->albums()->attach($albums->pluck('id')->mapWithKeys(fn ($id, $i) => [$id => ['position' => $i]]));
+
+    $this->actingAs($user)
+        ->get(route('lists.index'))
+        ->assertInertia(fn (AssertableInertia $page) => $page
+            ->has('lists.data.0.previewCovers', 3)
+            ->where('lists.data.0.previewCovers.0', $albums[0]->cover_url)
+            ->where('lists.data.0.previewCovers.1', $albums[1]->cover_url)
+            ->where('lists.data.0.previewCovers.2', $albums[2]->cover_url)
+        );
+});
+
+test('preview covers is an empty array when list has no albums', function () {
+    $user = User::factory()->create();
+
+    $this->actingAs($user)
+        ->get(route('lists.index'))
+        ->assertInertia(fn (AssertableInertia $page) => $page
+            ->where('lists.data.0.previewCovers', [])
+        );
+});
+
 test('unauthenticated users cannot access the lists page', function () {
     $this->get(route('lists.index'))
         ->assertRedirect(route('login'));

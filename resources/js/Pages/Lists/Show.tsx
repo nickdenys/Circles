@@ -98,7 +98,7 @@ function AlbumCardContent({ album, onMove, onRemove, dragHandleProps }: {
                 className="drag-handle flex cursor-grab items-center self-stretch text-muted-foreground"
                 {...dragHandleProps}
             >
-                <GripVertical className="h-5 w-5" />
+                <GripVertical className="h-4 w-4" />
             </div>
 
             <div className="flex min-w-0 flex-1 items-center gap-5">
@@ -155,7 +155,7 @@ function AlbumCardContent({ album, onMove, onRemove, dragHandleProps }: {
                             asChild
                         >
                             <a href={album.spotifyUri}>
-                                <ExternalLink className="h-4 w-4" />
+                                <ExternalLink className="h-6 w-6" />
                             </a>
                         </Button>
                     </TooltipTrigger>
@@ -171,7 +171,7 @@ function AlbumCardContent({ album, onMove, onRemove, dragHandleProps }: {
                             data-album-title={album.title}
                             onClick={() => onMove({ id: album.id, title: album.title })}
                         >
-                            <ArrowRightLeft className="h-4 w-4" />
+                            <ArrowRightLeft className="h-6 w-6" />
                         </Button>
                     </TooltipTrigger>
                     <TooltipContent>Move to list</TooltipContent>
@@ -186,7 +186,7 @@ function AlbumCardContent({ album, onMove, onRemove, dragHandleProps }: {
                             data-album-title={album.title}
                             onClick={() => onRemove({ id: album.id, title: album.title })}
                         >
-                            <Trash2 className="h-4 w-4" />
+                            <Trash2 className="h-6 w-6" />
                         </Button>
                     </TooltipTrigger>
                     <TooltipContent>Remove from list</TooltipContent>
