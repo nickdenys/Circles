@@ -152,7 +152,7 @@ export default function AlbumSearch({ listId, onAlbumAdded }: AlbumSearchProps) 
 
             <PopoverContent
                 id="album-search-dropdown"
-                className="w-[var(--radix-popover-trigger-width)] p-0"
+                className="w-[var(--anchor-width)] p-0"
                 onOpenAutoFocus={(e) => e.preventDefault()}
             >
                 <div id="album-search-results">
