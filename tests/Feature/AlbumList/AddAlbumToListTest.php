@@ -1,11 +1,13 @@
 <?php
 
+use App\Jobs\FetchAlbumGenres;
 use App\Models\Album;
 use App\Models\AlbumList;
 use App\Models\User;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Queue;
 
-function fakeSpotifyAlbumResponse(array $overrides = [], array $musicBrainzGenres = [['name' => 'latin pop', 'count' => 5], ['name' => 'miami hip hop', 'count' => 3]]): void
+function fakeSpotifyAlbumResponse(array $overrides = []): void
 {
     $album = array_merge([
         'id' => '4aawyAB9vmqN3uQ7FjRGTy',
@@ -31,16 +33,12 @@ function fakeSpotifyAlbumResponse(array $overrides = [], array $musicBrainzGenre
 
     Http::fake([
         'api.spotify.com/v1/albums/*' => Http::response($album),
-        'musicbrainz.org/ws/2/release-group?*' => Http::response([
-            'release-groups' => [['id' => 'mb-test-id']],
-        ]),
-        'musicbrainz.org/ws/2/release-group/mb-test-id*' => Http::response([
-            'genres' => $musicBrainzGenres,
-        ]),
     ]);
 }
 
 test('clicking a search result adds the album to the list', function () {
+    Queue::fake();
+
     $user = User::factory()->create();
     $list = AlbumList::factory()->create(['user_id' => $user->id]);
 
@@ -58,6 +56,8 @@ test('clicking a search result adds the album to the list', function () {
 });
 
 test('album spotify data is stored in the database', function () {
+    Queue::fake();
+
     $user = User::factory()->create();
     $list = AlbumList::factory()->create(['user_id' => $user->id]);
 
@@ -79,7 +79,11 @@ test('album spotify data is stored in the database', function () {
         ->total_tracks->toBe(12)
         ->release_date->toBe('2012-11-16')
         ->spotify_uri->toBe('spotify:album:4aawyAB9vmqN3uQ7FjRGTy')
-        ->genres->toBe(['latin pop', 'miami hip hop']);
+        ->genres->toBe([]);
+
+    Queue::assertPushed(FetchAlbumGenres::class, function (FetchAlbumGenres $job) use ($album) {
+        return $job->album->id === $album->id && $job->bypassCache === false;
+    });
 });
 
 test('duplicate albums in the same list are prevented', function () {
@@ -100,6 +104,8 @@ test('duplicate albums in the same list are prevented', function () {
 });
 
 test('album appears in the list immediately after being added', function () {
+    Queue::fake();
+
     $user = User::factory()->create();
     $list = AlbumList::factory()->create(['user_id' => $user->id]);
 
@@ -117,6 +123,8 @@ test('album appears in the list immediately after being added', function () {
 });
 
 test('existing album record is reused when adding to a different list', function () {
+    Queue::fake();
+
     $user = User::factory()->create();
     $list1 = AlbumList::factory()->create(['user_id' => $user->id]);
     $list2 = AlbumList::factory()->create(['user_id' => $user->id]);
@@ -134,9 +142,13 @@ test('existing album record is reused when adding to a different list', function
 
     expect(Album::where('spotify_id', '4aawyAB9vmqN3uQ7FjRGTy')->count())->toBe(1);
     expect($list2->albums)->toHaveCount(1);
+
+    Queue::assertNotPushed(FetchAlbumGenres::class);
 });
 
 test('album is assigned the next position in the list', function () {
+    Queue::fake();
+
     $user = User::factory()->create();
     $list = AlbumList::factory()->create(['user_id' => $user->id]);
     $existingAlbum = Album::factory()->create();

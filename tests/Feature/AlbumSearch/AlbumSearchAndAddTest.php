@@ -90,14 +90,20 @@ test('album search uses shadcn input component', function () {
     expect($component)->toContain("from '@/components/ui/input'");
 });
 
-test('show page integrates album search component', function () {
+test('show page integrates album search component via dialog', function () {
     $showComponent = file_get_contents(resource_path('js/Pages/Lists/Show.tsx'));
 
     expect($showComponent)
-        ->toContain("from './AlbumSearch'")
-        ->toContain('<AlbumSearch')
+        ->toContain("from './AddAlbumDialog'")
+        ->toContain('<AddAlbumDialog')
         ->toContain('listId={list.id}')
         ->toContain('onAlbumAdded');
+
+    $dialogComponent = file_get_contents(resource_path('js/Pages/Lists/AddAlbumDialog.tsx'));
+
+    expect($dialogComponent)
+        ->toContain("from './AlbumSearch'")
+        ->toContain('<AlbumSearch');
 });
 
 test('show page updates album count after adding an album', function () {

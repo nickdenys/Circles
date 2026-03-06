@@ -14,6 +14,18 @@ class MusicBrainzService
 
     private static ?float $lastRequestTime = null;
 
+    private bool $shouldBypassCache = false;
+
+    /**
+     * Bypass the cache for the next request.
+     */
+    public function bypassCache(): static
+    {
+        $this->shouldBypassCache = true;
+
+        return $this;
+    }
+
     /**
      * Get genres for an album from MusicBrainz.
      *
@@ -23,7 +35,9 @@ class MusicBrainzService
     {
         $cacheKey = 'musicbrainz_genres:'.md5($title.':'.$artist);
 
-        if (Cache::has($cacheKey)) {
+        if ($this->shouldBypassCache) {
+            Cache::forget($cacheKey);
+        } elseif (Cache::has($cacheKey)) {
             return Cache::get($cacheKey);
         }
 

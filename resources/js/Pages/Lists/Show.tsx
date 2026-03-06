@@ -19,6 +19,7 @@ import {
     List,
     Loader2,
     Music,
+    Plus,
     RefreshCw,
     ArrowRightLeft,
     Trash2,
@@ -31,9 +32,9 @@ import { useEffect, useRef, useState } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
-import AlbumSearch, { type AddedAlbum } from './AlbumSearch';
+import { type AddedAlbum } from './AlbumSearch';
+import AddAlbumDialog from './AddAlbumDialog';
 import DeleteListDialog from './DeleteListDialog';
 import EditListDialog from './EditListDialog';
 import MoveAlbumDialog from './MoveAlbumDialog';
@@ -118,7 +119,7 @@ function AlbumCardContent({ album, onMove, onRemove, dragHandleProps }: {
                 <div className="min-w-0 flex-1">
                     <p className="font-medium">{album.title}</p>
                     <p className="text-sm text-muted-foreground">{album.artists}</p>
-                    <div className="mt-2 flex flex-col gap-0.5">
+                    <div className="mt-2 flex flex-wrap items-center gap-4">
                         <p className="flex items-center gap-1 text-xs text-muted-foreground">
                             <Calendar className="h-3 w-3 shrink-0" />
                             {album.releaseDate.slice(0, 4)}
@@ -267,13 +268,22 @@ function AlbumGridItem({ album }: { album: AlbumItem }) {
 
 export default function Show({ list, albums }: ShowProps) {
     const [refreshing, setRefreshing] = useState(false);
-    const [viewMode, setViewMode] = useState<ViewMode>('list');
+    const [viewMode, setViewMode] = useState<ViewMode>(() => {
+        const stored = localStorage.getItem(`list-${list.id}-view`);
+        return stored === 'grid' ? 'grid' : 'list';
+    });
+
+    function changeViewMode(mode: ViewMode) {
+        setViewMode(mode);
+        localStorage.setItem(`list-${list.id}-view`, mode);
+    }
     const [orderedAlbums, setOrderedAlbums] = useState<AlbumItem[]>(albums.data);
     const [albumCount, setAlbumCount] = useState(list.albumsCount);
     const [albumToMove, setAlbumToMove] = useState<{ id: number; title: string } | null>(null);
     const [moveDialogOpen, setMoveDialogOpen] = useState(false);
     const [albumToRemove, setAlbumToRemove] = useState<{ id: number; title: string } | null>(null);
     const [removeDialogOpen, setRemoveDialogOpen] = useState(false);
+    const [addAlbumDialogOpen, setAddAlbumDialogOpen] = useState(false);
     const [editDialogOpen, setEditDialogOpen] = useState(false);
     const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
     const [activeAlbum, setActiveAlbum] = useState<AlbumItem | null>(null);
@@ -397,7 +407,15 @@ export default function Show({ list, albums }: ShowProps) {
                             ) : (
                                 <RefreshCw className="mr-2 h-4 w-4" />
                             )}
-                            {refreshing ? 'Refreshing...' : 'Refresh'}
+                            {refreshing ? 'Refreshing...' : 'Refresh Album Data'}
+                        </Button>
+
+                        <Button
+                            onClick={() => setAddAlbumDialogOpen(true)}
+                            id="add-album-button"
+                        >
+                            <Plus className="mr-2 h-4 w-4" />
+                            Add an Album
                         </Button>
 
                         {list.type === 'custom' && (
@@ -422,31 +440,33 @@ export default function Show({ list, albums }: ShowProps) {
                 </div>
 
                 {hasAlbums && (
-                    <div className="mt-4 flex items-center gap-2">
-                        <Select value={viewMode} onValueChange={(v) => setViewMode(v as ViewMode)}>
-                            <SelectTrigger id="view-mode">
-                                <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                                <SelectItem value="list">
-                                    <span className="flex items-center gap-2"><List className="h-4 w-4" />List</span>
-                                </SelectItem>
-                                <SelectItem value="grid">
-                                    <span className="flex items-center gap-2"><LayoutGrid className="h-4 w-4" />Grid</span>
-                                </SelectItem>
-                            </SelectContent>
-                        </Select>
+                    <div className="mt-4 inline-flex items-center rounded-md border">
+                        <Button
+                            variant={viewMode === 'list' ? 'default' : 'ghost'}
+                            size="sm"
+                            className="rounded-r-none border-0"
+                            onClick={() => changeViewMode('list')}
+                            id="view-mode-list"
+                        >
+                            <List className="mr-1.5 h-4 w-4" />
+                            List
+                        </Button>
+                        <Button
+                            variant={viewMode === 'grid' ? 'default' : 'ghost'}
+                            size="sm"
+                            className="rounded-l-none border-0"
+                            onClick={() => changeViewMode('grid')}
+                            id="view-mode-grid"
+                        >
+                            <LayoutGrid className="mr-1.5 h-4 w-4" />
+                            Grid
+                        </Button>
                     </div>
                 )}
 
-                <AlbumSearch
-                    listId={list.id}
-                    onAlbumAdded={handleAlbumAdded}
-                />
-
                 {!hasAlbums ? (
                     <p className="mt-8 text-center text-muted-foreground">
-                        No albums yet. Search for albums above to add them to this list.
+                        No albums yet. Click "Add an Album" to get started.
                     </p>
                 ) : viewMode === 'grid' ? (
                     <div className="mt-6">
@@ -537,6 +557,13 @@ export default function Show({ list, albums }: ShowProps) {
                     </div>
                 )}
             </div>
+
+            <AddAlbumDialog
+                listId={list.id}
+                open={addAlbumDialogOpen}
+                onOpenChange={setAddAlbumDialogOpen}
+                onAlbumAdded={handleAlbumAdded}
+            />
 
             <DeleteListDialog
                 listId={list.id}
