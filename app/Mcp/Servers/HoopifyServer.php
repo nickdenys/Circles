@@ -7,6 +7,7 @@ use App\Mcp\Tools\CreateList;
 use App\Mcp\Tools\DeleteList;
 use App\Mcp\Tools\GetListAlbums;
 use App\Mcp\Tools\GetLists;
+use App\Mcp\Tools\RemoveAlbumFromList;
 use App\Mcp\Tools\SearchAlbums;
 use Laravel\Mcp\Server;
 use Laravel\Mcp\Server\Attributes\Instructions;
@@ -24,6 +25,7 @@ class HoopifyServer extends Server
         DeleteList::class,
         GetListAlbums::class,
         GetLists::class,
+        RemoveAlbumFromList::class,
         SearchAlbums::class,
     ];
 
