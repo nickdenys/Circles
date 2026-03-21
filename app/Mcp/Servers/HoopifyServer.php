@@ -2,6 +2,7 @@
 
 namespace App\Mcp\Servers;
 
+use App\Mcp\Tools\SearchAlbums;
 use Laravel\Mcp\Server;
 use Laravel\Mcp\Server\Attributes\Instructions;
 use Laravel\Mcp\Server\Attributes\Name;
@@ -13,7 +14,7 @@ use Laravel\Mcp\Server\Attributes\Version;
 class HoopifyServer extends Server
 {
     protected array $tools = [
-        //
+        SearchAlbums::class,
     ];
 
     protected array $resources = [
