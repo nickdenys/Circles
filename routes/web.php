@@ -4,6 +4,7 @@ use App\Http\Controllers\AlbumListAlbumController;
 use App\Http\Controllers\AlbumListController;
 use App\Http\Controllers\Auth\SpotifyAuthController;
 use App\Http\Controllers\HomeController;
+use App\Http\Controllers\SettingsController;
 use App\Http\Controllers\SpotifySearchController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
@@ -32,4 +33,8 @@ Route::middleware('auth')->group(function (): void {
     Route::delete('/lists/{albumList}/albums/{album}', [AlbumListAlbumController::class, 'destroy'])->name('lists.albums.destroy');
 
     Route::get('/spotify/search/albums', [SpotifySearchController::class, 'albums'])->name('spotify.search.albums');
+
+    Route::get('/settings', [SettingsController::class, 'index'])->name('settings.index');
+    Route::post('/settings/tokens', [SettingsController::class, 'createToken'])->name('settings.tokens.store');
+    Route::delete('/settings/tokens/{token}', [SettingsController::class, 'destroyToken'])->name('settings.tokens.destroy');
 });
