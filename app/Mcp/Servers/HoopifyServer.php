@@ -4,6 +4,7 @@ namespace App\Mcp\Servers;
 
 use App\Mcp\Tools\AddAlbumToList;
 use App\Mcp\Tools\CreateList;
+use App\Mcp\Tools\DeleteList;
 use App\Mcp\Tools\GetListAlbums;
 use App\Mcp\Tools\GetLists;
 use App\Mcp\Tools\SearchAlbums;
@@ -20,6 +21,7 @@ class HoopifyServer extends Server
     protected array $tools = [
         AddAlbumToList::class,
         CreateList::class,
+        DeleteList::class,
         GetListAlbums::class,
         GetLists::class,
         SearchAlbums::class,
