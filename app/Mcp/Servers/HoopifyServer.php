@@ -2,6 +2,7 @@
 
 namespace App\Mcp\Servers;
 
+use App\Mcp\Tools\AddAlbumToList;
 use App\Mcp\Tools\CreateList;
 use App\Mcp\Tools\GetListAlbums;
 use App\Mcp\Tools\GetLists;
@@ -17,6 +18,7 @@ use Laravel\Mcp\Server\Attributes\Version;
 class HoopifyServer extends Server
 {
     protected array $tools = [
+        AddAlbumToList::class,
         CreateList::class,
         GetListAlbums::class,
         GetLists::class,
