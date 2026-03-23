@@ -80,21 +80,54 @@ export default function Index() {
                             </div>
                             <div className="mt-4">
                                 <p className="text-sm text-green-800 dark:text-green-200">
-                                    Add this to your Claude Desktop config:
+                                    Add this to your Claude Desktop config (<code className="rounded bg-white/60 px-1 py-0.5 dark:bg-zinc-800/60">~/Library/Application Support/Claude/claude_desktop_config.json</code>):
                                 </p>
-                                <pre className="mt-2 overflow-x-auto rounded bg-white p-3 text-xs dark:bg-zinc-900">
+                                <div className="relative mt-2">
+                                    <pre className="overflow-x-auto rounded bg-white p-3 pr-16 text-xs dark:bg-zinc-900">
 {`{
   "mcpServers": {
     "hoopify": {
-      "type": "url",
-      "url": "${window.location.origin}/mcp",
-      "headers": {
-        "Authorization": "Bearer ${flash.token}"
+      "command": "npx",
+      "args": [
+        "-y",
+        "mcp-remote",
+        "${window.location.origin}/mcp",
+        "--header",
+        "Authorization: Bearer ${flash.token}"
+      ],
+      "env": {
+        "NODE_TLS_REJECT_UNAUTHORIZED": "0"
       }
     }
   }
 }`}
-                                </pre>
+                                    </pre>
+                                    <Button
+                                        variant="outline"
+                                        size="sm"
+                                        className="absolute top-2 right-2"
+                                        onClick={() => handleCopy(JSON.stringify({
+                                            mcpServers: {
+                                                hoopify: {
+                                                    command: 'npx',
+                                                    args: [
+                                                        '-y',
+                                                        'mcp-remote',
+                                                        `${window.location.origin}/mcp`,
+                                                        '--header',
+                                                        `Authorization: Bearer ${flash.token}`,
+                                                    ],
+                                                    env: {
+                                                        NODE_TLS_REJECT_UNAUTHORIZED: '0',
+                                                    },
+                                                },
+                                            },
+                                        }, null, 2))}
+                                    >
+                                        <Copy className="mr-1.5 h-4 w-4" />
+                                        {copied ? 'Copied!' : 'Copy'}
+                                    </Button>
+                                </div>
                             </div>
                         </CardContent>
                     </Card>
