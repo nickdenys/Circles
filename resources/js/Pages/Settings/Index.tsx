@@ -1,5 +1,5 @@
 import { router, useForm, usePage } from '@inertiajs/react';
-import { Copy, Trash2 } from 'lucide-react';
+import { Copy, ExternalLink, Trash2 } from 'lucide-react';
 import { FormEvent, useCallback, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -132,6 +132,23 @@ export default function Index() {
                         </CardContent>
                     </Card>
                 )}
+
+                <Card>
+                    <CardHeader>
+                        <CardTitle>Spotify Connection</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                        <p className="mb-3 text-sm text-muted-foreground">
+                            Reconnect your Spotify account to grant updated permissions (e.g. playlist creation).
+                        </p>
+                        <a href="/auth/spotify/reconnect">
+                            <Button variant="outline">
+                                <ExternalLink className="mr-1.5 h-4 w-4" />
+                                Reconnect Spotify
+                            </Button>
+                        </a>
+                    </CardContent>
+                </Card>
 
                 <Card>
                     <CardHeader>

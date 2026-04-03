@@ -56,7 +56,7 @@ test('created list appears on the lists overview page', function () {
             ->component('Lists/Index')
             ->has('lists.data', fn ($lists) => $lists
                 ->each(fn ($list) => $list
-                    ->hasAll(['id', 'title', 'albumsCount', 'url'])
+                    ->hasAll(['id', 'title', 'albumsCount', 'url', 'previewCovers'])
                 )
             )
             ->where('lists.data.1.title', 'New Custom List')

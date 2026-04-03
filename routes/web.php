@@ -12,11 +12,13 @@ use Inertia\Inertia;
 Route::middleware('guest')->group(function (): void {
     Route::get('/login', fn () => Inertia::render('Auth/Login'))->name('login');
     Route::get('/auth/spotify/redirect', [SpotifyAuthController::class, 'redirect'])->name('spotify.redirect');
-    Route::get('/auth/spotify/callback', [SpotifyAuthController::class, 'callback'])->name('spotify.callback');
 });
+
+Route::get('/auth/spotify/callback', [SpotifyAuthController::class, 'callback'])->name('spotify.callback');
 
 Route::middleware('auth')->group(function (): void {
     Route::post('/logout', [SpotifyAuthController::class, 'logout'])->name('logout');
+    Route::get('/auth/spotify/reconnect', [SpotifyAuthController::class, 'reconnect'])->name('spotify.reconnect');
 
     Route::get('/', HomeController::class)->name('home');
     Route::get('/lists', [AlbumListController::class, 'index'])->name('lists.index');

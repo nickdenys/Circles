@@ -117,6 +117,120 @@ class SpotifyService
     }
 
     /**
+     * Search for tracks on Spotify.
+     *
+     * @return array<int, array{id: string, name: string, artists: string, album: string, uri: string, duration_ms: int}>
+     */
+    public function searchTracks(string $query, int $limit = 5): array
+    {
+        $cacheKey = 'spotify_track_search:'.$this->user->id.':'.md5($query).':'.$limit;
+
+        if ($this->shouldBypassCache) {
+            Cache::forget($cacheKey);
+        } elseif (Cache::has($cacheKey)) {
+            return Cache::get($cacheKey);
+        }
+
+        $response = $this->get('/search', [
+            'q' => $query,
+            'type' => 'track',
+            'limit' => $limit,
+        ]);
+
+        if ($response->failed()) {
+            return [];
+        }
+
+        $tracks = $response->json('tracks.items', []);
+
+        $results = array_map(fn (array $track) => [
+            'id' => $track['id'],
+            'name' => $track['name'],
+            'artists' => implode(', ', array_column($track['artists'], 'name')),
+            'album' => $track['album']['name'] ?? '',
+            'uri' => $track['uri'],
+            'duration_ms' => $track['duration_ms'],
+        ], $tracks);
+
+        Cache::put($cacheKey, $results, self::SEARCH_CACHE_TTL);
+
+        return $results;
+    }
+
+    /**
+     * Search for multiple tracks on Spotify in batch.
+     *
+     * @param  array<int, string>  $queries
+     * @return array<int, array{query: string, results: array<int, array{id: string, name: string, artists: string, album: string, uri: string, duration_ms: int}>}>
+     */
+    public function searchTracksBatch(array $queries, int $limitPerQuery = 3): array
+    {
+        return array_map(fn (string $query) => [
+            'query' => $query,
+            'results' => $this->searchTracks($query, $limitPerQuery),
+        ], $queries);
+    }
+
+    /**
+     * Create a new private playlist on Spotify.
+     *
+     * @return array{id: string, name: string, url: string, uri: string}|null
+     */
+    public function createPlaylist(string $name, ?string $description = null): ?array
+    {
+        $response = $this->post('/me/playlists', [
+            'name' => $name,
+            'description' => $description ?? '',
+            'public' => false,
+        ]);
+
+        if ($response->failed()) {
+            return null;
+        }
+
+        $playlist = $response->json();
+
+        return [
+            'id' => $playlist['id'],
+            'name' => $playlist['name'],
+            'url' => $playlist['external_urls']['spotify'] ?? '',
+            'uri' => $playlist['uri'],
+        ];
+    }
+
+    /**
+     * Add tracks to a Spotify playlist.
+     *
+     * @param  array<int, string>  $trackUris
+     * @return array{snapshot_id: string|null, added: int, failed: array<int, string>}
+     */
+    public function addTracksToPlaylist(string $playlistId, array $trackUris): array
+    {
+        $failed = [];
+        $added = 0;
+        $snapshotId = null;
+
+        foreach (array_chunk($trackUris, 100) as $chunk) {
+            $response = $this->post('/playlists/'.$playlistId.'/items', [
+                'uris' => $chunk,
+            ]);
+
+            if ($response->successful()) {
+                $added += count($chunk);
+                $snapshotId = $response->json('snapshot_id');
+            } else {
+                array_push($failed, ...$chunk);
+            }
+        }
+
+        return [
+            'snapshot_id' => $snapshotId,
+            'added' => $added,
+            'failed' => $failed,
+        ];
+    }
+
+    /**
      * Make an authenticated GET request to the Spotify API.
      */
     private function get(string $endpoint, array $query = []): Response
@@ -125,6 +239,17 @@ class SpotifyService
 
         return Http::withToken($this->user->spotify_token)
             ->get(self::BASE_URL.$endpoint, $query);
+    }
+
+    /**
+     * Make an authenticated POST request to the Spotify API.
+     */
+    private function post(string $endpoint, array $data = []): Response
+    {
+        $this->refreshTokenIfExpired();
+
+        return Http::withToken($this->user->spotify_token)
+            ->post(self::BASE_URL.$endpoint, $data);
     }
 
     /**
