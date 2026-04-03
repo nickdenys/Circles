@@ -135,8 +135,8 @@ test('album data is cached after first api call', function () {
     $second = $spotify->getAlbum('4aawyAB9vmqN3uQ7FjRGTy');
 
     expect($first)->toEqual($second);
-    // 3 requests on first call (Spotify album + MusicBrainz search + MusicBrainz lookup), 0 on second (cached)
-    Http::assertSentCount(3);
+    // 1 request on first call (Spotify album), 0 on second (cached)
+    Http::assertSentCount(1);
 });
 
 test('cached album data is used for subsequent requests', function () {

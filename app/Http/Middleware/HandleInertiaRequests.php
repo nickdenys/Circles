@@ -43,6 +43,9 @@ class HandleInertiaRequests extends Middleware
                 ]
                 : null,
             'currentRouteName' => $request->route()?->getName(),
+            'flash' => [
+                'token' => fn () => $request->session()->get('token'),
+            ],
         ];
     }
 }

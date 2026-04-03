@@ -17,7 +17,18 @@ class SpotifyAuthController extends Controller
     public function redirect(): SymfonyRedirectResponse
     {
         return Socialite::driver('spotify')
-            ->scopes(['user-read-email'])
+            ->scopes(['user-read-email', 'playlist-modify-private'])
+            ->redirect();
+    }
+
+    /**
+     * Reconnect the user's Spotify account to request updated scopes.
+     */
+    public function reconnect(): SymfonyRedirectResponse
+    {
+        return Socialite::driver('spotify')
+            ->scopes(['user-read-email', 'playlist-modify-private'])
+            ->with(['show_dialog' => 'true'])
             ->redirect();
     }
 

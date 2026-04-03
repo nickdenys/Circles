@@ -246,5 +246,5 @@ test('empty state is shown when list has no albums', function () {
         );
 
     $component = file_get_contents(resource_path('js/Pages/Lists/Show.tsx'));
-    expect($component)->toContain('No albums yet. Search for albums above to add them to this list.');
+    expect($component)->toContain('No albums yet. Click "Add an Album" to get started.');
 });

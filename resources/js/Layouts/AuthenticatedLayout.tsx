@@ -77,6 +77,9 @@ export default function AuthenticatedLayout({ children }: PropsWithChildren) {
                             <Link href="/lists" className={navLinkClasses('lists')}>
                                 Lists
                             </Link>
+                            <Link href="/settings" className={navLinkClasses('settings')}>
+                                Settings
+                            </Link>
                         </nav>
                     </div>
 

@@ -83,8 +83,9 @@ function formatRuntime(ms: number): string {
     return `${totalMinutes} min`;
 }
 
-function AlbumCardContent({ album, onMove, onRemove, dragHandleProps }: {
+function AlbumCardContent({ album, position, onMove, onRemove, dragHandleProps }: {
     album: AlbumItem;
+    position?: number;
     onMove: (album: { id: number; title: string }) => void;
     onRemove: (album: { id: number; title: string }) => void;
     dragHandleProps?: React.HTMLAttributes<HTMLDivElement>;
@@ -100,6 +101,12 @@ function AlbumCardContent({ album, onMove, onRemove, dragHandleProps }: {
             >
                 <GripVertical className="h-4 w-4" />
             </div>
+
+            {position !== undefined && (
+                <span className="w-6 shrink-0 text-center text-sm font-medium text-muted-foreground">
+                    {position}
+                </span>
+            )}
 
             <div className="flex min-w-0 flex-1 items-center gap-5">
                 <div className="shrink-0">
@@ -196,8 +203,9 @@ function AlbumCardContent({ album, onMove, onRemove, dragHandleProps }: {
     );
 }
 
-function AlbumCard({ album, onMove, onRemove }: {
+function AlbumCard({ album, position, onMove, onRemove }: {
     album: AlbumItem;
+    position?: number;
     onMove: (album: { id: number; title: string }) => void;
     onRemove: (album: { id: number; title: string }) => void;
 }) {
@@ -214,6 +222,7 @@ function AlbumCard({ album, onMove, onRemove }: {
         >
             <AlbumCardContent
                 album={album}
+                position={position}
                 onMove={onMove}
                 onRemove={onRemove}
                 dragHandleProps={{ ...attributes, ...listeners }}
@@ -378,7 +387,7 @@ export default function Show({ list, albums }: ShowProps) {
         <>
             <Head title={list.title} />
 
-            <div>
+            <div className="pb-48">
                 <div className="flex justify-between gap-4">
                     <div className="min-w-0">
                         <h1 className="text-3xl font-bold tracking-tight sm:text-4xl">
@@ -533,10 +542,11 @@ export default function Show({ list, albums }: ShowProps) {
                                         </div>
                                     )}
                                 >
-                                    {orderedAlbums.map((album) => (
+                                    {orderedAlbums.map((album, index) => (
                                         <AlbumCard
                                             key={album.id}
                                             album={album}
+                                            position={index + 1}
                                             onMove={handleMoveAlbum}
                                             onRemove={handleRemoveAlbum}
                                         />
