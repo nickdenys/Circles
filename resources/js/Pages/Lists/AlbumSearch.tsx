@@ -30,6 +30,7 @@ export interface AddedAlbum {
     releaseDate: string;
     spotifyUri: string;
     genres: string[];
+    note: string | null;
 }
 
 export default function AlbumSearch({ listId, onAlbumAdded, popoverContainer }: AlbumSearchProps) {
@@ -107,6 +108,7 @@ export default function AlbumSearch({ listId, onAlbumAdded, popoverContainer }: 
                 releaseDate: data.release_date,
                 spotifyUri: data.spotify_uri,
                 genres: data.genres,
+                note: data.note,
             });
 
             setQuery('');

@@ -28,7 +28,8 @@ import {
     Calendar,
     ExternalLink,
 } from 'lucide-react';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, useCallback } from 'react';
+import { toast } from 'sonner';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -60,6 +61,7 @@ interface AlbumItem {
     releaseDate: string;
     spotifyUri: string;
     genres: string[];
+    note: string | null;
 }
 
 interface PaginatedAlbums {
@@ -83,16 +85,134 @@ function formatRuntime(ms: number): string {
     return `${totalMinutes} min`;
 }
 
-function AlbumCardContent({ album, position, onMove, onRemove, dragHandleProps }: {
+function AlbumNoteEditor({ listId, albumId, note, onNoteUpdated }: {
+    listId: number;
+    albumId: number;
+    note: string | null;
+    onNoteUpdated: (albumId: number, note: string | null) => void;
+}) {
+    const [editing, setEditing] = useState(false);
+    const [draft, setDraft] = useState(note ?? '');
+    const [saving, setSaving] = useState(false);
+    const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+    const resizeTextarea = useCallback(() => {
+        const el = textareaRef.current;
+        if (el) {
+            el.style.height = 'auto';
+            el.style.height = `${el.scrollHeight}px`;
+        }
+    }, []);
+
+    useEffect(() => {
+        if (editing) {
+            resizeTextarea();
+            textareaRef.current?.focus();
+        }
+    }, [editing, resizeTextarea]);
+
+    function handleSave() {
+        const trimmed = draft.trim();
+        const value = trimmed === '' ? null : trimmed;
+
+        setSaving(true);
+
+        axios
+            .patch(`/lists/${listId}/albums/${albumId}`, { note: value })
+            .then(() => {
+                onNoteUpdated(albumId, value);
+                setEditing(false);
+                toast.success('Note saved');
+            })
+            .catch(() => {
+                toast.error('Could not save note');
+            })
+            .finally(() => {
+                setSaving(false);
+            });
+    }
+
+    function handleCancel() {
+        setDraft(note ?? '');
+        setEditing(false);
+    }
+
+    if (editing) {
+        return (
+            <div className="mt-2 space-y-2">
+                <textarea
+                    ref={textareaRef}
+                    value={draft}
+                    onChange={(e) => {
+                        setDraft(e.target.value);
+                        resizeTextarea();
+                    }}
+                    readOnly={saving}
+                    className="w-full resize-none rounded-md border bg-transparent px-2 py-1 text-sm focus:outline-none focus:ring-1 focus:ring-ring"
+                    rows={1}
+                />
+                <div className="flex gap-2">
+                    <Button
+                        size="sm"
+                        onClick={handleSave}
+                        disabled={saving}
+                    >
+                        {saving && <Loader2 className="mr-1 h-3 w-3 animate-spin" />}
+                        Save
+                    </Button>
+                    <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={handleCancel}
+                        disabled={saving}
+                    >
+                        Cancel
+                    </Button>
+                </div>
+            </div>
+        );
+    }
+
+    if (note) {
+        return (
+            <p
+                className="mt-2 cursor-pointer whitespace-pre-wrap text-sm text-muted-foreground"
+                onClick={() => {
+                    setDraft(note);
+                    setEditing(true);
+                }}
+            >
+                {note}
+            </p>
+        );
+    }
+
+    return (
+        <button
+            type="button"
+            className="mt-2 text-xs text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100 [@media(hover:none)]:opacity-100"
+            onClick={() => {
+                setDraft('');
+                setEditing(true);
+            }}
+        >
+            + note
+        </button>
+    );
+}
+
+function AlbumCardContent({ album, position, listId, onMove, onRemove, onNoteUpdated, dragHandleProps }: {
     album: AlbumItem;
     position?: number;
+    listId: number;
     onMove: (album: { id: number; title: string }) => void;
     onRemove: (album: { id: number; title: string }) => void;
+    onNoteUpdated: (albumId: number, note: string | null) => void;
     dragHandleProps?: React.HTMLAttributes<HTMLDivElement>;
 }) {
     return (
         <Card
-            className="album-card relative flex flex-row items-center gap-3 px-4 py-3"
+            className="album-card group relative flex flex-row items-center gap-3 px-4 py-3"
             data-album-db-id={album.id}
         >
             <div
@@ -149,6 +269,12 @@ function AlbumCardContent({ album, position, onMove, onRemove, dragHandleProps }
                             ))}
                         </div>
                     )}
+                    <AlbumNoteEditor
+                        listId={listId}
+                        albumId={album.id}
+                        note={album.note}
+                        onNoteUpdated={onNoteUpdated}
+                    />
                 </div>
             </div>
 
@@ -203,11 +329,13 @@ function AlbumCardContent({ album, position, onMove, onRemove, dragHandleProps }
     );
 }
 
-function AlbumCard({ album, position, onMove, onRemove }: {
+function AlbumCard({ album, position, listId, onMove, onRemove, onNoteUpdated }: {
     album: AlbumItem;
     position?: number;
+    listId: number;
     onMove: (album: { id: number; title: string }) => void;
     onRemove: (album: { id: number; title: string }) => void;
+    onNoteUpdated: (albumId: number, note: string | null) => void;
 }) {
     const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: album.id });
 
@@ -223,8 +351,10 @@ function AlbumCard({ album, position, onMove, onRemove }: {
             <AlbumCardContent
                 album={album}
                 position={position}
+                listId={listId}
                 onMove={onMove}
                 onRemove={onRemove}
+                onNoteUpdated={onNoteUpdated}
                 dragHandleProps={{ ...attributes, ...listeners }}
             />
         </div>
@@ -379,6 +509,12 @@ export default function Show({ list, albums }: ShowProps) {
     function handleAlbumRemoved(albumId: number) {
         setOrderedAlbums((prev) => prev.filter((a) => a.id !== albumId));
         setAlbumCount((prev) => prev - 1);
+    }
+
+    function handleNoteUpdated(albumId: number, note: string | null) {
+        setOrderedAlbums((prev) =>
+            prev.map((a) => (a.id === albumId ? { ...a, note } : a)),
+        );
     }
 
     const hasAlbums = orderedAlbums.length > 0;
@@ -547,8 +683,10 @@ export default function Show({ list, albums }: ShowProps) {
                                             key={album.id}
                                             album={album}
                                             position={index + 1}
+                                            listId={list.id}
                                             onMove={handleMoveAlbum}
                                             onRemove={handleRemoveAlbum}
+                                            onNoteUpdated={handleNoteUpdated}
                                         />
                                     ))}
                                 </InfiniteScroll>
@@ -559,8 +697,10 @@ export default function Show({ list, albums }: ShowProps) {
                                     <div className="scale-[1.03] cursor-grabbing rounded-xl shadow-2xl">
                                         <AlbumCardContent
                                             album={activeAlbum}
+                                            listId={list.id}
                                             onMove={handleMoveAlbum}
                                             onRemove={handleRemoveAlbum}
+                                            onNoteUpdated={handleNoteUpdated}
                                         />
                                     </div>
                                 )}
