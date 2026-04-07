@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\UpdateAlbumListAlbumRequest;
 use App\Jobs\FetchAlbumGenres;
 use App\Models\Album;
 use App\Models\AlbumList;
@@ -99,6 +100,25 @@ class AlbumListAlbumController extends Controller
             ]);
 
         return redirect()->route('lists.show', $albumList);
+    }
+
+    /**
+     * Update the pivot data for an album in the given list.
+     */
+    public function update(UpdateAlbumListAlbumRequest $request, AlbumList $albumList, Album $album): JsonResponse
+    {
+        $note = $request->input('note');
+        $note = is_string($note) ? trim($note) : null;
+
+        if ($note === '') {
+            $note = null;
+        }
+
+        $albumList->albums()->updateExistingPivot($album->id, [
+            'note' => $note,
+        ]);
+
+        return response()->json(['note' => $note]);
     }
 
     /**

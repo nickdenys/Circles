@@ -32,6 +32,7 @@ Route::middleware('auth')->group(function (): void {
     Route::post('/lists/{albumList}/albums', [AlbumListAlbumController::class, 'store'])->name('lists.albums.store');
     Route::put('/lists/{albumList}/albums/reorder', [AlbumListAlbumController::class, 'reorder'])->name('lists.albums.reorder');
     Route::post('/lists/{albumList}/albums/{album}/move', [AlbumListAlbumController::class, 'move'])->name('lists.albums.move');
+    Route::patch('/lists/{albumList}/albums/{album}', [AlbumListAlbumController::class, 'update'])->name('lists.albums.update');
     Route::delete('/lists/{albumList}/albums/{album}', [AlbumListAlbumController::class, 'destroy'])->name('lists.albums.destroy');
 
     Route::get('/spotify/search/albums', [SpotifySearchController::class, 'albums'])->name('spotify.search.albums');
