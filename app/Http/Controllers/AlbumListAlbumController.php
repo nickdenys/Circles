@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Jobs\FetchAlbumGenres;
 use App\Models\Album;
 use App\Models\AlbumList;
+use App\Models\AlbumListAlbum;
 use App\Services\SpotifyService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -88,10 +89,13 @@ class AlbumListAlbumController extends Controller
 
         $maxPosition = $destinationList->albums()->max('album_album_list.position') ?? 0;
 
-        $albumList->albums()->detach($album->id);
-        $destinationList->albums()->attach($album->id, [
-            'position' => $maxPosition + 1,
-        ]);
+        AlbumListAlbum::query()
+            ->where('album_list_id', $albumList->id)
+            ->where('album_id', $album->id)
+            ->update([
+                'album_list_id' => $destinationList->id,
+                'position' => $maxPosition + 1,
+            ]);
 
         return redirect()->route('lists.show', $albumList);
     }

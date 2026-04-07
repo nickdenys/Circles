@@ -43,6 +43,36 @@ test('it moves album between lists', function () {
     expect($toList->albums()->where('album_id', $album->id)->exists())->toBeTrue();
 });
 
+test('it preserves note when moving album between lists', function () {
+    $fromList = AlbumList::factory()->create([
+        'user_id' => $this->user->id,
+        'title' => 'Source List',
+    ]);
+
+    $toList = AlbumList::factory()->create([
+        'user_id' => $this->user->id,
+        'title' => 'Destination List',
+    ]);
+
+    $album = Album::factory()->create([
+        'spotify_id' => 'noteAlbum',
+        'title' => 'Note Album',
+    ]);
+
+    $fromList->albums()->attach($album->id, ['position' => 1, 'note' => 'Must listen']);
+
+    HoopifyServer::actingAs($this->user)
+        ->tool(MoveAlbum::class, [
+            'spotify_id' => 'noteAlbum',
+            'from_list' => 'Source List',
+            'to_list' => 'Destination List',
+        ])
+        ->assertOk();
+
+    $pivot = $toList->fresh()->albums()->where('album_id', $album->id)->first()->pivot;
+    expect($pivot->note)->toBe('Must listen');
+});
+
 test('it prevents duplicate in destination list', function () {
     $fromList = AlbumList::factory()->create([
         'user_id' => $this->user->id,

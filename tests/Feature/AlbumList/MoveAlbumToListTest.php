@@ -182,6 +182,24 @@ test('list search requires a query parameter', function () {
         ->assertUnprocessable();
 });
 
+test('moving an album with a note preserves the note', function () {
+    $user = User::factory()->create();
+    $sourceList = AlbumList::factory()->create(['user_id' => $user->id]);
+    $destList = AlbumList::factory()->create(['user_id' => $user->id]);
+    $album = Album::factory()->create();
+
+    $sourceList->albums()->attach($album->id, ['position' => 1, 'note' => 'Great album']);
+
+    $this->actingAs($user)
+        ->post(route('lists.albums.move', [$sourceList, $album]), [
+            'destination_list_id' => $destList->id,
+        ])
+        ->assertRedirect(route('lists.show', $sourceList));
+
+    $pivot = $destList->fresh()->albums()->where('album_id', $album->id)->first()->pivot;
+    expect($pivot->note)->toBe('Great album');
+});
+
 test('current list updates immediately after move', function () {
     $user = User::factory()->create();
     $sourceList = AlbumList::factory()->create(['user_id' => $user->id]);

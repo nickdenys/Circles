@@ -4,6 +4,7 @@ namespace App\Mcp\Tools;
 
 use App\Mcp\Concerns\ResolvesAlbumList;
 use App\Models\Album;
+use App\Models\AlbumListAlbum;
 use Illuminate\Contracts\JsonSchema\JsonSchema;
 use Laravel\Mcp\Request;
 use Laravel\Mcp\Response;
@@ -52,10 +53,13 @@ class MoveAlbum extends Tool
 
         $maxPosition = $toList->albums()->max('album_album_list.position') ?? 0;
 
-        $fromList->albums()->detach($album->id);
-        $toList->albums()->attach($album->id, [
-            'position' => $maxPosition + 1,
-        ]);
+        AlbumListAlbum::query()
+            ->where('album_list_id', $fromList->id)
+            ->where('album_id', $album->id)
+            ->update([
+                'album_list_id' => $toList->id,
+                'position' => $maxPosition + 1,
+            ]);
 
         return Response::json([
             'message' => "Moved \"{$album->title}\" from \"{$fromList->title}\" to \"{$toList->title}\".",
