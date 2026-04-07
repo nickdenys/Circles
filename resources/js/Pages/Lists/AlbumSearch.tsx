@@ -108,7 +108,7 @@ export default function AlbumSearch({ listId, onAlbumAdded, popoverContainer }: 
                 releaseDate: data.release_date,
                 spotifyUri: data.spotify_uri,
                 genres: data.genres,
-                note: data.note,
+                note: data.note ?? null,
             });
 
             setQuery('');
