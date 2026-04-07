@@ -81,6 +81,7 @@ class AlbumListController extends Controller
                     'release_date' => $album->release_date,
                     'spotify_uri' => $album->spotify_uri,
                     'genres' => $album->genres ?? [],
+                    'note' => $album->pivot->note,
                 ]),
                 'next_page_url' => $albums->nextPageUrl(),
             ]);
@@ -107,6 +108,7 @@ class AlbumListController extends Controller
                     'releaseDate' => $album->release_date,
                     'spotifyUri' => $album->spotify_uri,
                     'genres' => $album->genres ?? [],
+                    'note' => $album->pivot->note,
                 ])
             ),
         ]);

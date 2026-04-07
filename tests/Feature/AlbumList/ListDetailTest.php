@@ -1,5 +1,6 @@
 <?php
 
+use App\Models\Album;
 use App\Models\AlbumList;
 use App\Models\User;
 
@@ -111,6 +112,36 @@ test('list detail page shows empty state when no albums', function () {
     $component = file_get_contents(resource_path('js/Pages/Lists/Show.tsx'));
 
     expect($component)->toContain('No albums yet. Click "Add an Album" to get started.');
+});
+
+test('list detail page includes note field on each album via inertia', function () {
+    $user = User::factory()->create();
+    $list = AlbumList::factory()->create(['user_id' => $user->id]);
+    $albums = Album::factory()->count(2)->create();
+
+    foreach ($albums as $i => $album) {
+        $list->albums()->attach($album->id, ['position' => $i + 1]);
+    }
+
+    $this->actingAs($user)
+        ->get(route('lists.show', $list))
+        ->assertInertia(fn ($page) => $page
+            ->has('albums.data', 2)
+            ->where('albums.data.0.note', null)
+            ->where('albums.data.1.note', null)
+        );
+});
+
+test('list detail json response includes note field on each album', function () {
+    $user = User::factory()->create();
+    $list = AlbumList::factory()->create(['user_id' => $user->id]);
+    $album = Album::factory()->create();
+    $list->albums()->attach($album->id, ['position' => 1]);
+
+    $this->actingAs($user)
+        ->getJson(route('lists.show', $list))
+        ->assertOk()
+        ->assertJsonPath('data.0.note', null);
 });
 
 test('list detail page uses Head component with list title', function () {

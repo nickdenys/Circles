@@ -63,6 +63,7 @@ class AlbumListAlbumController extends Controller
                 'release_date' => $album->release_date,
                 'spotify_uri' => $album->spotify_uri,
                 'genres' => $album->genres ?? [],
+                'note' => null,
             ],
         ], 201);
     }
