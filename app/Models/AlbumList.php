@@ -37,7 +37,11 @@ class AlbumList extends Model
      */
     public function albums(): BelongsToMany
     {
-        return $this->belongsToMany(Album::class)->withPivot('position')->withTimestamps()->orderBy('position');
+        return $this->belongsToMany(Album::class)
+            ->using(AlbumListAlbum::class)
+            ->withPivot('id', 'position', 'note')
+            ->withTimestamps()
+            ->orderBy('position');
     }
 
     /**
