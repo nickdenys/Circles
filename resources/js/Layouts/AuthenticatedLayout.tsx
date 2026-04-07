@@ -2,6 +2,7 @@ import { Link, router, usePage } from '@inertiajs/react';
 import { Moon, Sun } from 'lucide-react';
 import { PropsWithChildren, useCallback, useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
+import { Toaster } from '@/components/ui/sonner';
 
 interface AuthUser {
     id: number;
@@ -125,6 +126,8 @@ export default function AuthenticatedLayout({ children }: PropsWithChildren) {
             <main className="mx-auto max-w-5xl px-4 py-8 sm:px-6">
                 {children}
             </main>
+
+            <Toaster />
         </div>
     );
 }
