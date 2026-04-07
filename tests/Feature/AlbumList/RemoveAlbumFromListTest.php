@@ -2,6 +2,7 @@
 
 use App\Models\Album;
 use App\Models\AlbumList;
+use App\Models\AlbumListAlbum;
 use App\Models\User;
 
 test('each album card has a remove button', function () {
@@ -113,6 +114,29 @@ test('remove button has album id and title data attributes', function () {
     expect($component)
         ->toContain('data-album-id={album.id}')
         ->toContain('data-album-title={album.title}');
+});
+
+test('removing an album hard-deletes the pivot row and its note', function () {
+    $user = User::factory()->create();
+    $list = AlbumList::factory()->create(['user_id' => $user->id]);
+    $album = Album::factory()->create();
+
+    $list->albums()->attach($album->id, ['position' => 1, 'note' => 'Will be deleted']);
+
+    $pivotId = AlbumListAlbum::query()
+        ->where('album_list_id', $list->id)
+        ->where('album_id', $album->id)
+        ->value('id');
+
+    $this->actingAs($user)
+        ->delete(route('lists.albums.destroy', [$list, $album]));
+
+    expect(AlbumListAlbum::find($pivotId))->toBeNull();
+    expect(AlbumListAlbum::query()
+        ->where('album_list_id', $list->id)
+        ->where('album_id', $album->id)
+        ->exists()
+    )->toBeFalse();
 });
 
 test('album card passes album data for removal', function () {

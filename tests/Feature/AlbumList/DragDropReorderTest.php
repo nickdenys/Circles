@@ -2,6 +2,7 @@
 
 use App\Models\Album;
 use App\Models\AlbumList;
+use App\Models\AlbumListAlbum;
 use App\Models\User;
 
 test('albums can be reordered via the reorder endpoint', function () {
@@ -161,6 +162,37 @@ test('show page uses sortable context for drag reorder', function () {
         ->toContain('useSortable');
 });
 
+test('reorder preserves notes on pivot rows', function () {
+    $user = User::factory()->create();
+    $list = AlbumList::factory()->create(['user_id' => $user->id]);
+
+    $album1 = Album::factory()->create();
+    $album2 = Album::factory()->create();
+    $album3 = Album::factory()->create();
+
+    $list->albums()->attach($album1->id, ['position' => 1, 'note' => 'First note']);
+    $list->albums()->attach($album2->id, ['position' => 2, 'note' => null]);
+    $list->albums()->attach($album3->id, ['position' => 3, 'note' => 'Third note']);
+
+    $this->actingAs($user)
+        ->putJson(route('lists.albums.reorder', $list), [
+            'album_ids' => [$album3->id, $album1->id, $album2->id],
+        ])
+        ->assertOk();
+
+    $pivots = AlbumListAlbum::query()
+        ->where('album_list_id', $list->id)
+        ->orderBy('position')
+        ->get();
+
+    expect($pivots[0]->album_id)->toBe($album3->id);
+    expect($pivots[0]->note)->toBe('Third note');
+    expect($pivots[1]->album_id)->toBe($album1->id);
+    expect($pivots[1]->note)->toBe('First note');
+    expect($pivots[2]->album_id)->toBe($album2->id);
+    expect($pivots[2]->note)->toBeNull();
+});
+
 test('show page manages ordered albums state for drag reorder consistency', function () {
     $component = file_get_contents(resource_path('js/Pages/Lists/Show.tsx'));
 
@@ -168,4 +200,3 @@ test('show page manages ordered albums state for drag reorder consistency', func
         ->toContain('orderedAlbums, setOrderedAlbums] = useState<AlbumItem[]>(albums.data)')
         ->toContain('orderedAlbums.map((album)');
 });
-

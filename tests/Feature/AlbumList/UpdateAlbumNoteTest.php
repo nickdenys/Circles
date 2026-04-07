@@ -2,6 +2,7 @@
 
 use App\Models\Album;
 use App\Models\AlbumList;
+use App\Models\AlbumListAlbum;
 use App\Models\User;
 
 test('can update the note on a pivot row', function () {
@@ -134,6 +135,27 @@ test('cannot update note on another users list', function () {
         ->assertForbidden();
 
     expect($list->albums()->first()->pivot->note)->toBeNull();
+});
+
+test('AlbumListAlbumFactory withNote state creates a pivot row with a note', function () {
+    $pivot = AlbumListAlbum::factory()->withNote()->create();
+
+    expect($pivot)->toBeInstanceOf(AlbumListAlbum::class);
+    expect($pivot->note)->toBeString()->not->toBeEmpty();
+    expect($pivot->album_id)->not->toBeNull();
+    expect($pivot->album_list_id)->not->toBeNull();
+});
+
+test('AlbumListAlbumFactory withNote accepts a custom note', function () {
+    $pivot = AlbumListAlbum::factory()->withNote('Custom note text')->create();
+
+    expect($pivot->note)->toBe('Custom note text');
+});
+
+test('AlbumListAlbumFactory default state creates a pivot row without a note', function () {
+    $pivot = AlbumListAlbum::factory()->create();
+
+    expect($pivot->note)->toBeNull();
 });
 
 test('unauthenticated user cannot update note', function () {
