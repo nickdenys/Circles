@@ -97,6 +97,13 @@ test('InfiniteScroll component uses albums data prop', function () {
     expect($content)->toContain('data="albums"');
 });
 
+test('show page deduplicates merged albums by id to avoid duplicate React keys', function () {
+    $content = file_get_contents(resource_path('js/Pages/Lists/Show.tsx'));
+
+    expect($content)->toContain('existingIds');
+    expect($content)->toContain('!existingIds.has(a.id)');
+});
+
 test('json endpoint returns paginated album data', function () {
     $user = User::factory()->create();
     $list = AlbumList::factory()->create(['user_id' => $user->id]);

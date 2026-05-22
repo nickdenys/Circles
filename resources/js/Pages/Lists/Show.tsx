@@ -445,7 +445,10 @@ export default function Show({ list, albums }: ShowProps) {
 
         if (currCount > prevCount && currFirstId === prevFirstId) {
             const newItems = albums.data.slice(prevCount);
-            setOrderedAlbums((prev) => [...prev, ...newItems]);
+            setOrderedAlbums((prev) => {
+                const existingIds = new Set(prev.map((a) => a.id));
+                return [...prev, ...newItems.filter((a) => !existingIds.has(a.id))];
+            });
         } else if (currFirstId !== prevFirstId || currCount < prevCount) {
             setOrderedAlbums(albums.data);
         }
