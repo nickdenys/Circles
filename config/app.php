@@ -107,6 +107,21 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Signup Allowlist
+    |--------------------------------------------------------------------------
+    |
+    | Comma-separated Spotify IDs that are allowed to sign up. When empty,
+    | signup is open to anyone who completes the Spotify OAuth flow.
+    |
+    */
+
+    'signup_allowlist' => array_filter(array_map(
+        'trim',
+        explode(',', (string) env('SIGNUP_ALLOWLIST', ''))
+    )),
+
+    /*
+    |--------------------------------------------------------------------------
     | Maintenance Mode Driver
     |--------------------------------------------------------------------------
     |

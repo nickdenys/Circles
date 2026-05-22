@@ -58,3 +58,16 @@ test('it validates query is required', function () {
         ->tool(SearchAlbums::class, [])
         ->assertHasErrors(['query']);
 });
+
+test('it surfaces a reconnect message when the spotify refresh token is invalid', function () {
+    $user = User::factory()->withExpiredToken()->create();
+
+    Http::fake([
+        'accounts.spotify.com/api/token' => Http::response(['error' => 'invalid_grant'], 400),
+    ]);
+
+    HoopifyServer::actingAs($user)
+        ->tool(SearchAlbums::class, ['query' => 'doesnt matter'])
+        ->assertSee('Your Spotify connection has expired')
+        ->assertSee('/auth/spotify/reconnect');
+});

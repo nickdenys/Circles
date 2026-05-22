@@ -1,6 +1,7 @@
 <?php
 
 use App\Models\User;
+use Illuminate\Support\Facades\Config;
 use Laravel\Socialite\Facades\Socialite;
 use Laravel\Socialite\Two\User as SocialiteUser;
 
@@ -75,6 +76,31 @@ test('spotify callback updates existing user on subsequent login', function () {
         ->name->toBe('Test User')
         ->email->toBe('test@example.com');
     expect(User::count())->toBe(1);
+});
+
+test('allowlisted spotify id is allowed to sign up', function () {
+    Config::set('app.signup_allowlist', ['spotify_123']);
+
+    Socialite::fake('spotify', $this->spotifyUser);
+
+    $this->get(route('spotify.callback'))
+        ->assertRedirect(route('home'));
+
+    $this->assertAuthenticated();
+    $this->assertDatabaseHas('users', ['spotify_id' => 'spotify_123']);
+});
+
+test('non-allowlisted spotify id is rejected with a flash error', function () {
+    Config::set('app.signup_allowlist', ['someone_else']);
+
+    Socialite::fake('spotify', $this->spotifyUser);
+
+    $this->get(route('spotify.callback'))
+        ->assertRedirect(route('login'))
+        ->assertSessionHas('error', 'Your Spotify account isn\'t authorized to use Hoopify.');
+
+    $this->assertGuest();
+    $this->assertDatabaseMissing('users', ['spotify_id' => 'spotify_123']);
 });
 
 test('spotify tokens are stored securely', function () {

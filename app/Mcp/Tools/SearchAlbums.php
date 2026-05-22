@@ -2,6 +2,7 @@
 
 namespace App\Mcp\Tools;
 
+use App\Mcp\Concerns\HandlesSpotifyAuthErrors;
 use App\Services\SpotifyService;
 use Illuminate\Contracts\JsonSchema\JsonSchema;
 use Laravel\Mcp\Request;
@@ -14,6 +15,8 @@ use Laravel\Mcp\Server\Tools\Annotations\IsReadOnly;
 #[IsReadOnly]
 class SearchAlbums extends Tool
 {
+    use HandlesSpotifyAuthErrors;
+
     /**
      * Handle the tool request.
      */
@@ -24,14 +27,14 @@ class SearchAlbums extends Tool
             'limit' => ['sometimes', 'integer', 'min:1', 'max:20'],
         ]);
 
-        $user = $request->user();
+        return $this->runWithSpotifyAuth(function () use ($request, $validated): Response {
+            $results = (new SpotifyService($request->user()))->searchAlbums(
+                $validated['query'],
+                $validated['limit'] ?? 5,
+            );
 
-        $results = (new SpotifyService($user))->searchAlbums(
-            $validated['query'],
-            $validated['limit'] ?? 5,
-        );
-
-        return Response::json($results);
+            return Response::json($results);
+        });
     }
 
     /**

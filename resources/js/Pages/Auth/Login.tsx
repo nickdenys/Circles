@@ -1,6 +1,16 @@
+import { usePage } from '@inertiajs/react';
 import { Button } from '@/components/ui/button';
 
+interface LoginProps {
+    flash: {
+        error: string | null;
+    };
+    [key: string]: unknown;
+}
+
 export default function Login() {
+    const { flash } = usePage<LoginProps>().props;
+
     return (
         <div className="flex min-h-screen items-center justify-center bg-white dark:bg-zinc-950">
             <div className="w-full max-w-sm px-6 text-center">
@@ -10,6 +20,15 @@ export default function Login() {
                 <p className="mb-10 text-zinc-500 dark:text-zinc-400">
                     Organize your music library with Spotify.
                 </p>
+
+                {flash.error && (
+                    <div
+                        role="alert"
+                        className="mb-6 rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-900 dark:border-red-900 dark:bg-red-950/50 dark:text-red-100"
+                    >
+                        {flash.error}
+                    </div>
+                )}
 
                 <Button
                     asChild

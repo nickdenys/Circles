@@ -2,6 +2,7 @@
 
 namespace App\Mcp\Tools;
 
+use App\Mcp\Concerns\HandlesSpotifyAuthErrors;
 use App\Services\SpotifyService;
 use Illuminate\Contracts\JsonSchema\JsonSchema;
 use Laravel\Mcp\Request;
@@ -12,6 +13,8 @@ use Laravel\Mcp\Server\Tool;
 #[Description('Create a private Spotify playlist and add tracks to it. Accepts confirmed Spotify track URIs (from SearchTracks results).')]
 class CreatePlaylist extends Tool
 {
+    use HandlesSpotifyAuthErrors;
+
     /**
      * Handle the tool request.
      */
@@ -24,26 +27,27 @@ class CreatePlaylist extends Tool
             'track_uris.*' => ['required', 'string', 'regex:/^spotify:track:[a-zA-Z0-9]+$/'],
         ]);
 
-        $user = $request->user();
-        $spotify = new SpotifyService($user);
+        return $this->runWithSpotifyAuth(function () use ($request, $validated): Response {
+            $spotify = new SpotifyService($request->user());
 
-        $playlist = $spotify->createPlaylist(
-            $validated['name'],
-            $validated['description'] ?? null,
-        );
+            $playlist = $spotify->createPlaylist(
+                $validated['name'],
+                $validated['description'] ?? null,
+            );
 
-        if (! $playlist) {
-            return Response::error('Failed to create playlist on Spotify. Ensure your account has been reconnected with playlist permissions.');
-        }
+            if (! $playlist) {
+                return Response::error('Failed to create playlist on Spotify. Ensure your account has been reconnected with playlist permissions.');
+            }
 
-        $result = $spotify->addTracksToPlaylist($playlist['id'], $validated['track_uris']);
+            $result = $spotify->addTracksToPlaylist($playlist['id'], $validated['track_uris']);
 
-        return Response::json([
-            'message' => "Created playlist \"{$playlist['name']}\" with {$result['added']} track(s).",
-            'playlist' => $playlist,
-            'tracks_added' => $result['added'],
-            'failed_uris' => $result['failed'],
-        ]);
+            return Response::json([
+                'message' => "Created playlist \"{$playlist['name']}\" with {$result['added']} track(s).",
+                'playlist' => $playlist,
+                'tracks_added' => $result['added'],
+                'failed_uris' => $result['failed'],
+            ]);
+        });
     }
 
     /**

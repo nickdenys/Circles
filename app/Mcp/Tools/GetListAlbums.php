@@ -41,6 +41,7 @@ class GetListAlbums extends Tool
             'genres' => $album->genres,
             'album_type' => $album->album_type,
             'total_tracks' => $album->total_tracks,
+            'note' => $album->pivot->note,
         ]);
 
         return Response::json($albums);

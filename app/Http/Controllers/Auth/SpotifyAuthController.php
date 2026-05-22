@@ -39,6 +39,15 @@ class SpotifyAuthController extends Controller
     {
         $spotifyUser = Socialite::driver('spotify')->user();
 
+        $allowlist = config('app.signup_allowlist');
+
+        if (! empty($allowlist) && ! in_array($spotifyUser->getId(), $allowlist, true)) {
+            return redirect()->route('login')->with(
+                'error',
+                'Your Spotify account isn\'t authorized to use Hoopify.',
+            );
+        }
+
         $user = User::query()->updateOrCreate(
             ['spotify_id' => $spotifyUser->getId()],
             [

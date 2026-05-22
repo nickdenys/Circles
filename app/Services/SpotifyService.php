@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Exceptions\SpotifyAuthExpired;
 use App\Models\User;
 use Illuminate\Http\Client\Response;
 use Illuminate\Support\Facades\Cache;
@@ -268,12 +269,14 @@ class SpotifyService
             'client_secret' => config('services.spotify.client_secret'),
         ]);
 
-        if ($response->successful()) {
-            $this->user->update([
-                'spotify_token' => $response->json('access_token'),
-                'spotify_refresh_token' => $response->json('refresh_token', $this->user->spotify_refresh_token),
-                'spotify_token_expires_at' => now()->addSeconds($response->json('expires_in')),
-            ]);
+        if (! $response->successful()) {
+            throw new SpotifyAuthExpired;
         }
+
+        $this->user->update([
+            'spotify_token' => $response->json('access_token'),
+            'spotify_refresh_token' => $response->json('refresh_token', $this->user->spotify_refresh_token),
+            'spotify_token_expires_at' => now()->addSeconds($response->json('expires_in')),
+        ]);
     }
 }

@@ -2,6 +2,7 @@
 
 namespace App\Mcp\Tools;
 
+use App\Mcp\Concerns\HandlesSpotifyAuthErrors;
 use App\Services\SpotifyService;
 use Illuminate\Contracts\JsonSchema\JsonSchema;
 use Laravel\Mcp\Request;
@@ -14,6 +15,8 @@ use Laravel\Mcp\Server\Tools\Annotations\IsReadOnly;
 #[IsReadOnly]
 class SearchTracks extends Tool
 {
+    use HandlesSpotifyAuthErrors;
+
     /**
      * Handle the tool request.
      */
@@ -25,39 +28,40 @@ class SearchTracks extends Tool
             'limit' => ['sometimes', 'integer', 'min:1', 'max:10'],
         ]);
 
-        $user = $request->user();
-        $limit = $validated['limit'] ?? 3;
-        $spotify = new SpotifyService($user);
+        return $this->runWithSpotifyAuth(function () use ($request, $validated): Response {
+            $limit = $validated['limit'] ?? 3;
+            $spotify = new SpotifyService($request->user());
 
-        $results = [];
+            $results = [];
 
-        foreach ($validated['queries'] as $query) {
-            $parsed = $this->parseTrackUri($query);
+            foreach ($validated['queries'] as $query) {
+                $parsed = $this->parseTrackUri($query);
 
-            if ($parsed) {
-                $results[] = [
-                    'query' => $query,
-                    'results' => [
-                        [
-                            'id' => $parsed['id'],
-                            'name' => $query,
-                            'artists' => '',
-                            'album' => '',
-                            'uri' => $parsed['uri'],
-                            'duration_ms' => 0,
-                            'resolved' => true,
+                if ($parsed) {
+                    $results[] = [
+                        'query' => $query,
+                        'results' => [
+                            [
+                                'id' => $parsed['id'],
+                                'name' => $query,
+                                'artists' => '',
+                                'album' => '',
+                                'uri' => $parsed['uri'],
+                                'duration_ms' => 0,
+                                'resolved' => true,
+                            ],
                         ],
-                    ],
-                ];
-            } else {
-                $results[] = [
-                    'query' => $query,
-                    'results' => $spotify->searchTracks($query, $limit),
-                ];
+                    ];
+                } else {
+                    $results[] = [
+                        'query' => $query,
+                        'results' => $spotify->searchTracks($query, $limit),
+                    ];
+                }
             }
-        }
 
-        return Response::json($results);
+            return Response::json($results);
+        });
     }
 
     /**

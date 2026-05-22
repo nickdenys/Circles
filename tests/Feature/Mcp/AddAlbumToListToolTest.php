@@ -102,6 +102,59 @@ test('it parses spotify urls', function () {
         ->assertSee('URL Album');
 });
 
+test('it stores a note when provided', function () {
+    $album = Album::factory()->create([
+        'spotify_id' => 'notedAlbumId',
+        'title' => 'Noted Album',
+    ]);
+
+    $list = AlbumList::factory()->create([
+        'user_id' => $this->user->id,
+        'title' => 'My List',
+    ]);
+
+    HoopifyServer::actingAs($this->user)
+        ->tool(AddAlbumToList::class, [
+            'spotify_id' => 'notedAlbumId',
+            'list' => 'My List',
+            'note' => 'Great late-night record.',
+        ])
+        ->assertOk()
+        ->assertSee('Great late-night record.');
+
+    $this->assertDatabaseHas('album_album_list', [
+        'album_list_id' => $list->id,
+        'album_id' => $album->id,
+        'note' => 'Great late-night record.',
+    ]);
+});
+
+test('it stores a null note when the note is blank', function () {
+    $album = Album::factory()->create([
+        'spotify_id' => 'blankNoteAlbumId',
+        'title' => 'Blank Note Album',
+    ]);
+
+    $list = AlbumList::factory()->create([
+        'user_id' => $this->user->id,
+        'title' => 'My List',
+    ]);
+
+    HoopifyServer::actingAs($this->user)
+        ->tool(AddAlbumToList::class, [
+            'spotify_id' => 'blankNoteAlbumId',
+            'list' => 'My List',
+            'note' => '   ',
+        ])
+        ->assertOk();
+
+    $this->assertDatabaseHas('album_album_list', [
+        'album_list_id' => $list->id,
+        'album_id' => $album->id,
+        'note' => null,
+    ]);
+});
+
 test('it prevents duplicate albums in a list', function () {
     $album = Album::factory()->create([
         'spotify_id' => 'dupeAlbumId',

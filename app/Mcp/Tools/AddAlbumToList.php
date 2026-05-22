@@ -3,6 +3,7 @@
 namespace App\Mcp\Tools;
 
 use App\Jobs\FetchAlbumGenres;
+use App\Mcp\Concerns\HandlesSpotifyAuthErrors;
 use App\Mcp\Concerns\ResolvesAlbumList;
 use App\Models\Album;
 use App\Services\SpotifyService;
@@ -15,6 +16,7 @@ use Laravel\Mcp\Server\Tool;
 #[Description('Add an album to a list by Spotify ID or URL. Defaults to "Listen Later" if no list is specified.')]
 class AddAlbumToList extends Tool
 {
+    use HandlesSpotifyAuthErrors;
     use ResolvesAlbumList;
 
     /**
@@ -25,53 +27,60 @@ class AddAlbumToList extends Tool
         $validated = $request->validate([
             'spotify_id' => ['required', 'string'],
             'list' => ['sometimes', 'string'],
+            'note' => ['sometimes', 'nullable', 'string', 'max:10000'],
         ]);
 
-        $user = $request->user();
-        $spotifyId = $this->parseSpotifyId($validated['spotify_id']);
-        $list = $this->resolveList($user, $validated['list'] ?? null);
+        return $this->runWithSpotifyAuth(function () use ($request, $validated): Response {
+            $user = $request->user();
+            $spotifyId = $this->parseSpotifyId($validated['spotify_id']);
+            $list = $this->resolveList($user, $validated['list'] ?? null);
+            $note = isset($validated['note']) ? trim((string) $validated['note']) : null;
+            $note = $note === '' ? null : $note;
 
-        if (! $list) {
-            return Response::error('List not found.');
-        }
-
-        if ($list->albums()->where('spotify_id', $spotifyId)->exists()) {
-            return Response::text("Album is already in \"{$list->title}\".");
-        }
-
-        $album = Album::where('spotify_id', $spotifyId)->first();
-
-        if (! $album) {
-            $spotify = new SpotifyService($user);
-            $albumData = $spotify->getAlbum($spotifyId);
-
-            if (! $albumData) {
-                return Response::error('Album not found on Spotify.');
+            if (! $list) {
+                return Response::error('List not found.');
             }
 
-            $album = Album::create($albumData);
-            FetchAlbumGenres::dispatch($album);
-        }
+            if ($list->albums()->where('spotify_id', $spotifyId)->exists()) {
+                return Response::text("Album is already in \"{$list->title}\".");
+            }
 
-        $maxPosition = $list->albums()->max('album_album_list.position') ?? 0;
+            $album = Album::where('spotify_id', $spotifyId)->first();
 
-        $list->albums()->attach($album->id, [
-            'position' => $maxPosition + 1,
-        ]);
+            if (! $album) {
+                $spotify = new SpotifyService($user);
+                $albumData = $spotify->getAlbum($spotifyId);
 
-        return Response::json([
-            'message' => "Added \"{$album->title}\" by {$album->artists} to \"{$list->title}\".",
-            'album' => [
-                'spotify_id' => $album->spotify_id,
-                'title' => $album->title,
-                'artists' => $album->artists,
-                'cover_url' => $album->cover_url,
-            ],
-            'list' => [
-                'id' => $list->id,
-                'title' => $list->title,
-            ],
-        ]);
+                if (! $albumData) {
+                    return Response::error('Album not found on Spotify.');
+                }
+
+                $album = Album::create($albumData);
+                FetchAlbumGenres::dispatch($album);
+            }
+
+            $maxPosition = $list->albums()->max('album_album_list.position') ?? 0;
+
+            $list->albums()->attach($album->id, [
+                'position' => $maxPosition + 1,
+                'note' => $note,
+            ]);
+
+            return Response::json([
+                'message' => "Added \"{$album->title}\" by {$album->artists} to \"{$list->title}\".",
+                'album' => [
+                    'spotify_id' => $album->spotify_id,
+                    'title' => $album->title,
+                    'artists' => $album->artists,
+                    'cover_url' => $album->cover_url,
+                    'note' => $note,
+                ],
+                'list' => [
+                    'id' => $list->id,
+                    'title' => $list->title,
+                ],
+            ]);
+        });
     }
 
     /**
@@ -103,6 +112,8 @@ class AddAlbumToList extends Tool
                 ->required(),
             'list' => $schema->string()
                 ->description('List name or ID (defaults to "Listen Later")'),
+            'note' => $schema->string()
+                ->description('Optional personal note to attach to the album in this list'),
         ];
     }
 }

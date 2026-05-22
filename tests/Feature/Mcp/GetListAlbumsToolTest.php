@@ -46,6 +46,24 @@ test('it returns error when list not found', function () {
         ->assertHasErrors(['List not found.']);
 });
 
+test('it includes the note from the pivot', function () {
+    $list = AlbumList::factory()->create([
+        'user_id' => $this->user->id,
+        'title' => 'Noted List',
+    ]);
+
+    $album = Album::factory()->create(['title' => 'Noted Album']);
+    $list->albums()->attach($album->id, [
+        'position' => 1,
+        'note' => 'Essential listening for Sundays.',
+    ]);
+
+    HoopifyServer::actingAs($this->user)
+        ->tool(GetListAlbums::class, ['list' => 'Noted List'])
+        ->assertOk()
+        ->assertSee('Essential listening for Sundays.');
+});
+
 test('it handles empty lists gracefully', function () {
     $list = AlbumList::factory()->create([
         'user_id' => $this->user->id,
