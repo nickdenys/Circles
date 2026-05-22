@@ -98,6 +98,20 @@ return [
             'sslmode' => env('DB_SSLMODE', 'prefer'),
         ],
 
+        'pgsql_legacy' => [
+            'driver' => 'pgsql',
+            'host' => env('DB_LEGACY_HOST', '127.0.0.1'),
+            'port' => env('DB_LEGACY_PORT', '5432'),
+            'database' => env('DB_LEGACY_DATABASE', 'hoopify'),
+            'username' => env('DB_LEGACY_USERNAME', 'postgres'),
+            'password' => env('DB_LEGACY_PASSWORD', ''),
+            'charset' => env('DB_LEGACY_CHARSET', 'utf8'),
+            'prefix' => '',
+            'prefix_indexes' => true,
+            'search_path' => 'public',
+            'sslmode' => env('DB_LEGACY_SSLMODE', 'prefer'),
+        ],
+
         'sqlsrv' => [
             'driver' => 'sqlsrv',
             'url' => env('DB_URL'),

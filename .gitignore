@@ -30,3 +30,4 @@ CLAUDE.md
 /.junie
 resources/js/common/types/generated.d.ts
 .chief/
+/database/database.sqlite
