@@ -7,6 +7,7 @@ use App\Models\Album;
 use App\Models\AlbumList;
 use App\Models\AlbumReview;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
 class AlbumReviewController extends Controller
@@ -48,6 +49,48 @@ class AlbumReviewController extends Controller
             'rating' => (float) $request->validated('rating'),
             'review' => $request->validated('review'),
             'reviewedListId' => $reviewedList->id,
+        ]);
+    }
+
+    /**
+     * Delete the review for the given album and move it back to the user's Listen Later list.
+     */
+    public function destroy(Request $request, AlbumList $albumList, Album $album): JsonResponse
+    {
+        $user = $request->user();
+
+        abort_unless($albumList->user_id === $user->id, 403);
+        abort_unless($albumList->isReviewed(), 403);
+        abort_unless($albumList->albums()->where('album_id', $album->id)->exists(), 404);
+
+        $review = AlbumReview::query()
+            ->where('user_id', $user->id)
+            ->where('album_id', $album->id)
+            ->first();
+
+        abort_unless($review, 404);
+
+        $listenLaterList = DB::transaction(function () use ($user, $albumList, $album, $review): AlbumList {
+            $review->delete();
+
+            $albumList->albums()->detach($album->id);
+
+            $listenLaterList = $user->listenLaterList()->firstOrFail();
+
+            if (! $listenLaterList->albums()->where('album_id', $album->id)->exists()) {
+                $maxPosition = $listenLaterList->albums()->max('album_album_list.position') ?? 0;
+
+                $listenLaterList->albums()->attach($album->id, [
+                    'position' => $maxPosition + 1,
+                ]);
+            }
+
+            return $listenLaterList;
+        });
+
+        return response()->json([
+            'ok' => true,
+            'listenLaterListId' => $listenLaterList->id,
         ]);
     }
 }

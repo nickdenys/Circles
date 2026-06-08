@@ -115,4 +115,12 @@ class User extends Authenticatable
     {
         return $this->hasOne(AlbumList::class)->where('type', 'reviewed');
     }
+
+    /**
+     * Get the user's Listen Later system list.
+     */
+    public function listenLaterList(): HasOne
+    {
+        return $this->hasOne(AlbumList::class)->where('type', 'system');
+    }
 }

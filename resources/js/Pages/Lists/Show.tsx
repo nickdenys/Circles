@@ -827,6 +827,11 @@ export default function Show({ list, albums, sort, direction }: ShowProps) {
         setAlbumCount((prev) => prev - 1);
     }
 
+    function handleAlbumUnreviewed(albumId: number) {
+        setOrderedAlbums((prev) => prev.filter((a) => a.id !== albumId));
+        setAlbumCount((prev) => prev - 1);
+    }
+
     const hasAlbums = orderedAlbums.length > 0;
 
     return (
@@ -928,9 +933,16 @@ export default function Show({ list, albums, sort, direction }: ShowProps) {
                 </div>
 
                 {!hasAlbums ? (
-                    <p className="mt-8 text-center text-muted-foreground">
-                        No albums yet. Click "Add an Album" to get started.
-                    </p>
+                    isReviewedList ? (
+                        <div className="mt-8 text-center text-muted-foreground">
+                            <p>No reviewed albums yet.</p>
+                            <p>Rate an album from any list and it'll show up here.</p>
+                        </div>
+                    ) : (
+                        <p className="mt-8 text-center text-muted-foreground">
+                            No albums yet. Click "Add an Album" to get started.
+                        </p>
+                    )
                 ) : viewMode === 'grid' ? (
                     <div className="mt-6">
                         <DndContext
@@ -1084,6 +1096,8 @@ export default function Show({ list, albums, sort, direction }: ShowProps) {
                 open={ratingDialogOpen}
                 onOpenChange={setRatingDialogOpen}
                 onSubmitted={handleReviewSubmitted}
+                allowUnreview={isReviewedList}
+                onUnreviewed={handleAlbumUnreviewed}
             />
         </>
     );
