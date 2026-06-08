@@ -2,7 +2,9 @@
 
 namespace App\Http\Requests;
 
+use App\Enums\AlbumListMode;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class StoreAlbumListRequest extends FormRequest
 {
@@ -24,6 +26,7 @@ class StoreAlbumListRequest extends FormRequest
         return [
             'title' => ['required', 'string', 'max:255'],
             'description' => ['nullable', 'string', 'max:1000'],
+            'mode' => ['nullable', Rule::enum(AlbumListMode::class)],
         ];
     }
 

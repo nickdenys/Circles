@@ -56,7 +56,7 @@ export default function MoveAlbumDialog({
 
             try {
                 const response = await axios.get('/lists/search', {
-                    params: { q, exclude: listId },
+                    params: { q, exclude: listId, exclude_reviewed: 1 },
                 });
                 setResults(response.data.data);
                 setIsOpen(true);

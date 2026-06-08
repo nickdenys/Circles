@@ -2,19 +2,18 @@
 
 namespace App\Http\Requests;
 
+use App\Enums\AlbumSort;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
-class DestroyAlbumListRequest extends FormRequest
+class UpdateAlbumListSortRequest extends FormRequest
 {
     /**
      * Determine if the user is authorized to make this request.
      */
     public function authorize(): bool
     {
-        $albumList = $this->route('albumList');
-
-        return $albumList->user_id === $this->user()->id
-            && ! $albumList->isLocked();
+        return $this->route('albumList')->user_id === $this->user()->id;
     }
 
     /**
@@ -24,6 +23,9 @@ class DestroyAlbumListRequest extends FormRequest
      */
     public function rules(): array
     {
-        return [];
+        return [
+            'sort' => ['required', Rule::enum(AlbumSort::class)],
+            'direction' => ['required', 'in:asc,desc'],
+        ];
     }
 }

@@ -139,7 +139,7 @@ test('album card uses Card component with album-card class', function () {
     $component = file_get_contents(resource_path('js/Pages/Lists/Show.tsx'));
 
     expect($component)
-        ->toContain('className="album-card')
+        ->toContain('album-card')
         ->toContain("from '@/components/ui/card'");
 });
 

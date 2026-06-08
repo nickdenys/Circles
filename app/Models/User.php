@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
@@ -59,10 +60,7 @@ class User extends Authenticatable
     protected static function booted(): void
     {
         static::created(function (User $user): void {
-            $user->albumLists()->create([
-                'title' => 'Listen Later',
-                'type' => 'system',
-            ]);
+            $user->ensureSystemLists();
         });
     }
 
@@ -75,10 +73,46 @@ class User extends Authenticatable
     }
 
     /**
+     * Make sure the user has the auto-managed system lists.
+     */
+    public function ensureSystemLists(): void
+    {
+        $this->albumLists()->firstOrCreate(
+            ['type' => 'system'],
+            ['title' => 'Listen Later'],
+        );
+
+        $this->albumLists()->firstOrCreate(
+            ['type' => 'reviewed'],
+            [
+                'title' => 'Reviewed',
+                'sort' => 'added',
+                'direction' => 'desc',
+            ],
+        );
+    }
+
+    /**
      * Get the album lists for the user.
      */
     public function albumLists(): HasMany
     {
         return $this->hasMany(AlbumList::class);
+    }
+
+    /**
+     * Get the album reviews owned by the user.
+     */
+    public function reviews(): HasMany
+    {
+        return $this->hasMany(AlbumReview::class);
+    }
+
+    /**
+     * Get the user's Reviewed system list.
+     */
+    public function reviewedList(): HasOne
+    {
+        return $this->hasOne(AlbumList::class)->where('type', 'reviewed');
     }
 }

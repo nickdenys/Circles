@@ -20,6 +20,7 @@ class AlbumListAlbumController extends Controller
     public function store(Request $request, AlbumList $albumList): JsonResponse
     {
         abort_unless($albumList->user_id === $request->user()->id, 403);
+        abort_if($albumList->isReviewed(), 403);
 
         $request->validate([
             'spotify_id' => ['required', 'string'],
@@ -75,6 +76,7 @@ class AlbumListAlbumController extends Controller
     public function move(Request $request, AlbumList $albumList, Album $album): RedirectResponse
     {
         abort_unless($albumList->user_id === $request->user()->id, 403);
+        abort_if($albumList->isReviewed(), 403);
 
         $request->validate([
             'destination_list_id' => ['required', 'integer', 'exists:album_lists,id'],
@@ -83,6 +85,7 @@ class AlbumListAlbumController extends Controller
         $destinationList = AlbumList::findOrFail($request->input('destination_list_id'));
 
         abort_unless($destinationList->user_id === $request->user()->id, 403);
+        abort_if($destinationList->isReviewed(), 403);
 
         if ($destinationList->albums()->where('album_id', $album->id)->exists()) {
             return redirect()->route('lists.show', $albumList)
@@ -127,6 +130,7 @@ class AlbumListAlbumController extends Controller
     public function reorder(Request $request, AlbumList $albumList): JsonResponse
     {
         abort_unless($albumList->user_id === $request->user()->id, 403);
+        abort_if($albumList->isReviewed(), 403);
 
         $request->validate([
             'album_ids' => ['required', 'array'],
@@ -150,6 +154,7 @@ class AlbumListAlbumController extends Controller
     public function destroy(Request $request, AlbumList $albumList, Album $album): RedirectResponse
     {
         abort_unless($albumList->user_id === $request->user()->id, 403);
+        abort_if($albumList->isReviewed(), 403);
 
         $albumList->albums()->detach($album->id);
 

@@ -132,9 +132,16 @@ test('update route redirects to list show page on success', function () {
         ->description->toBe('New description');
 });
 
-test('edit dialog is only available for custom lists', function () {
+test('edit button is available for every list', function () {
     $content = file_get_contents(resource_path('js/Pages/Lists/Show.tsx'));
 
-    expect($content)->toContain("list.type === 'custom'");
     expect($content)->toContain('id="edit-list-button"');
+});
+
+test('delete button is only available for custom lists', function () {
+    $content = file_get_contents(resource_path('js/Pages/Lists/Show.tsx'));
+
+    expect($content)
+        ->toContain("list.type === 'custom'")
+        ->toContain('id="delete-list-button"');
 });

@@ -34,6 +34,10 @@ class RemoveAlbumFromList extends Tool
             return Response::error('List not found.');
         }
 
+        if ($list->isReviewed()) {
+            return Response::error('The Reviewed list is managed by the rating workflow and cannot be modified manually.');
+        }
+
         $album = Album::where('spotify_id', $validated['spotify_id'])->first();
 
         if (! $album || ! $list->albums()->where('album_id', $album->id)->exists()) {

@@ -22,30 +22,43 @@ import {
     Plus,
     RefreshCw,
     ArrowRightLeft,
+    ArrowDownUp,
+    ArrowUp,
+    ArrowDown,
+    Check,
     Trash2,
     ListMusic,
     Clock,
     Calendar,
     ExternalLink,
+    MoreVertical,
 } from 'lucide-react';
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { toast } from 'sonner';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { StarRating } from '@/components/ui/star-rating';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+import { cn } from '@/lib/utils';
+import { type ListMode } from './ListModeField';
 import { type AddedAlbum } from './AlbumSearch';
 import AddAlbumDialog from './AddAlbumDialog';
 import DeleteListDialog from './DeleteListDialog';
 import EditListDialog from './EditListDialog';
 import MoveAlbumDialog from './MoveAlbumDialog';
+import RatingDialog, { type RatingDialogAlbum } from './RatingDialog';
 import RemoveAlbumDialog from './RemoveAlbumDialog';
+
+type ListType = 'system' | 'custom' | 'reviewed';
 
 interface AlbumListDetail {
     id: number;
     title: string;
     description: string | null;
-    type: 'system' | 'custom';
+    type: ListType;
+    mode: ListMode;
     albumsCount: number;
 }
 
@@ -62,6 +75,8 @@ interface AlbumItem {
     spotifyUri: string;
     genres: string[];
     note: string | null;
+    rating?: number | null;
+    review?: string | null;
 }
 
 interface PaginatedAlbums {
@@ -72,6 +87,8 @@ interface PaginatedAlbums {
 interface ShowProps {
     list: AlbumListDetail;
     albums: PaginatedAlbums;
+    sort: string;
+    direction: 'asc' | 'desc';
     [key: string]: unknown;
 }
 
@@ -201,26 +218,128 @@ function AlbumNoteEditor({ listId, albumId, note, onNoteUpdated }: {
     );
 }
 
-function AlbumCardContent({ album, position, listId, onMove, onRemove, onNoteUpdated, dragHandleProps }: {
+function ListenedButton({ albumId, onClick }: { albumId: number; onClick: () => void }) {
+    return (
+        <Tooltip>
+            <TooltipTrigger asChild>
+                <Button
+                    variant="default"
+                    size="icon-lg"
+                    className="listened-button"
+                    data-album-id={albumId}
+                    onClick={onClick}
+                >
+                    <Check className="h-6 w-6" />
+                </Button>
+            </TooltipTrigger>
+            <TooltipContent>I listened to this</TooltipContent>
+        </Tooltip>
+    );
+}
+
+function AlbumActionsMenu({ album, onMove, onRemove }: {
+    album: AlbumItem;
+    onMove: (album: { id: number; title: string }) => void;
+    onRemove: (album: { id: number; title: string }) => void;
+}) {
+    const [open, setOpen] = useState(false);
+
+    return (
+        <Popover open={open} onOpenChange={setOpen}>
+            <PopoverTrigger
+                render={
+                    <Button
+                        variant="ghost"
+                        size="icon"
+                        className="album-actions-button h-8 w-8"
+                        aria-label="Album actions"
+                    />
+                }
+            >
+                <MoreVertical className="h-6 w-6" />
+            </PopoverTrigger>
+            <PopoverContent align="end" className="w-48 p-1">
+                <Button
+                    variant="ghost"
+                    size="sm"
+                    className="move-album-button w-full justify-start font-normal"
+                    data-album-id={album.id}
+                    data-album-title={album.title}
+                    onClick={() => {
+                        setOpen(false);
+                        onMove({ id: album.id, title: album.title });
+                    }}
+                >
+                    <ArrowRightLeft className="mr-2 h-4 w-4" />
+                    Move to list
+                </Button>
+                <Button
+                    variant="ghost"
+                    size="sm"
+                    className="remove-album-button w-full justify-start font-normal text-destructive hover:text-destructive"
+                    data-album-id={album.id}
+                    data-album-title={album.title}
+                    onClick={() => {
+                        setOpen(false);
+                        onRemove({ id: album.id, title: album.title });
+                    }}
+                >
+                    <Trash2 className="mr-2 h-4 w-4" />
+                    Remove from list
+                </Button>
+            </PopoverContent>
+        </Popover>
+    );
+}
+
+function AlbumCardContent({ album, position, listId, listType, mode, onMove, onRemove, onRate, onNoteUpdated, dragHandleProps, draggable = true }: {
     album: AlbumItem;
     position?: number;
     listId: number;
+    listType: ListType;
+    mode: ListMode;
     onMove: (album: { id: number; title: string }) => void;
     onRemove: (album: { id: number; title: string }) => void;
+    onRate: (album: AlbumItem) => void;
     onNoteUpdated: (albumId: number, note: string | null) => void;
     dragHandleProps?: React.HTMLAttributes<HTMLDivElement>;
+    draggable?: boolean;
 }) {
+    const isReviewed = listType === 'reviewed';
+
+    function handleCardClick() {
+        if (isReviewed) {
+            onRate(album);
+        }
+    }
+
+    function handleCardKeyDown(event: React.KeyboardEvent<HTMLDivElement>) {
+        if (isReviewed && (event.key === 'Enter' || event.key === ' ')) {
+            event.preventDefault();
+            onRate(album);
+        }
+    }
+
     return (
         <Card
-            className="album-card group relative flex flex-row items-center gap-3 px-4 py-3"
+            className={cn(
+                'album-card group relative flex flex-row items-center gap-3 px-4 py-3',
+                isReviewed && 'reviewed-card cursor-pointer hover:bg-accent/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
+            )}
             data-album-db-id={album.id}
+            role={isReviewed ? 'button' : undefined}
+            tabIndex={isReviewed ? 0 : undefined}
+            onClick={isReviewed ? handleCardClick : undefined}
+            onKeyDown={isReviewed ? handleCardKeyDown : undefined}
         >
-            <div
-                className="drag-handle flex cursor-grab items-center self-stretch text-muted-foreground"
-                {...dragHandleProps}
-            >
-                <GripVertical className="h-4 w-4" />
-            </div>
+            {draggable && !isReviewed && (
+                <div
+                    className="drag-handle flex cursor-grab items-center self-stretch text-muted-foreground"
+                    {...dragHandleProps}
+                >
+                    <GripVertical className="h-4 w-4" />
+                </div>
+            )}
 
             {position !== undefined && (
                 <span className="w-6 shrink-0 text-center text-sm font-medium text-muted-foreground">
@@ -269,16 +388,31 @@ function AlbumCardContent({ album, position, listId, onMove, onRemove, onNoteUpd
                             ))}
                         </div>
                     )}
-                    <AlbumNoteEditor
-                        listId={listId}
-                        albumId={album.id}
-                        note={album.note}
-                        onNoteUpdated={onNoteUpdated}
-                    />
+                    {isReviewed ? (
+                        <div className="mt-2 space-y-2">
+                            <StarRating value={album.rating ?? 0} size="md" />
+                            {album.review && (
+                                <p className="album-review whitespace-pre-wrap text-sm text-muted-foreground">
+                                    {album.review}
+                                </p>
+                            )}
+                        </div>
+                    ) : (
+                        <AlbumNoteEditor
+                            listId={listId}
+                            albumId={album.id}
+                            note={album.note}
+                            onNoteUpdated={onNoteUpdated}
+                        />
+                    )}
                 </div>
             </div>
 
             <div className="flex shrink-0 items-center gap-1">
+                {!isReviewed && mode === 'listening' && (
+                    <ListenedButton albumId={album.id} onClick={() => onRate(album)} />
+                )}
+
                 <Tooltip>
                     <TooltipTrigger asChild>
                         <Button
@@ -287,57 +421,74 @@ function AlbumCardContent({ album, position, listId, onMove, onRemove, onNoteUpd
                             className="h-8 w-8"
                             asChild
                         >
-                            <a href={album.spotifyUri}>
+                            <a
+                                href={album.spotifyUri}
+                                onClick={(event) => event.stopPropagation()}
+                            >
                                 <ExternalLink className="h-6 w-6" />
                             </a>
                         </Button>
                     </TooltipTrigger>
                     <TooltipContent>Open in Spotify</TooltipContent>
                 </Tooltip>
-                <Tooltip>
-                    <TooltipTrigger asChild>
-                        <Button
-                            variant="ghost"
-                            size="icon"
-                            className="move-album-button h-8 w-8"
-                            data-album-id={album.id}
-                            data-album-title={album.title}
-                            onClick={() => onMove({ id: album.id, title: album.title })}
-                        >
-                            <ArrowRightLeft className="h-6 w-6" />
-                        </Button>
-                    </TooltipTrigger>
-                    <TooltipContent>Move to list</TooltipContent>
-                </Tooltip>
-                <Tooltip>
-                    <TooltipTrigger asChild>
-                        <Button
-                            variant="ghost"
-                            size="icon"
-                            className="remove-album-button h-8 w-8 text-destructive hover:text-destructive"
-                            data-album-id={album.id}
-                            data-album-title={album.title}
-                            onClick={() => onRemove({ id: album.id, title: album.title })}
-                        >
-                            <Trash2 className="h-6 w-6" />
-                        </Button>
-                    </TooltipTrigger>
-                    <TooltipContent>Remove from list</TooltipContent>
-                </Tooltip>
+
+                {!isReviewed && (mode === 'listening' ? (
+                    <AlbumActionsMenu album={album} onMove={onMove} onRemove={onRemove} />
+                ) : (
+                    <>
+                        <Tooltip>
+                            <TooltipTrigger asChild>
+                                <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="move-album-button h-8 w-8"
+                                    data-album-id={album.id}
+                                    data-album-title={album.title}
+                                    onClick={() => onMove({ id: album.id, title: album.title })}
+                                >
+                                    <ArrowRightLeft className="h-6 w-6" />
+                                </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>Move to list</TooltipContent>
+                        </Tooltip>
+                        <Tooltip>
+                            <TooltipTrigger asChild>
+                                <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="remove-album-button h-8 w-8 text-destructive hover:text-destructive"
+                                    data-album-id={album.id}
+                                    data-album-title={album.title}
+                                    onClick={() => onRemove({ id: album.id, title: album.title })}
+                                >
+                                    <Trash2 className="h-6 w-6" />
+                                </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>Remove from list</TooltipContent>
+                        </Tooltip>
+                    </>
+                ))}
             </div>
         </Card>
     );
 }
 
-function AlbumCard({ album, position, listId, onMove, onRemove, onNoteUpdated }: {
+function AlbumCard({ album, position, listId, listType, mode, onMove, onRemove, onRate, onNoteUpdated, draggable = true }: {
     album: AlbumItem;
     position?: number;
     listId: number;
+    listType: ListType;
+    mode: ListMode;
     onMove: (album: { id: number; title: string }) => void;
     onRemove: (album: { id: number; title: string }) => void;
+    onRate: (album: AlbumItem) => void;
     onNoteUpdated: (albumId: number, note: string | null) => void;
+    draggable?: boolean;
 }) {
-    const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: album.id });
+    const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
+        id: album.id,
+        disabled: !draggable,
+    });
 
     return (
         <div
@@ -352,9 +503,13 @@ function AlbumCard({ album, position, listId, onMove, onRemove, onNoteUpdated }:
                 album={album}
                 position={position}
                 listId={listId}
+                listType={listType}
+                mode={mode}
                 onMove={onMove}
                 onRemove={onRemove}
+                onRate={onRate}
                 onNoteUpdated={onNoteUpdated}
+                draggable={draggable}
                 dragHandleProps={{ ...attributes, ...listeners }}
             />
         </div>
@@ -363,7 +518,7 @@ function AlbumCard({ album, position, listId, onMove, onRemove, onNoteUpdated }:
 
 type ViewMode = 'list' | 'grid';
 
-function AlbumGridItemContent({ album }: { album: AlbumItem }) {
+function AlbumGridItemContent({ album, showRating = false }: { album: AlbumItem; showRating?: boolean }) {
     return (
         <div className="flex flex-col gap-2">
             {album.coverUrl ? (
@@ -380,13 +535,41 @@ function AlbumGridItemContent({ album }: { album: AlbumItem }) {
             <div className="min-w-0">
                 <p className="truncate text-sm font-medium">{album.title}</p>
                 <p className="truncate text-xs text-muted-foreground">{album.artists}</p>
+                {showRating && (
+                    <div className="mt-1">
+                        <StarRating value={album.rating ?? 0} size="sm" />
+                    </div>
+                )}
             </div>
         </div>
     );
 }
 
-function AlbumGridItem({ album }: { album: AlbumItem }) {
-    const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: album.id });
+function AlbumGridItem({ album, listType, onRate, draggable = true }: {
+    album: AlbumItem;
+    listType: ListType;
+    onRate: (album: AlbumItem) => void;
+    draggable?: boolean;
+}) {
+    const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
+        id: album.id,
+        disabled: !draggable,
+    });
+
+    const isReviewed = listType === 'reviewed';
+
+    function handleClick() {
+        if (isReviewed) {
+            onRate(album);
+        }
+    }
+
+    function handleKeyDown(event: React.KeyboardEvent<HTMLDivElement>) {
+        if (isReviewed && (event.key === 'Enter' || event.key === ' ')) {
+            event.preventDefault();
+            onRate(album);
+        }
+    }
 
     return (
         <div
@@ -396,16 +579,99 @@ function AlbumGridItem({ album }: { album: AlbumItem }) {
                 transition,
                 opacity: isDragging ? 0.35 : 1,
             }}
-            className="cursor-grab touch-none"
-            {...attributes}
-            {...listeners}
+            className={cn(
+                draggable && !isReviewed && 'cursor-grab touch-none',
+                isReviewed && 'reviewed-card cursor-pointer rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
+            )}
+            {...(isReviewed
+                ? {
+                      role: 'button' as const,
+                      tabIndex: 0,
+                      onClick: handleClick,
+                      onKeyDown: handleKeyDown,
+                  }
+                : draggable
+                    ? { ...attributes, ...listeners }
+                    : {})}
         >
-            <AlbumGridItemContent album={album} />
+            <AlbumGridItemContent album={album} showRating={isReviewed} />
         </div>
     );
 }
 
-export default function Show({ list, albums }: ShowProps) {
+const SORT_OPTIONS = [
+    { value: 'manual', label: 'Manual' },
+    { value: 'title', label: 'Title' },
+    { value: 'artist', label: 'Artist' },
+    { value: 'release_date', label: 'Release date' },
+    { value: 'added', label: 'Date added' },
+] as const;
+
+const DEFAULT_SORT_DIRECTION: Record<string, 'asc' | 'desc'> = {
+    title: 'asc',
+    artist: 'asc',
+    release_date: 'desc',
+    added: 'desc',
+};
+
+function SortControl({ listId, sort, direction }: { listId: number; sort: string; direction: 'asc' | 'desc' }) {
+    const [open, setOpen] = useState(false);
+    const activeLabel = SORT_OPTIONS.find((option) => option.value === sort)?.label ?? 'Manual';
+
+    function applySort(value: string) {
+        setOpen(false);
+
+        const nextDirection = value === 'manual'
+            ? 'asc'
+            : value === sort
+                ? (direction === 'asc' ? 'desc' : 'asc')
+                : DEFAULT_SORT_DIRECTION[value];
+
+        router.patch(`/lists/${listId}/sort`, { sort: value, direction: nextDirection }, {
+            preserveScroll: false,
+        });
+    }
+
+    return (
+        <Popover open={open} onOpenChange={setOpen}>
+            <PopoverTrigger render={<Button variant="outline" size="sm" id="sort-control" />}>
+                <ArrowDownUp className="mr-1.5 h-4 w-4" />
+                Sort: {activeLabel}
+                {sort !== 'manual' && (
+                    direction === 'asc'
+                        ? <ArrowUp className="ml-1.5 h-3.5 w-3.5" />
+                        : <ArrowDown className="ml-1.5 h-3.5 w-3.5" />
+                )}
+            </PopoverTrigger>
+            <PopoverContent align="end" className="w-44 p-1">
+                {SORT_OPTIONS.map((option) => {
+                    const isActive = option.value === sort;
+
+                    return (
+                        <Button
+                            key={option.value}
+                            variant="ghost"
+                            size="sm"
+                            className="w-full justify-between font-normal"
+                            onClick={() => applySort(option.value)}
+                        >
+                            {option.label}
+                            {isActive && option.value === 'manual' && <Check className="h-3.5 w-3.5" />}
+                            {isActive && option.value !== 'manual' && (
+                                direction === 'asc'
+                                    ? <ArrowUp className="h-3.5 w-3.5" />
+                                    : <ArrowDown className="h-3.5 w-3.5" />
+                            )}
+                        </Button>
+                    );
+                })}
+            </PopoverContent>
+        </Popover>
+    );
+}
+
+export default function Show({ list, albums, sort, direction }: ShowProps) {
+    const isManual = sort === 'manual';
     const [refreshing, setRefreshing] = useState(false);
     const [viewMode, setViewMode] = useState<ViewMode>(() => {
         const stored = localStorage.getItem(`list-${list.id}-view`);
@@ -426,6 +692,10 @@ export default function Show({ list, albums }: ShowProps) {
     const [editDialogOpen, setEditDialogOpen] = useState(false);
     const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
     const [activeAlbum, setActiveAlbum] = useState<AlbumItem | null>(null);
+    const [albumToReview, setAlbumToReview] = useState<RatingDialogAlbum | null>(null);
+    const [ratingDialogOpen, setRatingDialogOpen] = useState(false);
+
+    const isReviewedList = list.type === 'reviewed';
 
     const syncRef = useRef({ count: albums.data.length, firstId: albums.data[0]?.id });
 
@@ -456,13 +726,27 @@ export default function Show({ list, albums }: ShowProps) {
         syncRef.current = { count: currCount, firstId: currFirstId };
     }, [albums.data]);
 
+    useEffect(() => {
+        setOrderedAlbums(albums.data);
+        syncRef.current = { count: albums.data.length, firstId: albums.data[0]?.id };
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [sort, direction]);
+
     function handleDragStart(event: DragStartEvent) {
+        if (!isManual) {
+            return;
+        }
+
         const album = orderedAlbums.find((a) => a.id === event.active.id);
         setActiveAlbum(album ?? null);
     }
 
     function handleDragEnd(event: DragEndEvent) {
         setActiveAlbum(null);
+
+        if (!isManual) {
+            return;
+        }
 
         const { active, over } = event;
         if (!over || active.id === over.id) {
@@ -520,6 +804,29 @@ export default function Show({ list, albums }: ShowProps) {
         );
     }
 
+    function handleRateAlbum(album: AlbumItem) {
+        setAlbumToReview({
+            id: album.id,
+            title: album.title,
+            currentRating: album.rating ?? null,
+            currentReview: album.review ?? null,
+        });
+        setRatingDialogOpen(true);
+    }
+
+    function handleReviewSubmitted(albumId: number, rating: number, review: string | null) {
+        if (isReviewedList) {
+            setOrderedAlbums((prev) =>
+                prev.map((a) => (a.id === albumId ? { ...a, rating, review } : a)),
+            );
+
+            return;
+        }
+
+        setOrderedAlbums((prev) => prev.filter((a) => a.id !== albumId));
+        setAlbumCount((prev) => prev - 1);
+    }
+
     const hasAlbums = orderedAlbums.length > 0;
 
     return (
@@ -559,56 +866,62 @@ export default function Show({ list, albums }: ShowProps) {
                             {refreshing ? 'Refreshing...' : 'Refresh Album Data'}
                         </Button>
 
-                        <Button
-                            onClick={() => setAddAlbumDialogOpen(true)}
-                            id="add-album-button"
-                        >
-                            <Plus className="mr-2 h-4 w-4" />
-                            Add an Album
-                        </Button>
+                        {!isReviewedList && (
+                            <Button
+                                onClick={() => setAddAlbumDialogOpen(true)}
+                                id="add-album-button"
+                            >
+                                <Plus className="mr-2 h-4 w-4" />
+                                Add an Album
+                            </Button>
+                        )}
 
+                        {!isReviewedList && (
+                            <Button
+                                variant="outline"
+                                id="edit-list-button"
+                                onClick={() => setEditDialogOpen(true)}
+                            >
+                                Edit
+                            </Button>
+                        )}
                         {list.type === 'custom' && (
-                            <>
-                                <Button
-                                    variant="outline"
-                                    id="edit-list-button"
-                                    onClick={() => setEditDialogOpen(true)}
-                                >
-                                    Edit
-                                </Button>
-                                <Button
-                                    variant="outline"
-                                    id="delete-list-button"
-                                    onClick={() => setDeleteDialogOpen(true)}
-                                >
-                                    Delete
-                                </Button>
-                            </>
+                            <Button
+                                variant="outline"
+                                id="delete-list-button"
+                                onClick={() => setDeleteDialogOpen(true)}
+                            >
+                                Delete
+                            </Button>
                         )}
                         </div>
 
                         {hasAlbums && (
-                            <div className="inline-flex items-center rounded-md border">
-                                <Button
-                                    variant={viewMode === 'list' ? 'default' : 'ghost'}
-                                    size="sm"
-                                    className="rounded-r-none border-0"
-                                    onClick={() => changeViewMode('list')}
-                                    id="view-mode-list"
-                                >
-                                    <List className="mr-1.5 h-4 w-4" />
-                                    List
-                                </Button>
-                                <Button
-                                    variant={viewMode === 'grid' ? 'default' : 'ghost'}
-                                    size="sm"
-                                    className="rounded-l-none border-0"
-                                    onClick={() => changeViewMode('grid')}
-                                    id="view-mode-grid"
-                                >
-                                    <LayoutGrid className="mr-1.5 h-4 w-4" />
-                                    Grid
-                                </Button>
+                            <div className="flex items-center gap-2">
+                                <SortControl listId={list.id} sort={sort} direction={direction} />
+
+                                <div className="inline-flex items-center rounded-md border">
+                                    <Button
+                                        variant={viewMode === 'list' ? 'default' : 'ghost'}
+                                        size="sm"
+                                        className="rounded-r-none border-0"
+                                        onClick={() => changeViewMode('list')}
+                                        id="view-mode-list"
+                                    >
+                                        <List className="mr-1.5 h-4 w-4" />
+                                        List
+                                    </Button>
+                                    <Button
+                                        variant={viewMode === 'grid' ? 'default' : 'ghost'}
+                                        size="sm"
+                                        className="rounded-l-none border-0"
+                                        onClick={() => changeViewMode('grid')}
+                                        id="view-mode-grid"
+                                    >
+                                        <LayoutGrid className="mr-1.5 h-4 w-4" />
+                                        Grid
+                                    </Button>
+                                </div>
                             </div>
                         )}
                     </div>
@@ -643,7 +956,13 @@ export default function Show({ list, albums }: ShowProps) {
                                     )}
                                 >
                                     {orderedAlbums.map((album) => (
-                                        <AlbumGridItem key={album.id} album={album} />
+                                        <AlbumGridItem
+                                            key={album.id}
+                                            album={album}
+                                            listType={list.type}
+                                            onRate={handleRateAlbum}
+                                            draggable={isManual && !isReviewedList}
+                                        />
                                     ))}
                                 </InfiniteScroll>
                             </SortableContext>
@@ -651,7 +970,7 @@ export default function Show({ list, albums }: ShowProps) {
                             <DragOverlay>
                                 {activeAlbum && (
                                     <div className="w-40 scale-[1.05] cursor-grabbing rounded-md shadow-2xl">
-                                        <AlbumGridItemContent album={activeAlbum} />
+                                        <AlbumGridItemContent album={activeAlbum} showRating={isReviewedList} />
                                     </div>
                                 )}
                             </DragOverlay>
@@ -687,9 +1006,13 @@ export default function Show({ list, albums }: ShowProps) {
                                             album={album}
                                             position={index + 1}
                                             listId={list.id}
+                                            listType={list.type}
+                                            mode={list.mode}
                                             onMove={handleMoveAlbum}
                                             onRemove={handleRemoveAlbum}
+                                            onRate={handleRateAlbum}
                                             onNoteUpdated={handleNoteUpdated}
+                                            draggable={isManual && !isReviewedList}
                                         />
                                     ))}
                                 </InfiniteScroll>
@@ -701,8 +1024,11 @@ export default function Show({ list, albums }: ShowProps) {
                                         <AlbumCardContent
                                             album={activeAlbum}
                                             listId={list.id}
+                                            listType={list.type}
+                                            mode={list.mode}
                                             onMove={handleMoveAlbum}
                                             onRemove={handleRemoveAlbum}
+                                            onRate={handleRateAlbum}
                                             onNoteUpdated={handleNoteUpdated}
                                         />
                                     </div>
@@ -730,6 +1056,8 @@ export default function Show({ list, albums }: ShowProps) {
                 listId={list.id}
                 title={list.title}
                 description={list.description}
+                mode={list.mode}
+                type={list.type}
                 open={editDialogOpen}
                 onOpenChange={setEditDialogOpen}
             />
@@ -748,6 +1076,14 @@ export default function Show({ list, albums }: ShowProps) {
                 open={removeDialogOpen}
                 onOpenChange={setRemoveDialogOpen}
                 onRemoved={handleAlbumRemoved}
+            />
+
+            <RatingDialog
+                listId={list.id}
+                album={albumToReview}
+                open={ratingDialogOpen}
+                onOpenChange={setRatingDialogOpen}
+                onSubmitted={handleReviewSubmitted}
             />
         </>
     );

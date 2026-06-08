@@ -12,11 +12,14 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import ListModeField, { type ListMode } from '@/Pages/Lists/ListModeField';
 
 interface EditListDialogProps {
     listId: number;
     title: string;
     description: string | null;
+    mode: ListMode;
+    type: 'system' | 'custom' | 'reviewed';
     open: boolean;
     onOpenChange: (open: boolean) => void;
 }
@@ -25,12 +28,17 @@ export default function EditListDialog({
     listId,
     title,
     description,
+    mode,
+    type,
     open,
     onOpenChange,
 }: EditListDialogProps) {
-    const { data, setData, put, processing, errors, reset } = useForm({
+    const isSystem = type === 'system';
+
+    const { data, setData, put, patch, processing, errors, reset } = useForm({
         title: title,
         description: description ?? '',
+        mode: mode,
     });
 
     useEffect(() => {
@@ -38,6 +46,7 @@ export default function EditListDialog({
             setData({
                 title: title,
                 description: description ?? '',
+                mode: mode,
             });
         }
     }, [open]);
@@ -45,12 +54,18 @@ export default function EditListDialog({
     function handleSubmit(e: FormEvent) {
         e.preventDefault();
 
-        put(`/lists/${listId}`, {
-            onSuccess: () => {
-                reset();
-                onOpenChange(false);
-            },
-        });
+        const onSuccess = () => {
+            reset();
+            onOpenChange(false);
+        };
+
+        if (isSystem) {
+            patch(`/lists/${listId}/mode`, { onSuccess });
+
+            return;
+        }
+
+        put(`/lists/${listId}`, { onSuccess });
     }
 
     function handleOpenChange(value: boolean) {
@@ -78,6 +93,8 @@ export default function EditListDialog({
                             value={data.title}
                             onChange={(e) => setData('title', e.target.value)}
                             aria-invalid={!!errors.title}
+                            disabled={isSystem}
+                            className="disabled:pointer-events-auto disabled:cursor-not-allowed"
                         />
                         {errors.title && (
                             <p className="text-sm text-destructive">
@@ -100,6 +117,7 @@ export default function EditListDialog({
                                 setData('description', e.target.value)
                             }
                             aria-invalid={!!errors.description}
+                            disabled={isSystem}
                         />
                         {errors.description && (
                             <p className="text-sm text-destructive">
@@ -107,6 +125,11 @@ export default function EditListDialog({
                             </p>
                         )}
                     </div>
+
+                    <ListModeField
+                        value={data.mode}
+                        onChange={(value) => setData('mode', value)}
+                    />
 
                     <DialogFooter>
                         <Button

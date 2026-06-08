@@ -26,7 +26,7 @@ test('home page displays total lists count', function () {
         ->assertSuccessful()
         ->assertInertia(fn (AssertableInertia $page) => $page
             ->component('Home')
-            ->where('totalLists', 4) // 3 custom + 1 system Watchlist
+            ->where('totalLists', 5) // 3 custom + Listen Later (system) + Reviewed
         );
 });
 
@@ -77,16 +77,16 @@ test('home page shows most populated list with zero albums when no albums exist'
         );
 });
 
-test('home page includes system list in total count', function () {
+test('home page includes system lists in total count', function () {
     $user = User::factory()->create();
 
-    // User gets auto-created Watchlist (1 system list)
+    // User gets the auto-created Listen Later + Reviewed system lists
     $this->actingAs($user)
         ->get(route('home'))
         ->assertSuccessful()
         ->assertInertia(fn (AssertableInertia $page) => $page
             ->component('Home')
-            ->where('totalLists', 1)
+            ->where('totalLists', 2)
         );
 });
 

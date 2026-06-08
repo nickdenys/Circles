@@ -2,7 +2,9 @@
 
 namespace App\Http\Requests;
 
+use App\Enums\AlbumListMode;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class UpdateAlbumListRequest extends FormRequest
 {
@@ -14,7 +16,7 @@ class UpdateAlbumListRequest extends FormRequest
         $albumList = $this->route('albumList');
 
         return $albumList->user_id === $this->user()->id
-            && ! $albumList->isSystem();
+            && ! $albumList->isLocked();
     }
 
     /**
@@ -27,6 +29,7 @@ class UpdateAlbumListRequest extends FormRequest
         return [
             'title' => ['required', 'string', 'max:255'],
             'description' => ['nullable', 'string', 'max:1000'],
+            'mode' => ['nullable', Rule::enum(AlbumListMode::class)],
         ];
     }
 

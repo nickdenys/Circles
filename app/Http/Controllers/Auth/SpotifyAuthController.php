@@ -60,6 +60,8 @@ class SpotifyAuthController extends Controller
             ],
         );
 
+        $user->ensureSystemLists();
+
         Auth::login($user, remember: true);
 
         return redirect()->route('home');

@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Enums\AlbumListMode;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -22,7 +23,22 @@ class AlbumList extends Model
         'title',
         'description',
         'type',
+        'mode',
+        'sort',
+        'direction',
     ];
+
+    /**
+     * Get the attribute casts for the model.
+     *
+     * @return array<string, string>
+     */
+    protected function casts(): array
+    {
+        return [
+            'mode' => AlbumListMode::class,
+        ];
+    }
 
     /**
      * Determine if the list is a system list.
@@ -30,6 +46,22 @@ class AlbumList extends Model
     public function isSystem(): bool
     {
         return $this->type === 'system';
+    }
+
+    /**
+     * Determine if the list is the auto-managed Reviewed list.
+     */
+    public function isReviewed(): bool
+    {
+        return $this->type === 'reviewed';
+    }
+
+    /**
+     * Determine if the list is locked against deletion or title/description edits.
+     */
+    public function isLocked(): bool
+    {
+        return $this->isSystem() || $this->isReviewed();
     }
 
     /**

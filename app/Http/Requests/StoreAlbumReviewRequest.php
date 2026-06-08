@@ -4,17 +4,14 @@ namespace App\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
 
-class DestroyAlbumListRequest extends FormRequest
+class StoreAlbumReviewRequest extends FormRequest
 {
     /**
      * Determine if the user is authorized to make this request.
      */
     public function authorize(): bool
     {
-        $albumList = $this->route('albumList');
-
-        return $albumList->user_id === $this->user()->id
-            && ! $albumList->isLocked();
+        return $this->route('albumList')->user_id === $this->user()->id;
     }
 
     /**
@@ -24,6 +21,9 @@ class DestroyAlbumListRequest extends FormRequest
      */
     public function rules(): array
     {
-        return [];
+        return [
+            'rating' => ['required', 'numeric', 'min:0.5', 'max:5', 'multiple_of:0.5'],
+            'review' => ['nullable', 'string', 'max:5000'],
+        ];
     }
 }

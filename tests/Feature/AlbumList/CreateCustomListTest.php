@@ -59,7 +59,7 @@ test('created list appears on the lists overview page', function () {
                     ->hasAll(['id', 'title', 'albumsCount', 'url', 'previewCovers'])
                 )
             )
-            ->where('lists.data.1.title', 'New Custom List')
+            ->where('lists.data.2.title', 'New Custom List')
         );
 });
 

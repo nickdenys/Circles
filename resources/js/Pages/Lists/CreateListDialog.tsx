@@ -12,6 +12,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import ListModeField, { type ListMode } from '@/Pages/Lists/ListModeField';
 
 interface CreateListDialogProps {
     open: boolean;
@@ -25,6 +26,7 @@ export default function CreateListDialog({
     const { data, setData, post, processing, errors, reset } = useForm({
         title: '',
         description: '',
+        mode: 'default' as ListMode,
     });
 
     function handleSubmit(e: FormEvent) {
@@ -92,6 +94,11 @@ export default function CreateListDialog({
                             </p>
                         )}
                     </div>
+
+                    <ListModeField
+                        value={data.mode}
+                        onChange={(mode) => setData('mode', mode)}
+                    />
 
                     <DialogFooter>
                         <Button

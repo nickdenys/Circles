@@ -22,6 +22,9 @@ class AlbumListFactory extends Factory
             'title' => fake()->words(3, true),
             'description' => fake()->sentence(),
             'type' => 'custom',
+            'mode' => 'default',
+            'sort' => 'manual',
+            'direction' => 'asc',
         ];
     }
 
@@ -36,6 +39,16 @@ class AlbumListFactory extends Factory
     }
 
     /**
+     * Indicate the list uses the listening mode.
+     */
+    public function listening(): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'mode' => 'listening',
+        ]);
+    }
+
+    /**
      * Create a Listen Later system list.
      */
     public function watchlist(): static
@@ -43,6 +56,19 @@ class AlbumListFactory extends Factory
         return $this->state(fn (array $attributes) => [
             'title' => 'Listen Later',
             'type' => 'system',
+        ]);
+    }
+
+    /**
+     * Create the Reviewed system list.
+     */
+    public function reviewed(): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'title' => 'Reviewed',
+            'type' => 'reviewed',
+            'sort' => 'added',
+            'direction' => 'desc',
         ]);
     }
 }

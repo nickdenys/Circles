@@ -41,6 +41,10 @@ class AddAlbumToList extends Tool
                 return Response::error('List not found.');
             }
 
+            if ($list->isReviewed()) {
+                return Response::error('Cannot add to the Reviewed list directly. Use the rating flow instead.');
+            }
+
             if ($list->albums()->where('spotify_id', $spotifyId)->exists()) {
                 return Response::text("Album is already in \"{$list->title}\".");
             }

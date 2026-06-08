@@ -6,7 +6,7 @@ use Inertia\Testing\AssertableInertia;
 
 test('lists page loads first 20 lists initially', function () {
     $user = User::factory()->create();
-    // 25 custom + 1 system watchlist = 26 total
+    // 25 custom + Listen Later + Reviewed = 27 total
     AlbumList::factory()->count(25)->create(['user_id' => $user->id]);
 
     $this->actingAs($user)
@@ -20,14 +20,14 @@ test('lists page loads first 20 lists initially', function () {
 
 test('lists page loads all lists when under 20', function () {
     $user = User::factory()->create();
-    // 5 custom + 1 system watchlist = 6 total
+    // 5 custom + Listen Later + Reviewed = 7 total
     AlbumList::factory()->count(5)->create(['user_id' => $user->id]);
 
     $this->actingAs($user)
         ->get(route('lists.index'))
         ->assertInertia(fn (AssertableInertia $page) => $page
             ->component('Lists/Index')
-            ->has('lists.data', 6)
+            ->has('lists.data', 7)
             ->where('lists.next_page_url', null)
         );
 });
@@ -103,8 +103,8 @@ test('json endpoint second page returns remaining lists', function () {
         ->getJson(route('lists.index', ['page' => 2]));
 
     $data = $response->json();
-    // 26 total - 20 first page = 6 remaining
-    expect($data['data'])->toHaveCount(6);
+    // 27 total - 20 first page = 7 remaining
+    expect($data['data'])->toHaveCount(7);
     expect($data['next_page_url'])->toBeNull();
 });
 

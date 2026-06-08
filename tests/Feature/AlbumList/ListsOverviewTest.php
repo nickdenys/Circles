@@ -19,12 +19,12 @@ test('lists page displays all user lists', function () {
     $user = User::factory()->create();
     AlbumList::factory()->count(3)->create(['user_id' => $user->id]);
 
-    // 3 custom + 1 system watchlist = 4
+    // 3 custom + Listen Later (system) + Reviewed = 5
     $this->actingAs($user)
         ->get(route('lists.index'))
         ->assertInertia(fn (AssertableInertia $page) => $page
             ->component('Lists/Index')
-            ->has('lists.data', 4)
+            ->has('lists.data', 5)
         );
 });
 
@@ -38,8 +38,9 @@ test('system lists are displayed before custom lists', function () {
         ->assertInertia(fn (AssertableInertia $page) => $page
             ->component('Lists/Index')
             ->where('lists.data.0.title', 'Listen Later')
-            ->where('lists.data.1.title', 'Custom Alpha')
-            ->where('lists.data.2.title', 'Custom Beta')
+            ->where('lists.data.1.title', 'Reviewed')
+            ->where('lists.data.2.title', 'Custom Alpha')
+            ->where('lists.data.3.title', 'Custom Beta')
         );
 });
 
@@ -75,8 +76,9 @@ test('lists page only shows lists for the authenticated user', function () {
         ->get(route('lists.index'))
         ->assertInertia(fn (AssertableInertia $page) => $page
             ->component('Lists/Index')
-            ->has('lists.data', 1)
+            ->has('lists.data', 2)
             ->where('lists.data.0.title', 'Listen Later')
+            ->where('lists.data.1.title', 'Reviewed')
         );
 });
 
@@ -149,4 +151,3 @@ test('page component uses Inertia Link for navigation', function () {
     expect($content)->toContain("from '@inertiajs/react'");
     expect($content)->toContain('<Link');
 });
-

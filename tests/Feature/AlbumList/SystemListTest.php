@@ -5,13 +5,16 @@ use App\Models\User;
 use Laravel\Socialite\Facades\Socialite;
 use Laravel\Socialite\Two\User as SocialiteUser;
 
-test('watchlist is created automatically when a new user registers', function () {
+test('system lists are created automatically when a new user registers', function () {
     $user = User::factory()->create();
 
-    expect($user->albumLists)->toHaveCount(1);
-    expect($user->albumLists->first())
-        ->title->toBe('Listen Later')
-        ->type->toBe('system');
+    expect($user->albumLists)->toHaveCount(2);
+    expect($user->albumLists->firstWhere('type', 'system'))
+        ->title->toBe('Listen Later');
+    expect($user->albumLists->firstWhere('type', 'reviewed'))
+        ->title->toBe('Reviewed')
+        ->sort->toBe('added')
+        ->direction->toBe('desc');
 });
 
 test('watchlist is created via spotify oauth callback', function () {
@@ -37,16 +40,15 @@ test('watchlist is created via spotify oauth callback', function () {
 
     $user = User::where('spotify_id', 'spotify_new_user')->first();
 
-    expect($user->albumLists)->toHaveCount(1);
-    expect($user->albumLists->first())
-        ->title->toBe('Listen Later')
-        ->type->toBe('system');
+    expect($user->albumLists)->toHaveCount(2);
+    expect($user->albumLists->pluck('type')->sort()->values()->all())
+        ->toEqual(['reviewed', 'system']);
 });
 
 test('watchlist is not duplicated on subsequent logins', function () {
     $user = User::factory()->create(['spotify_id' => 'spotify_existing']);
 
-    expect($user->albumLists)->toHaveCount(1);
+    expect($user->albumLists)->toHaveCount(2);
 
     $spotifyUser = (new SocialiteUser)->setRaw([
         'id' => 'spotify_existing',
@@ -68,7 +70,20 @@ test('watchlist is not duplicated on subsequent logins', function () {
 
     $this->get(route('spotify.callback'));
 
-    expect($user->fresh()->albumLists)->toHaveCount(1);
+    expect($user->fresh()->albumLists)->toHaveCount(2);
+});
+
+test('ensureSystemLists is idempotent', function () {
+    $user = User::factory()->create();
+
+    expect($user->albumLists()->count())->toBe(2);
+
+    $user->ensureSystemLists();
+    $user->ensureSystemLists();
+
+    expect($user->albumLists()->count())->toBe(2);
+    expect($user->albumLists()->where('type', 'system')->count())->toBe(1);
+    expect($user->albumLists()->where('type', 'reviewed')->count())->toBe(1);
 });
 
 test('system lists are flagged with type system', function () {
@@ -76,6 +91,15 @@ test('system lists are flagged with type system', function () {
 
     expect($list->type)->toBe('system');
     expect($list->isSystem())->toBeTrue();
+});
+
+test('the Reviewed list is flagged with type reviewed', function () {
+    $list = AlbumList::factory()->reviewed()->create();
+
+    expect($list->type)->toBe('reviewed');
+    expect($list->isReviewed())->toBeTrue();
+    expect($list->isSystem())->toBeFalse();
+    expect($list->isLocked())->toBeTrue();
 });
 
 test('custom lists are flagged with type custom', function () {
@@ -96,6 +120,6 @@ test('user has many album lists', function () {
     $user = User::factory()->create();
     AlbumList::factory()->count(3)->create(['user_id' => $user->id]);
 
-    // 3 custom + 1 system watchlist = 4
-    expect($user->fresh()->albumLists)->toHaveCount(4);
+    // 3 custom + Listen Later (system) + Reviewed = 5
+    expect($user->fresh()->albumLists)->toHaveCount(5);
 });

@@ -11,7 +11,10 @@ class UpdateAlbumListAlbumRequest extends FormRequest
      */
     public function authorize(): bool
     {
-        return $this->route('albumList')->user_id === $this->user()->id;
+        $albumList = $this->route('albumList');
+
+        return $albumList->user_id === $this->user()->id
+            && ! $albumList->isReviewed();
     }
 
     /**

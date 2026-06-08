@@ -2,12 +2,18 @@
 
 namespace App\Http\Controllers;
 
+use App\Enums\AlbumListMode;
+use App\Enums\AlbumSort;
 use App\Http\Requests\DestroyAlbumListRequest;
 use App\Http\Requests\StoreAlbumListRequest;
+use App\Http\Requests\UpdateAlbumListModeRequest;
 use App\Http\Requests\UpdateAlbumListRequest;
+use App\Http\Requests\UpdateAlbumListSortRequest;
 use App\Jobs\FetchAlbumGenres;
 use App\Models\AlbumList;
 use App\Services\SpotifyService;
+use Illuminate\Contracts\Pagination\Paginator;
+use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -25,7 +31,7 @@ class AlbumListController extends Controller
             ->albumLists()
             ->withCount('albums')
             ->with(['albums' => fn ($q) => $q->orderBy('position')->limit(3)])
-            ->orderByRaw("CASE WHEN type = 'system' THEN 0 ELSE 1 END")
+            ->orderByRaw("CASE WHEN type IN ('system', 'reviewed') THEN 0 ELSE 1 END")
             ->orderBy('title');
 
         if ($request->wantsJson()) {
@@ -65,8 +71,12 @@ class AlbumListController extends Controller
 
         $albumList->loadCount('albums');
 
+        $sort = AlbumSort::coerce($albumList->sort);
+        $direction = $albumList->direction === 'desc' ? 'desc' : 'asc';
+
         if ($request->wantsJson()) {
-            $albums = $albumList->albums()->simplePaginate(20);
+            $albums = $this->sortedAlbums($albumList, $sort, $direction);
+            $reviews = $this->reviewsFor($request, $albumList, $albums->getCollection()->pluck('id'));
 
             return response()->json([
                 'data' => $albums->getCollection()->map(fn ($album) => [
@@ -82,6 +92,7 @@ class AlbumListController extends Controller
                     'spotify_uri' => $album->spotify_uri,
                     'genres' => $album->genres ?? [],
                     'note' => $album->pivot->note,
+                    ...$this->reviewPayloadFor($albumList, $reviews, $album->id),
                 ]),
                 'next_page_url' => $albums->nextPageUrl(),
             ]);
@@ -93,10 +104,16 @@ class AlbumListController extends Controller
                 'title' => $albumList->title,
                 'description' => $albumList->description,
                 'type' => $albumList->type,
+                'mode' => $albumList->mode->value,
                 'albumsCount' => $albumList->albums_count,
             ],
-            'albums' => Inertia::scroll(
-                fn () => $albumList->albums()->simplePaginate(20)->through(fn ($album) => [
+            'sort' => $sort->value,
+            'direction' => $direction,
+            'albums' => Inertia::scroll(function () use ($request, $albumList, $sort, $direction) {
+                $paginator = $this->sortedAlbums($albumList, $sort, $direction);
+                $reviews = $this->reviewsFor($request, $albumList, $paginator->getCollection()->pluck('id'));
+
+                return $paginator->through(fn ($album) => [
                     'id' => $album->id,
                     'spotifyId' => $album->spotify_id,
                     'title' => $album->title,
@@ -109,9 +126,81 @@ class AlbumListController extends Controller
                     'spotifyUri' => $album->spotify_uri,
                     'genres' => $album->genres ?? [],
                     'note' => $album->pivot->note,
-                ])
-            ),
+                    ...$this->reviewPayloadFor($albumList, $reviews, $album->id),
+                ]);
+            }),
         ]);
+    }
+
+    /**
+     * Update the list's stored sort setting.
+     */
+    public function updateSort(UpdateAlbumListSortRequest $request, AlbumList $albumList): RedirectResponse
+    {
+        $albumList->update($request->validated());
+
+        return to_route('lists.show', $albumList);
+    }
+
+    /**
+     * Update the list's stored mode setting.
+     */
+    public function updateMode(UpdateAlbumListModeRequest $request, AlbumList $albumList): RedirectResponse
+    {
+        $albumList->update($request->validated());
+
+        return to_route('lists.show', $albumList);
+    }
+
+    /**
+     * Paginate a list's albums with the list's stored sort applied.
+     */
+    private function sortedAlbums(AlbumList $albumList, AlbumSort $sort, string $direction): Paginator
+    {
+        $query = $albumList->albums();
+
+        $sort->applyTo($query, $direction);
+
+        return $query->simplePaginate(20);
+    }
+
+    /**
+     * Load the user's reviews keyed by album id for the given album ids, but only when the list is the Reviewed list.
+     *
+     * @param  \Illuminate\Support\Collection<int, int>  $albumIds
+     * @return \Illuminate\Database\Eloquent\Collection<int, \App\Models\AlbumReview>
+     */
+    private function reviewsFor(Request $request, AlbumList $albumList, $albumIds)
+    {
+        if (! $albumList->isReviewed() || $albumIds->isEmpty()) {
+            return new EloquentCollection;
+        }
+
+        return $request->user()
+            ->reviews()
+            ->whereIn('album_id', $albumIds)
+            ->get()
+            ->keyBy('album_id');
+    }
+
+    /**
+     * Build the rating/review payload fragment for an album row.
+     *
+     * @param  \Illuminate\Database\Eloquent\Collection<int, \App\Models\AlbumReview>  $reviews
+     * @return array<string, float|string|null>
+     */
+    private function reviewPayloadFor(AlbumList $albumList, $reviews, int $albumId): array
+    {
+        if (! $albumList->isReviewed()) {
+            return [];
+        }
+
+        $review = $reviews->get($albumId);
+
+        return [
+            'rating' => $review ? (float) $review->rating : null,
+            'review' => $review?->review,
+        ];
     }
 
     /**
@@ -122,6 +211,7 @@ class AlbumListController extends Controller
         $request->validate([
             'q' => ['required', 'string', 'min:1'],
             'exclude' => ['nullable', 'integer'],
+            'exclude_reviewed' => ['nullable', 'boolean'],
         ]);
 
         $query = $request->input('q');
@@ -131,7 +221,8 @@ class AlbumListController extends Controller
             ->albumLists()
             ->whereRaw('LOWER(title) LIKE ?', ['%'.mb_strtolower($query).'%'])
             ->when($exclude, fn ($q) => $q->where('id', '!=', $exclude))
-            ->orderByRaw("CASE WHEN type = 'system' THEN 0 ELSE 1 END")
+            ->when($request->boolean('exclude_reviewed'), fn ($q) => $q->where('type', '!=', 'reviewed'))
+            ->orderByRaw("CASE WHEN type IN ('system', 'reviewed') THEN 0 ELSE 1 END")
             ->orderBy('title')
             ->limit(5)
             ->get(['id', 'title', 'type']);
@@ -154,6 +245,7 @@ class AlbumListController extends Controller
             'title' => $request->validated('title'),
             'description' => $request->validated('description'),
             'type' => 'custom',
+            'mode' => $request->validated('mode') ?? AlbumListMode::Default->value,
         ]);
 
         return redirect()->route('lists.index');
@@ -164,10 +256,16 @@ class AlbumListController extends Controller
      */
     public function update(UpdateAlbumListRequest $request, AlbumList $albumList): RedirectResponse
     {
-        $albumList->update([
+        $data = [
             'title' => $request->validated('title'),
             'description' => $request->validated('description'),
-        ]);
+        ];
+
+        if ($mode = $request->validated('mode')) {
+            $data['mode'] = $mode;
+        }
+
+        $albumList->update($data);
 
         return redirect()->route('lists.show', $albumList);
     }

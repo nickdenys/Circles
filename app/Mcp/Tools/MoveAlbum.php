@@ -41,6 +41,10 @@ class MoveAlbum extends Tool
             return Response::error('Destination list not found.');
         }
 
+        if ($toList->isReviewed()) {
+            return Response::error('Cannot move to the Reviewed list. Use the rating flow instead.');
+        }
+
         $album = Album::where('spotify_id', $validated['spotify_id'])->first();
 
         if (! $album || ! $fromList->albums()->where('album_id', $album->id)->exists()) {

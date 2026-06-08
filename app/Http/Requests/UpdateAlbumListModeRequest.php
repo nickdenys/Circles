@@ -2,9 +2,11 @@
 
 namespace App\Http\Requests;
 
+use App\Enums\AlbumListMode;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
-class DestroyAlbumListRequest extends FormRequest
+class UpdateAlbumListModeRequest extends FormRequest
 {
     /**
      * Determine if the user is authorized to make this request.
@@ -14,7 +16,7 @@ class DestroyAlbumListRequest extends FormRequest
         $albumList = $this->route('albumList');
 
         return $albumList->user_id === $this->user()->id
-            && ! $albumList->isLocked();
+            && ! $albumList->isReviewed();
     }
 
     /**
@@ -24,6 +26,8 @@ class DestroyAlbumListRequest extends FormRequest
      */
     public function rules(): array
     {
-        return [];
+        return [
+            'mode' => ['required', Rule::enum(AlbumListMode::class)],
+        ];
     }
 }
