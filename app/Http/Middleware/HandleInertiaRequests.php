@@ -43,6 +43,22 @@ class HandleInertiaRequests extends Middleware
                 ]
                 : null,
             'currentRouteName' => $request->route()?->getName(),
+            'sidebarLists' => fn () => $request->user()
+                ? $request->user()
+                    ->albumLists()
+                    ->withCount('albums')
+                    ->orderByRaw("CASE WHEN type IN ('system', 'reviewed') THEN 0 ELSE 1 END")
+                    ->orderBy('title')
+                    ->get(['id', 'title', 'type'])
+                    ->map(fn ($list) => [
+                        'id' => $list->id,
+                        'title' => $list->title,
+                        'type' => $list->type,
+                        'albumsCount' => $list->albums_count ?? 0,
+                        'url' => route('lists.show', $list),
+                    ])
+                    ->all()
+                : [],
             'flash' => [
                 'token' => fn () => $request->session()->get('token'),
                 'error' => fn () => $request->session()->get('error'),

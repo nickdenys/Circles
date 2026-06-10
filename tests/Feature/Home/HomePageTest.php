@@ -2,6 +2,7 @@
 
 use App\Models\Album;
 use App\Models\AlbumList;
+use App\Models\AlbumReview;
 use App\Models\User;
 use Inertia\Testing\AssertableInertia;
 
@@ -17,7 +18,7 @@ test('home page displays welcome greeting with user name', function () {
         );
 });
 
-test('home page displays total lists count', function () {
+test('home page exposes total lists count in the stats payload', function () {
     $user = User::factory()->create();
     AlbumList::factory()->count(3)->for($user)->create();
 
@@ -26,11 +27,12 @@ test('home page displays total lists count', function () {
         ->assertSuccessful()
         ->assertInertia(fn (AssertableInertia $page) => $page
             ->component('Home')
-            ->where('totalLists', 5) // 3 custom + Listen Later (system) + Reviewed
+            ->where('stats.totalLists', 5) // 3 custom + Listen Later + Reviewed
+            ->where('stats.userListCount', 3)
         );
 });
 
-test('home page displays total albums count', function () {
+test('home page exposes total albums count in the stats payload', function () {
     $user = User::factory()->create();
     $list = AlbumList::factory()->for($user)->create();
     $albums = Album::factory()->count(5)->create();
@@ -41,31 +43,29 @@ test('home page displays total albums count', function () {
         ->assertSuccessful()
         ->assertInertia(fn (AssertableInertia $page) => $page
             ->component('Home')
-            ->where('totalAlbums', 5)
+            ->where('stats.totalAlbums', 5)
         );
 });
 
-test('home page displays most populated list', function () {
+test('home page exposes the per-list overview with covers', function () {
     $user = User::factory()->create();
 
-    $smallList = AlbumList::factory()->for($user)->create(['title' => 'Small List']);
-    $smallList->albums()->attach(Album::factory()->create(), ['position' => 0]);
-
-    $bigList = AlbumList::factory()->for($user)->create(['title' => 'Big List']);
+    $list = AlbumList::factory()->for($user)->create(['title' => 'Big List']);
     $albums = Album::factory()->count(5)->create();
-    $bigList->albums()->attach($albums->pluck('id')->mapWithKeys(fn ($id, $i) => [$id => ['position' => $i]]));
+    $list->albums()->attach($albums->pluck('id')->mapWithKeys(fn ($id, $i) => [$id => ['position' => $i]]));
 
     $this->actingAs($user)
         ->get(route('home'))
         ->assertSuccessful()
         ->assertInertia(fn (AssertableInertia $page) => $page
             ->component('Home')
-            ->where('mostPopulatedList.title', 'Big List')
-            ->where('mostPopulatedList.albumsCount', 5)
+            ->has('lists', 3) // Listen Later + Reviewed + Big List
+            ->where('lists.2.title', 'Big List')
+            ->where('lists.2.albumsCount', 5)
         );
 });
 
-test('home page shows most populated list with zero albums when no albums exist', function () {
+test('home page exposes zero stats for a fresh account', function () {
     $user = User::factory()->create();
 
     $this->actingAs($user)
@@ -73,20 +73,21 @@ test('home page shows most populated list with zero albums when no albums exist'
         ->assertSuccessful()
         ->assertInertia(fn (AssertableInertia $page) => $page
             ->component('Home')
-            ->where('mostPopulatedList.albumsCount', 0)
+            ->where('stats.totalAlbums', 0)
+            ->where('stats.reviewedCount', 0)
+            ->where('stats.userListCount', 0)
         );
 });
 
-test('home page includes system lists in total count', function () {
+test('home page includes system lists in total list count', function () {
     $user = User::factory()->create();
 
-    // User gets the auto-created Listen Later + Reviewed system lists
     $this->actingAs($user)
         ->get(route('home'))
         ->assertSuccessful()
         ->assertInertia(fn (AssertableInertia $page) => $page
             ->component('Home')
-            ->where('totalLists', 2)
+            ->where('stats.totalLists', 2)
         );
 });
 
@@ -107,7 +108,7 @@ test('home page counts albums across multiple lists', function () {
         ->assertSuccessful()
         ->assertInertia(fn (AssertableInertia $page) => $page
             ->component('Home')
-            ->where('totalAlbums', 5)
+            ->where('stats.totalAlbums', 5)
         );
 });
 
@@ -116,29 +117,33 @@ test('home page requires authentication', function () {
         ->assertRedirect(route('login'));
 });
 
-test('home page returns inertia response with correct component', function () {
+test('home page returns inertia response with the design system stats block', function () {
     $this->actingAs(User::factory()->create())
         ->get(route('home'))
         ->assertSuccessful()
         ->assertInertia(fn (AssertableInertia $page) => $page
             ->component('Home')
-            ->has('totalLists')
-            ->has('totalAlbums')
+            ->has('stats.totalLists')
+            ->has('stats.totalAlbums')
+            ->has('stats.reviewedCount')
+            ->has('stats.averageRating')
+            ->has('lists')
         );
 });
 
-test('most populated list shows singular count for one album', function () {
+test('average rating is computed across the users reviews', function () {
     $user = User::factory()->create();
-    $list = AlbumList::factory()->for($user)->create(['title' => 'Solo List']);
-    $list->albums()->attach(Album::factory()->create(), ['position' => 0]);
+    $albums = Album::factory()->count(2)->create();
+
+    AlbumReview::factory()->create(['user_id' => $user->id, 'album_id' => $albums[0]->id, 'rating' => 8.0]);
+    AlbumReview::factory()->create(['user_id' => $user->id, 'album_id' => $albums[1]->id, 'rating' => 9.0]);
 
     $this->actingAs($user)
         ->get(route('home'))
         ->assertSuccessful()
         ->assertInertia(fn (AssertableInertia $page) => $page
             ->component('Home')
-            ->where('mostPopulatedList.title', 'Solo List')
-            ->where('mostPopulatedList.albumsCount', 1)
+            ->where('stats.averageRating', 8.5)
         );
 });
 
@@ -155,13 +160,12 @@ test('home page shares auth user data', function () {
         );
 });
 
-test('home page uses shadcn card components', function () {
-    // Verify the Home component imports and uses shadcn Card
+test('home page renders with the Hoopify design system primitives', function () {
     $content = file_get_contents(resource_path('js/Pages/Home.tsx'));
 
-    expect($content)->toContain("from '@/components/ui/card'")
-        ->and($content)->toContain('<Card>')
-        ->and($content)->toContain('<CardHeader>')
-        ->and($content)->toContain('<CardContent>')
-        ->and($content)->toContain('<CardTitle');
+    expect($content)
+        ->toContain("from '@/components/hoopify/")
+        ->toContain('StatTile')
+        ->toContain('ListCard')
+        ->toContain('TopBar');
 });

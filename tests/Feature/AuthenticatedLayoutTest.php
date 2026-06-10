@@ -12,70 +12,72 @@ test('authenticated layout component exists', function () {
 
     expect($content)
         ->toContain('export default function AuthenticatedLayout')
-        ->toContain('usePage')
         ->toContain('children');
 });
 
-test('authenticated layout contains navigation links', function () {
+test('authenticated layout uses the design system sidebar', function () {
     $content = file_get_contents(resource_path('js/Layouts/AuthenticatedLayout.tsx'));
+
+    expect($content)
+        ->toContain('Sidebar')
+        ->toContain('Toaster');
+});
+
+test('sidebar contains navigation links', function () {
+    $content = file_get_contents(resource_path('js/components/hoopify/Sidebar.tsx'));
 
     expect($content)
         ->toContain('Hoopify')
-        ->toContain('href="/"')
         ->toContain('Home')
-        ->toContain('href="/lists"')
-        ->toContain('Lists');
+        ->toContain('href="/"')
+        ->toContain('All lists')
+        ->toContain('href="/lists"');
 });
 
-test('authenticated layout contains dark mode toggle', function () {
+test('sidebar contains dark mode toggle and theme state', function () {
     $content = file_get_contents(resource_path('js/Layouts/AuthenticatedLayout.tsx'));
 
     expect($content)
-        ->toContain('Toggle dark mode')
-        ->toContain('localStorage.theme')
+        ->toContain('applyTheme')
+        ->toContain('readStoredTheme')
+        ->toContain('onToggleTheme');
+
+    $sidebarContent = file_get_contents(resource_path('js/components/hoopify/Sidebar.tsx'));
+    expect($sidebarContent)
         ->toContain('Sun')
-        ->toContain('Moon');
+        ->toContain('Moon')
+        ->toContain('lucide-react');
 });
 
-test('authenticated layout contains user display with avatar and name', function () {
-    $content = file_get_contents(resource_path('js/Layouts/AuthenticatedLayout.tsx'));
+test('sidebar contains user display with avatar and name', function () {
+    $content = file_get_contents(resource_path('js/components/hoopify/Sidebar.tsx'));
 
     expect($content)
-        ->toContain('auth.user.avatar')
-        ->toContain('auth.user.name')
-        ->toContain('hidden')
-        ->toContain('sm:inline');
+        ->toContain('user.avatar')
+        ->toContain('user.name');
 });
 
-test('authenticated layout contains logout button', function () {
-    $content = file_get_contents(resource_path('js/Layouts/AuthenticatedLayout.tsx'));
+test('sidebar contains logout button', function () {
+    $content = file_get_contents(resource_path('js/components/hoopify/Sidebar.tsx'));
 
     expect($content)
-        ->toContain('Logout')
+        ->toContain('Log out')
         ->toContain("router.post('/logout')");
 });
 
-test('authenticated layout uses max-w-5xl container', function () {
-    $content = file_get_contents(resource_path('js/Layouts/AuthenticatedLayout.tsx'));
+test('layout uses a 280px sidebar rail', function () {
+    $css = file_get_contents(resource_path('css/app.css'));
 
-    expect($content)->toContain('max-w-5xl');
+    expect($css)->toContain('--sidebar-w: 280px');
 });
 
-test('authenticated layout uses shadcn Button component', function () {
-    $content = file_get_contents(resource_path('js/Layouts/AuthenticatedLayout.tsx'));
+test('sidebar marks the active nav item', function () {
+    $content = file_get_contents(resource_path('js/components/hoopify/Sidebar.tsx'));
 
     expect($content)
-        ->toContain("from '@/components/ui/button'")
-        ->toContain('<Button');
-});
-
-test('authenticated layout has active state highlighting for navigation', function () {
-    $content = file_get_contents(resource_path('js/Layouts/AuthenticatedLayout.tsx'));
-
-    expect($content)
-        ->toContain('bg-zinc-100')
-        ->toContain('dark:bg-zinc-800')
-        ->toContain('currentRouteName');
+        ->toContain('currentRouteName')
+        ->toContain('var(--accent-weak)')
+        ->toContain('var(--accent)');
 });
 
 test('HandleInertiaRequests shares auth user data', function () {

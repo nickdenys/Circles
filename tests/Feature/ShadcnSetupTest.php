@@ -29,21 +29,21 @@ test('cn utility exists at resources/js/lib/utils.ts', function () {
         ->toContain('export function cn');
 });
 
-test('shadcn CSS variables are configured for light and dark mode', function () {
+test('Hoopify design tokens are configured for light and dark mode', function () {
     $css = file_get_contents(resource_path('css/app.css'));
 
     expect($css)
         ->toContain(':root')
-        ->toContain('.dark')
-        ->toContain('--background')
-        ->toContain('--foreground')
-        ->toContain('--primary')
-        ->toContain('--card')
-        ->toContain('--border')
-        ->toContain('--destructive');
+        ->toContain('data-theme=\'dark\'')
+        ->toContain('--bg')
+        ->toContain('--fg1')
+        ->toContain('--accent')
+        ->toContain('--surface')
+        ->toContain('--line')
+        ->toContain('--critical');
 });
 
-test('shadcn button component exists and can be resolved', function () {
+test('shadcn button component still exists for legacy dialogs', function () {
     $path = resource_path('js/components/ui/button.tsx');
 
     expect(file_exists($path))->toBeTrue();

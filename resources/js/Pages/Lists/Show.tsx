@@ -11,42 +11,55 @@ import {
     useSensor,
     useSensors,
 } from '@dnd-kit/core';
-import { arrayMove, rectSortingStrategy, SortableContext, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable';
+import {
+    arrayMove,
+    rectSortingStrategy,
+    SortableContext,
+    useSortable,
+    verticalListSortingStrategy,
+} from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import {
+    ArrowDown,
+    ArrowDownUp,
+    ArrowRightLeft,
+    ArrowUp,
+    Calendar,
+    Check,
+    CheckCircle,
+    Clock,
+    ExternalLink,
     GripVertical,
     LayoutGrid,
-    List,
+    List as ListIcon,
+    ListMusic,
     Loader2,
+    MoreHorizontal,
     Music,
+    Pencil,
     Plus,
     RefreshCw,
-    ArrowRightLeft,
-    ArrowDownUp,
-    ArrowUp,
-    ArrowDown,
-    Check,
     Trash2,
-    ListMusic,
-    Clock,
-    Calendar,
-    ExternalLink,
-    MoreVertical,
 } from 'lucide-react';
-import { useEffect, useRef, useState, useCallback } from 'react';
+import { CSSProperties, useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
+import { Button } from '@/components/hoopify/Button';
+import { Chip } from '@/components/hoopify/Chip';
+import { CoverMosaic, MiniCover } from '@/components/hoopify/CoverArt';
+import { IconButton } from '@/components/hoopify/IconButton';
+import { Label } from '@/components/hoopify/Label';
+import { Score } from '@/components/hoopify/Score';
+import { StatBlock } from '@/components/hoopify/StatBlock';
+import { listColor } from '@/components/hoopify/theme';
+import { TopBar } from '@/components/hoopify/TopBar';
 import { Card } from '@/components/ui/card';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { StarRating } from '@/components/ui/star-rating';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
-import { cn } from '@/lib/utils';
-import { type ListMode } from './ListModeField';
-import { type AddedAlbum } from './AlbumSearch';
 import AddAlbumDialog from './AddAlbumDialog';
+import { type AddedAlbum } from './AlbumSearch';
 import DeleteListDialog from './DeleteListDialog';
 import EditListDialog from './EditListDialog';
+import { type ListMode } from './ListModeField';
 import MoveAlbumDialog from './MoveAlbumDialog';
 import RatingDialog, { type RatingDialogAlbum } from './RatingDialog';
 import RemoveAlbumDialog from './RemoveAlbumDialog';
@@ -92,519 +105,14 @@ interface ShowProps {
     [key: string]: unknown;
 }
 
-function formatRuntime(ms: number): string {
-    const totalMinutes = Math.round(ms / 60000);
-    if (totalMinutes >= 60) {
-        const hours = Math.floor(totalMinutes / 60);
-        const minutes = totalMinutes % 60;
-        return `${hours}h ${minutes}m`;
-    }
-    return `${totalMinutes} min`;
-}
-
-function AlbumNoteEditor({ listId, albumId, note, onNoteUpdated }: {
-    listId: number;
-    albumId: number;
-    note: string | null;
-    onNoteUpdated: (albumId: number, note: string | null) => void;
-}) {
-    const [editing, setEditing] = useState(false);
-    const [draft, setDraft] = useState(note ?? '');
-    const [saving, setSaving] = useState(false);
-    const textareaRef = useRef<HTMLTextAreaElement>(null);
-
-    const resizeTextarea = useCallback(() => {
-        const el = textareaRef.current;
-        if (el) {
-            el.style.height = 'auto';
-            el.style.height = `${el.scrollHeight}px`;
-        }
-    }, []);
-
-    useEffect(() => {
-        if (editing) {
-            resizeTextarea();
-            textareaRef.current?.focus();
-        }
-    }, [editing, resizeTextarea]);
-
-    function handleSave() {
-        const trimmed = draft.trim();
-        const value = trimmed === '' ? null : trimmed;
-
-        setSaving(true);
-
-        axios
-            .patch(`/lists/${listId}/albums/${albumId}`, { note: value })
-            .then(() => {
-                onNoteUpdated(albumId, value);
-                setEditing(false);
-                toast.success('Note saved');
-            })
-            .catch(() => {
-                toast.error('Could not save note');
-            })
-            .finally(() => {
-                setSaving(false);
-            });
-    }
-
-    function handleCancel() {
-        setDraft(note ?? '');
-        setEditing(false);
-    }
-
-    if (editing) {
-        return (
-            <div className="mt-2 space-y-2">
-                <textarea
-                    ref={textareaRef}
-                    value={draft}
-                    onChange={(e) => {
-                        setDraft(e.target.value);
-                        resizeTextarea();
-                    }}
-                    readOnly={saving}
-                    className="w-full resize-none rounded-md border bg-transparent px-2 py-1 text-sm focus:outline-none focus:ring-1 focus:ring-ring"
-                    rows={1}
-                />
-                <div className="flex gap-2">
-                    <Button
-                        size="sm"
-                        onClick={handleSave}
-                        disabled={saving}
-                    >
-                        {saving && <Loader2 className="mr-1 h-3 w-3 animate-spin" />}
-                        Save
-                    </Button>
-                    <Button
-                        size="sm"
-                        variant="ghost"
-                        onClick={handleCancel}
-                        disabled={saving}
-                    >
-                        Cancel
-                    </Button>
-                </div>
-            </div>
-        );
-    }
-
-    if (note) {
-        return (
-            <p
-                className="mt-2 cursor-pointer whitespace-pre-wrap text-sm text-muted-foreground"
-                onClick={() => {
-                    setDraft(note);
-                    setEditing(true);
-                }}
-            >
-                {note}
-            </p>
-        );
-    }
-
-    return (
-        <button
-            type="button"
-            className="mt-2 text-xs text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100 [@media(hover:none)]:opacity-100"
-            onClick={() => {
-                setDraft('');
-                setEditing(true);
-            }}
-        >
-            + note
-        </button>
-    );
-}
-
-function ListenedButton({ albumId, onClick }: { albumId: number; onClick: () => void }) {
-    return (
-        <Tooltip>
-            <TooltipTrigger asChild>
-                <Button
-                    variant="default"
-                    size="icon-lg"
-                    className="listened-button"
-                    data-album-id={albumId}
-                    onClick={onClick}
-                >
-                    <Check className="h-6 w-6" />
-                </Button>
-            </TooltipTrigger>
-            <TooltipContent>I listened to this</TooltipContent>
-        </Tooltip>
-    );
-}
-
-function AlbumActionsMenu({ album, onMove, onRemove }: {
-    album: AlbumItem;
-    onMove: (album: { id: number; title: string }) => void;
-    onRemove: (album: { id: number; title: string }) => void;
-}) {
-    const [open, setOpen] = useState(false);
-
-    return (
-        <Popover open={open} onOpenChange={setOpen}>
-            <PopoverTrigger
-                render={
-                    <Button
-                        variant="ghost"
-                        size="icon"
-                        className="album-actions-button h-8 w-8"
-                        aria-label="Album actions"
-                    />
-                }
-            >
-                <MoreVertical className="h-6 w-6" />
-            </PopoverTrigger>
-            <PopoverContent align="end" className="w-48 p-1">
-                <Button
-                    variant="ghost"
-                    size="sm"
-                    className="move-album-button w-full justify-start font-normal"
-                    data-album-id={album.id}
-                    data-album-title={album.title}
-                    onClick={() => {
-                        setOpen(false);
-                        onMove({ id: album.id, title: album.title });
-                    }}
-                >
-                    <ArrowRightLeft className="mr-2 h-4 w-4" />
-                    Move to list
-                </Button>
-                <Button
-                    variant="ghost"
-                    size="sm"
-                    className="remove-album-button w-full justify-start font-normal text-destructive hover:text-destructive"
-                    data-album-id={album.id}
-                    data-album-title={album.title}
-                    onClick={() => {
-                        setOpen(false);
-                        onRemove({ id: album.id, title: album.title });
-                    }}
-                >
-                    <Trash2 className="mr-2 h-4 w-4" />
-                    Remove from list
-                </Button>
-            </PopoverContent>
-        </Popover>
-    );
-}
-
-function AlbumCardContent({ album, position, listId, listType, mode, onMove, onRemove, onRate, onNoteUpdated, dragHandleProps, draggable = true }: {
-    album: AlbumItem;
-    position?: number;
-    listId: number;
-    listType: ListType;
-    mode: ListMode;
-    onMove: (album: { id: number; title: string }) => void;
-    onRemove: (album: { id: number; title: string }) => void;
-    onRate: (album: AlbumItem) => void;
-    onNoteUpdated: (albumId: number, note: string | null) => void;
-    dragHandleProps?: React.HTMLAttributes<HTMLDivElement>;
-    draggable?: boolean;
-}) {
-    const isReviewed = listType === 'reviewed';
-
-    function handleCardClick() {
-        if (isReviewed) {
-            onRate(album);
-        }
-    }
-
-    function handleCardKeyDown(event: React.KeyboardEvent<HTMLDivElement>) {
-        if (isReviewed && (event.key === 'Enter' || event.key === ' ')) {
-            event.preventDefault();
-            onRate(album);
-        }
-    }
-
-    return (
-        <Card
-            className={cn(
-                'album-card group relative flex flex-row items-center gap-3 px-4 py-3',
-                isReviewed && 'reviewed-card cursor-pointer hover:bg-accent/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
-            )}
-            data-album-db-id={album.id}
-            role={isReviewed ? 'button' : undefined}
-            tabIndex={isReviewed ? 0 : undefined}
-            onClick={isReviewed ? handleCardClick : undefined}
-            onKeyDown={isReviewed ? handleCardKeyDown : undefined}
-        >
-            {draggable && !isReviewed && (
-                <div
-                    className="drag-handle flex cursor-grab items-center self-stretch text-muted-foreground"
-                    {...dragHandleProps}
-                >
-                    <GripVertical className="h-4 w-4" />
-                </div>
-            )}
-
-            {position !== undefined && (
-                <span className="w-6 shrink-0 text-center text-sm font-medium text-muted-foreground">
-                    {position}
-                </span>
-            )}
-
-            <div className="flex min-w-0 flex-1 items-center gap-5">
-                <div className="shrink-0">
-                    {album.coverUrl ? (
-                        <img
-                            src={album.coverUrl}
-                            alt={album.title}
-                            className="h-24 w-24 rounded object-cover"
-                        />
-                    ) : (
-                        <div className="flex h-24 w-24 items-center justify-center rounded bg-zinc-100 dark:bg-zinc-800">
-                            <Music className="h-6 w-6 text-muted-foreground" />
-                        </div>
-                    )}
-                </div>
-
-                <div className="min-w-0 flex-1">
-                    <p className="font-medium">{album.title}</p>
-                    <p className="text-sm text-muted-foreground">{album.artists}</p>
-                    <div className="mt-2 flex flex-wrap items-center gap-4">
-                        <p className="flex items-center gap-1 text-xs text-muted-foreground">
-                            <Calendar className="h-3 w-3 shrink-0" />
-                            {album.releaseDate.slice(0, 4)}
-                        </p>
-                        <p className="flex items-center gap-1 text-xs text-muted-foreground">
-                            <ListMusic className="h-3 w-3 shrink-0" />
-                            {album.totalTracks} {album.totalTracks === 1 ? 'track' : 'tracks'}
-                        </p>
-                        <p className="flex items-center gap-1 text-xs text-muted-foreground">
-                            <Clock className="h-3 w-3 shrink-0" />
-                            {formatRuntime(album.runtimeMs)}
-                        </p>
-                    </div>
-                    {album.genres.length > 0 && (
-                        <div className="mt-2 flex flex-wrap gap-1">
-                            {album.genres.map((genre) => (
-                                <Badge key={genre} variant="secondary">
-                                    {genre}
-                                </Badge>
-                            ))}
-                        </div>
-                    )}
-                    {isReviewed ? (
-                        <div className="mt-2 space-y-2">
-                            <StarRating value={album.rating ?? 0} size="md" />
-                            {album.review && (
-                                <p className="album-review whitespace-pre-wrap text-sm text-muted-foreground">
-                                    {album.review}
-                                </p>
-                            )}
-                        </div>
-                    ) : (
-                        <AlbumNoteEditor
-                            listId={listId}
-                            albumId={album.id}
-                            note={album.note}
-                            onNoteUpdated={onNoteUpdated}
-                        />
-                    )}
-                </div>
-            </div>
-
-            <div className="flex shrink-0 items-center gap-1">
-                {!isReviewed && mode === 'listening' && (
-                    <ListenedButton albumId={album.id} onClick={() => onRate(album)} />
-                )}
-
-                <Tooltip>
-                    <TooltipTrigger asChild>
-                        <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-8 w-8"
-                            asChild
-                        >
-                            <a
-                                href={album.spotifyUri}
-                                onClick={(event) => event.stopPropagation()}
-                            >
-                                <ExternalLink className="h-6 w-6" />
-                            </a>
-                        </Button>
-                    </TooltipTrigger>
-                    <TooltipContent>Open in Spotify</TooltipContent>
-                </Tooltip>
-
-                {!isReviewed && (mode === 'listening' ? (
-                    <AlbumActionsMenu album={album} onMove={onMove} onRemove={onRemove} />
-                ) : (
-                    <>
-                        <Tooltip>
-                            <TooltipTrigger asChild>
-                                <Button
-                                    variant="ghost"
-                                    size="icon"
-                                    className="move-album-button h-8 w-8"
-                                    data-album-id={album.id}
-                                    data-album-title={album.title}
-                                    onClick={() => onMove({ id: album.id, title: album.title })}
-                                >
-                                    <ArrowRightLeft className="h-6 w-6" />
-                                </Button>
-                            </TooltipTrigger>
-                            <TooltipContent>Move to list</TooltipContent>
-                        </Tooltip>
-                        <Tooltip>
-                            <TooltipTrigger asChild>
-                                <Button
-                                    variant="ghost"
-                                    size="icon"
-                                    className="remove-album-button h-8 w-8 text-destructive hover:text-destructive"
-                                    data-album-id={album.id}
-                                    data-album-title={album.title}
-                                    onClick={() => onRemove({ id: album.id, title: album.title })}
-                                >
-                                    <Trash2 className="h-6 w-6" />
-                                </Button>
-                            </TooltipTrigger>
-                            <TooltipContent>Remove from list</TooltipContent>
-                        </Tooltip>
-                    </>
-                ))}
-            </div>
-        </Card>
-    );
-}
-
-function AlbumCard({ album, position, listId, listType, mode, onMove, onRemove, onRate, onNoteUpdated, draggable = true }: {
-    album: AlbumItem;
-    position?: number;
-    listId: number;
-    listType: ListType;
-    mode: ListMode;
-    onMove: (album: { id: number; title: string }) => void;
-    onRemove: (album: { id: number; title: string }) => void;
-    onRate: (album: AlbumItem) => void;
-    onNoteUpdated: (albumId: number, note: string | null) => void;
-    draggable?: boolean;
-}) {
-    const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
-        id: album.id,
-        disabled: !draggable,
-    });
-
-    return (
-        <div
-            ref={setNodeRef}
-            style={{
-                transform: CSS.Transform.toString(transform),
-                transition,
-                opacity: isDragging ? 0.35 : 1,
-            }}
-        >
-            <AlbumCardContent
-                album={album}
-                position={position}
-                listId={listId}
-                listType={listType}
-                mode={mode}
-                onMove={onMove}
-                onRemove={onRemove}
-                onRate={onRate}
-                onNoteUpdated={onNoteUpdated}
-                draggable={draggable}
-                dragHandleProps={{ ...attributes, ...listeners }}
-            />
-        </div>
-    );
-}
-
-type ViewMode = 'list' | 'grid';
-
-function AlbumGridItemContent({ album, showRating = false }: { album: AlbumItem; showRating?: boolean }) {
-    return (
-        <div className="flex flex-col gap-2">
-            {album.coverUrl ? (
-                <img
-                    src={album.coverUrl}
-                    alt={album.title}
-                    className="aspect-square w-full rounded-md object-cover"
-                />
-            ) : (
-                <div className="flex aspect-square w-full items-center justify-center rounded-md bg-zinc-100 dark:bg-zinc-800">
-                    <Music className="h-8 w-8 text-muted-foreground" />
-                </div>
-            )}
-            <div className="min-w-0">
-                <p className="truncate text-sm font-medium">{album.title}</p>
-                <p className="truncate text-xs text-muted-foreground">{album.artists}</p>
-                {showRating && (
-                    <div className="mt-1">
-                        <StarRating value={album.rating ?? 0} size="sm" />
-                    </div>
-                )}
-            </div>
-        </div>
-    );
-}
-
-function AlbumGridItem({ album, listType, onRate, draggable = true }: {
-    album: AlbumItem;
-    listType: ListType;
-    onRate: (album: AlbumItem) => void;
-    draggable?: boolean;
-}) {
-    const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
-        id: album.id,
-        disabled: !draggable,
-    });
-
-    const isReviewed = listType === 'reviewed';
-
-    function handleClick() {
-        if (isReviewed) {
-            onRate(album);
-        }
-    }
-
-    function handleKeyDown(event: React.KeyboardEvent<HTMLDivElement>) {
-        if (isReviewed && (event.key === 'Enter' || event.key === ' ')) {
-            event.preventDefault();
-            onRate(album);
-        }
-    }
-
-    return (
-        <div
-            ref={setNodeRef}
-            style={{
-                transform: CSS.Transform.toString(transform),
-                transition,
-                opacity: isDragging ? 0.35 : 1,
-            }}
-            className={cn(
-                draggable && !isReviewed && 'cursor-grab touch-none',
-                isReviewed && 'reviewed-card cursor-pointer rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
-            )}
-            {...(isReviewed
-                ? {
-                      role: 'button' as const,
-                      tabIndex: 0,
-                      onClick: handleClick,
-                      onKeyDown: handleKeyDown,
-                  }
-                : draggable
-                    ? { ...attributes, ...listeners }
-                    : {})}
-        >
-            <AlbumGridItemContent album={album} showRating={isReviewed} />
-        </div>
-    );
-}
+type ViewMode = 'grid' | 'table';
 
 const SORT_OPTIONS = [
     { value: 'manual', label: 'Manual' },
+    { value: 'added', label: 'Date added' },
+    { value: 'release_date', label: 'Year' },
     { value: 'title', label: 'Title' },
     { value: 'artist', label: 'Artist' },
-    { value: 'release_date', label: 'Release date' },
-    { value: 'added', label: 'Date added' },
 ] as const;
 
 const DEFAULT_SORT_DIRECTION: Record<string, 'asc' | 'desc'> = {
@@ -614,18 +122,67 @@ const DEFAULT_SORT_DIRECTION: Record<string, 'asc' | 'desc'> = {
     added: 'desc',
 };
 
+function formatRuntime(ms: number): string {
+    const totalMinutes = Math.round(ms / 60000);
+    if (totalMinutes >= 60) {
+        const hours = Math.floor(totalMinutes / 60);
+        const minutes = totalMinutes % 60;
+        return `${hours}h ${String(minutes).padStart(2, '0')}m`;
+    }
+    return `${totalMinutes} min`;
+}
+
+function formatRuntimeShort(ms: number): string {
+    const totalMinutes = Math.round(ms / 60000);
+    if (totalMinutes >= 60) {
+        const hours = Math.floor(totalMinutes / 60);
+        const minutes = totalMinutes % 60;
+        return `${hours}h${String(minutes).padStart(2, '0')}`;
+    }
+    return `${totalMinutes}m`;
+}
+
+function trackCountLabel(count: number): string {
+    return count === 1 ? 'track' : 'tracks';
+}
+
+function HeroBadge({ list }: { list: AlbumListDetail }) {
+    const isSystem = list.type !== 'custom';
+    const Icon = list.type === 'reviewed' ? CheckCircle : list.type === 'system' ? Clock : null;
+    return (
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            {Icon ? (
+                <Icon size={18} strokeWidth={2} style={{ color: 'var(--accent)' }} />
+            ) : (
+                <span
+                    style={{
+                        width: 13,
+                        height: 13,
+                        borderRadius: '50%',
+                        background: listColor(list.id),
+                        boxShadow: `0 0 0 4px ${listColor(list.id)}22`,
+                    }}
+                />
+            )}
+            <Label ink>{isSystem ? 'SYSTEM LIST' : 'USER LIST'}</Label>
+        </div>
+    );
+}
+
 function SortControl({ listId, sort, direction }: { listId: number; sort: string; direction: 'asc' | 'desc' }) {
     const [open, setOpen] = useState(false);
     const activeLabel = SORT_OPTIONS.find((option) => option.value === sort)?.label ?? 'Manual';
 
     function applySort(value: string) {
         setOpen(false);
-
-        const nextDirection = value === 'manual'
-            ? 'asc'
-            : value === sort
-                ? (direction === 'asc' ? 'desc' : 'asc')
-                : DEFAULT_SORT_DIRECTION[value];
+        const nextDirection =
+            value === 'manual'
+                ? 'asc'
+                : value === sort
+                    ? direction === 'asc'
+                        ? 'desc'
+                        : 'asc'
+                    : DEFAULT_SORT_DIRECTION[value];
 
         router.patch(`/lists/${listId}/sort`, { sort: value, direction: nextDirection }, {
             preserveScroll: false,
@@ -634,35 +191,70 @@ function SortControl({ listId, sort, direction }: { listId: number; sort: string
 
     return (
         <Popover open={open} onOpenChange={setOpen}>
-            <PopoverTrigger render={<Button variant="outline" size="sm" id="sort-control" />}>
-                <ArrowDownUp className="mr-1.5 h-4 w-4" />
+            <PopoverTrigger
+                render={<Button variant="secondary" size="sm" icon={ArrowDownUp} id="sort-control" />}
+            >
                 Sort: {activeLabel}
-                {sort !== 'manual' && (
-                    direction === 'asc'
-                        ? <ArrowUp className="ml-1.5 h-3.5 w-3.5" />
-                        : <ArrowDown className="ml-1.5 h-3.5 w-3.5" />
-                )}
+                {sort !== 'manual' &&
+                    (direction === 'asc' ? (
+                        <ArrowUp size={14} strokeWidth={2} style={{ marginLeft: 4 }} />
+                    ) : (
+                        <ArrowDown size={14} strokeWidth={2} style={{ marginLeft: 4 }} />
+                    ))}
             </PopoverTrigger>
-            <PopoverContent align="end" className="w-44 p-1">
+            <PopoverContent
+                align="end"
+                style={{
+                    width: 200,
+                    padding: 6,
+                    background: 'var(--surface)',
+                    borderColor: 'var(--line-strong)',
+                    borderRadius: 12,
+                    boxShadow: 'var(--shadow-md)',
+                }}
+            >
                 {SORT_OPTIONS.map((option) => {
                     const isActive = option.value === sort;
-
                     return (
-                        <Button
+                        <button
                             key={option.value}
-                            variant="ghost"
-                            size="sm"
-                            className="w-full justify-between font-normal"
+                            type="button"
                             onClick={() => applySort(option.value)}
+                            style={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'space-between',
+                                width: '100%',
+                                padding: '8px 10px',
+                                borderRadius: 8,
+                                border: 'none',
+                                background: isActive ? 'var(--surface-3)' : 'transparent',
+                                cursor: 'pointer',
+                                fontFamily: 'var(--font-sans)',
+                                fontSize: 14,
+                                fontWeight: isActive ? 600 : 500,
+                                color: 'var(--fg1)',
+                                textAlign: 'left',
+                            }}
+                            onMouseEnter={(e) => {
+                                if (!isActive) e.currentTarget.style.background = 'var(--surface-2)';
+                            }}
+                            onMouseLeave={(e) => {
+                                if (!isActive) e.currentTarget.style.background = 'transparent';
+                            }}
                         >
                             {option.label}
-                            {isActive && option.value === 'manual' && <Check className="h-3.5 w-3.5" />}
-                            {isActive && option.value !== 'manual' && (
-                                direction === 'asc'
-                                    ? <ArrowUp className="h-3.5 w-3.5" />
-                                    : <ArrowDown className="h-3.5 w-3.5" />
+                            {isActive && option.value === 'manual' && (
+                                <Check size={14} strokeWidth={2} style={{ color: 'var(--accent)' }} />
                             )}
-                        </Button>
+                            {isActive &&
+                                option.value !== 'manual' &&
+                                (direction === 'asc' ? (
+                                    <ArrowUp size={14} strokeWidth={2} style={{ color: 'var(--accent)' }} />
+                                ) : (
+                                    <ArrowDown size={14} strokeWidth={2} style={{ color: 'var(--accent)' }} />
+                                ))}
+                        </button>
                     );
                 })}
             </PopoverContent>
@@ -670,18 +262,652 @@ function SortControl({ listId, sort, direction }: { listId: number; sort: string
     );
 }
 
+function AlbumCover({ album, size, radius = 10 }: { album: AlbumItem; size?: number | string; radius?: number }) {
+    if (album.coverUrl) {
+        return <MiniCover src={album.coverUrl} alt={album.title} size={size ?? '100%'} radius={radius} />;
+    }
+    return (
+        <div
+            style={{
+                width: size ?? '100%',
+                aspectRatio: '1 / 1',
+                borderRadius: radius,
+                background: 'var(--surface-2)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                color: 'var(--fg3)',
+            }}
+        >
+            <Music size={28} strokeWidth={2} />
+        </div>
+    );
+}
+
+function GridAlbumCard({
+    album,
+    index,
+    listType,
+    onRate,
+    onMore,
+    onPlay,
+}: {
+    album: AlbumItem;
+    index: number;
+    listType: ListType;
+    onRate: () => void;
+    onMore?: () => void;
+    onPlay: () => void;
+}) {
+    const [hover, setHover] = useState(false);
+    const isReviewedList = listType === 'reviewed';
+    const releaseYear = album.releaseDate ? album.releaseDate.slice(0, 4) : '';
+
+    return (
+        <div
+            onMouseEnter={() => setHover(true)}
+            onMouseLeave={() => setHover(false)}
+            onClick={isReviewedList ? onRate : onMore}
+            style={{
+                cursor: 'pointer',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: 11,
+                transition: 'transform var(--dur-fast) var(--ease-out)',
+                transform: hover ? 'translateY(-4px)' : 'none',
+            }}
+        >
+            <div
+                style={{
+                    position: 'relative',
+                    borderRadius: 10,
+                    overflow: 'hidden',
+                    border: '1px solid var(--line)',
+                    boxShadow: hover ? 'var(--shadow-md)' : 'var(--shadow-sm)',
+                    transition: 'box-shadow var(--dur-fast) var(--ease-out)',
+                    aspectRatio: '1 / 1',
+                }}
+            >
+                <AlbumCover album={album} radius={0} />
+
+                <span
+                    style={{
+                        position: 'absolute',
+                        top: 8,
+                        left: 8,
+                        background: 'rgba(14,12,9,0.62)',
+                        color: '#fff',
+                        fontFamily: 'var(--font-mono)',
+                        fontSize: 10,
+                        letterSpacing: '0.1em',
+                        padding: '3px 6px',
+                        borderRadius: 6,
+                        backdropFilter: 'blur(2px)',
+                    }}
+                >
+                    {String(index + 1).padStart(2, '0')}
+                </span>
+
+                {isReviewedList && album.rating != null ? (
+                    <span
+                        style={{
+                            position: 'absolute',
+                            top: 8,
+                            right: 8,
+                            background: 'var(--fg1)',
+                            color: 'var(--bg)',
+                            fontFamily: 'var(--font-mono)',
+                            fontWeight: 700,
+                            fontSize: 12,
+                            padding: '3px 7px',
+                            borderRadius: 7,
+                        }}
+                    >
+                        {album.rating.toFixed(1)}
+                    </span>
+                ) : album.runtimeMs > 0 ? (
+                    <span
+                        style={{
+                            position: 'absolute',
+                            top: 8,
+                            right: 8,
+                            background: 'var(--fg1)',
+                            color: 'var(--bg)',
+                            fontFamily: 'var(--font-mono)',
+                            fontWeight: 700,
+                            fontSize: 11,
+                            letterSpacing: '0.02em',
+                            padding: '3px 7px',
+                            borderRadius: 7,
+                        }}
+                    >
+                        {formatRuntimeShort(album.runtimeMs)}
+                    </span>
+                ) : null}
+
+                <span
+                    style={{
+                        position: 'absolute',
+                        inset: 0,
+                        background: 'linear-gradient(transparent 45%, rgba(0,0,0,0.5))',
+                        opacity: hover ? 1 : 0,
+                        transition: 'opacity var(--dur-fast)',
+                        display: 'flex',
+                        alignItems: 'flex-end',
+                        justifyContent: 'flex-end',
+                        padding: 11,
+                        pointerEvents: 'none',
+                    }}
+                >
+                    <a
+                        href={album.spotifyUri}
+                        onClick={(event) => {
+                            event.stopPropagation();
+                            onPlay();
+                        }}
+                        title="Open in Spotify"
+                        style={{
+                            width: 38,
+                            height: 38,
+                            borderRadius: '50%',
+                            background: 'var(--accent)',
+                            color: 'var(--accent-on)',
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            transform: hover ? 'translateY(0)' : 'translateY(6px)',
+                            transition: 'transform var(--dur-base) var(--ease-spring)',
+                            boxShadow: 'var(--shadow-md)',
+                            pointerEvents: 'auto',
+                            textDecoration: 'none',
+                        }}
+                    >
+                        <ExternalLink size={17} strokeWidth={2} style={{ marginLeft: 1 }} />
+                    </a>
+                </span>
+            </div>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+                <div
+                    style={{
+                        fontSize: 14.5,
+                        fontWeight: 600,
+                        lineHeight: 1.25,
+                        whiteSpace: 'nowrap',
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                        color: 'var(--fg1)',
+                    }}
+                >
+                    {album.title}
+                </div>
+                <div
+                    style={{
+                        fontSize: 13,
+                        color: 'var(--fg2)',
+                        whiteSpace: 'nowrap',
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                    }}
+                >
+                    {album.artists}
+                </div>
+                {releaseYear && <Label style={{ fontSize: 10, marginTop: 1 }}>{releaseYear}</Label>}
+            </div>
+        </div>
+    );
+}
+
+function GridAlbumItem({
+    album,
+    index,
+    listType,
+    onRate,
+    onMore,
+    onPlay,
+    draggable,
+}: {
+    album: AlbumItem;
+    index: number;
+    listType: ListType;
+    onRate: () => void;
+    onMore?: () => void;
+    onPlay: () => void;
+    draggable: boolean;
+}) {
+    const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
+        id: album.id,
+        disabled: !draggable,
+    });
+
+    return (
+        <div
+            ref={setNodeRef}
+            style={{
+                transform: CSS.Transform.toString(transform),
+                transition,
+                opacity: isDragging ? 0.35 : 1,
+            }}
+            {...(draggable ? { ...attributes, ...listeners } : {})}
+        >
+            <GridAlbumCard
+                album={album}
+                index={index}
+                listType={listType}
+                onRate={onRate}
+                onMore={onMore}
+                onPlay={onPlay}
+            />
+        </div>
+    );
+}
+
+function AlbumRowMenu({
+    album,
+    listType,
+    onMove,
+    onRemove,
+    onRate,
+}: {
+    album: AlbumItem;
+    listType: ListType;
+    onMove: (album: { id: number; title: string }) => void;
+    onRemove: (album: { id: number; title: string }) => void;
+    onRate: () => void;
+}) {
+    const [open, setOpen] = useState(false);
+    const isReviewedList = listType === 'reviewed';
+
+    return (
+        <Popover open={open} onOpenChange={setOpen}>
+            <PopoverTrigger
+                render={
+                    <IconButton
+                        icon={MoreHorizontal}
+                        label="Album options"
+                        size={18}
+                        boxSize={32}
+                        className="album-actions-button"
+                        data-album-id={album.id}
+                        data-album-title={album.title}
+                    />
+                }
+            />
+            <PopoverContent
+                align="end"
+                style={{
+                    width: 200,
+                    padding: 6,
+                    background: 'var(--surface)',
+                    borderColor: 'var(--line-strong)',
+                    borderRadius: 12,
+                    boxShadow: 'var(--shadow-md)',
+                }}
+            >
+                <a
+                    href={album.spotifyUri}
+                    onClick={() => setOpen(false)}
+                    style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 10,
+                        padding: '8px 10px',
+                        borderRadius: 8,
+                        fontFamily: 'var(--font-sans)',
+                        fontSize: 13.5,
+                        fontWeight: 500,
+                        color: 'var(--fg1)',
+                        textDecoration: 'none',
+                    }}
+                    onMouseEnter={(e) => (e.currentTarget.style.background = 'var(--surface-2)')}
+                    onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
+                >
+                    <ExternalLink size={15} strokeWidth={2} style={{ color: 'var(--fg2)' }} />
+                    Open in Spotify
+                </a>
+                {!isReviewedList && (
+                    <button
+                        type="button"
+                        onClick={() => {
+                            setOpen(false);
+                            onRate();
+                        }}
+                        style={menuItemStyle()}
+                        onMouseEnter={(e) => (e.currentTarget.style.background = 'var(--surface-2)')}
+                        onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
+                    >
+                        <Check size={15} strokeWidth={2} style={{ color: 'var(--fg2)' }} />
+                        Rate / review
+                    </button>
+                )}
+                {!isReviewedList && (
+                    <button
+                        type="button"
+                        className="move-album-button"
+                        data-album-id={album.id}
+                        data-album-title={album.title}
+                        onClick={() => onMove({ id: album.id, title: album.title })}
+                        style={menuItemStyle()}
+                        onMouseEnter={(e) => (e.currentTarget.style.background = 'var(--surface-2)')}
+                        onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
+                    >
+                        <ArrowRightLeft size={15} strokeWidth={2} style={{ color: 'var(--fg2)' }} />
+                        Move to list
+                    </button>
+                )}
+                {!isReviewedList && (
+                    <>
+                        <div style={{ height: 1, background: 'var(--line)', margin: '4px 0' }} />
+                        <button
+                            type="button"
+                            className="remove-album-button"
+                            data-album-id={album.id}
+                            data-album-title={album.title}
+                            onClick={() => onRemove({ id: album.id, title: album.title })}
+                            style={menuItemStyle(true)}
+                            onMouseEnter={(e) =>
+                                (e.currentTarget.style.background = 'rgba(218,59,42,0.08)')
+                            }
+                            onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
+                        >
+                            <Trash2 size={15} strokeWidth={2} style={{ color: 'var(--critical)' }} />
+                            Remove from list
+                        </button>
+                    </>
+                )}
+            </PopoverContent>
+        </Popover>
+    );
+}
+
+function menuItemStyle(danger = false): CSSProperties {
+    return {
+        display: 'flex',
+        alignItems: 'center',
+        gap: 10,
+        width: '100%',
+        padding: '8px 10px',
+        borderRadius: 8,
+        border: 'none',
+        background: 'transparent',
+        cursor: 'pointer',
+        textAlign: 'left',
+        fontFamily: 'var(--font-sans)',
+        fontSize: 13.5,
+        fontWeight: 500,
+        color: danger ? 'var(--critical)' : 'var(--fg1)',
+    };
+}
+
+function TableAlbumRow({
+    album,
+    index,
+    listType,
+    listId,
+    mode,
+    metric,
+    onMove,
+    onRemove,
+    onRate,
+    dragHandleProps,
+    draggable,
+}: {
+    album: AlbumItem;
+    index: number;
+    listType: ListType;
+    listId: number;
+    mode: ListMode;
+    metric: 'runtime' | 'rating';
+    onMove: (album: { id: number; title: string }) => void;
+    onRemove: (album: { id: number; title: string }) => void;
+    onRate: () => void;
+    dragHandleProps?: React.HTMLAttributes<HTMLSpanElement>;
+    draggable: boolean;
+}) {
+    const [hover, setHover] = useState(false);
+    const isReviewedList = listType === 'reviewed';
+    const releaseYear = album.releaseDate ? album.releaseDate.slice(0, 4) : '';
+    const hasNote = !!album.note && album.note.trim().length > 0;
+
+    return (
+        <Card
+            data-album-db-id={album.id}
+            onMouseEnter={() => setHover(true)}
+            onMouseLeave={() => setHover(false)}
+            className={
+                'album-card' + (isReviewedList ? ' reviewed-card' : '')
+            }
+            style={{
+                borderRadius: 10,
+                background: hover ? 'var(--surface-3)' : 'transparent',
+                border: 'none',
+                boxShadow: 'none',
+                transition: 'background var(--dur-fast)',
+            }}
+        >
+            <div
+                onClick={isReviewedList ? onRate : undefined}
+                style={{
+                    display: 'grid',
+                    gridTemplateColumns: '20px 26px 56px 1fr 200px 70px 34px',
+                    alignItems: 'center',
+                    gap: 14,
+                    padding: '9px 12px',
+                    cursor: isReviewedList ? 'pointer' : 'default',
+                }}
+            >
+                <span
+                    {...dragHandleProps}
+                    className={'drag-handle' + (draggable ? ' cursor-grab' : '')}
+                    style={{
+                        display: 'inline-flex',
+                        justifyContent: 'center',
+                        color: 'var(--fg3)',
+                        cursor: draggable ? 'grab' : 'default',
+                        opacity: hover && draggable ? 1 : 0,
+                        transition: 'opacity var(--dur-fast)',
+                    }}
+                >
+                    <GripVertical size={16} strokeWidth={2} />
+                </span>
+                <Label style={{ textAlign: 'right' }}>{String(index + 1).padStart(2, '0')}</Label>
+                <div
+                    style={{
+                        width: 56,
+                        height: 56,
+                        borderRadius: 7,
+                        overflow: 'hidden',
+                        border: '1px solid var(--line)',
+                    }}
+                >
+                    <AlbumCover album={album} size={56} radius={0} />
+                </div>
+                <div style={{ minWidth: 0 }}>
+                    <div
+                        style={{
+                            fontSize: 15,
+                            fontWeight: 600,
+                            whiteSpace: 'nowrap',
+                            overflow: 'hidden',
+                            textOverflow: 'ellipsis',
+                        }}
+                    >
+                        {album.title}
+                    </div>
+                    <div
+                        style={{
+                            fontSize: 13,
+                            color: 'var(--fg2)',
+                            whiteSpace: 'nowrap',
+                            overflow: 'hidden',
+                            textOverflow: 'ellipsis',
+                        }}
+                    >
+                        {album.artists}
+                    </div>
+                </div>
+                <Label
+                    style={{ textAlign: 'right', whiteSpace: 'nowrap' }}
+                    aria-label={`${album.totalTracks} ${trackCountLabel(album.totalTracks)}`}
+                >
+                    {releaseYear} · {album.totalTracks} TRK
+                </Label>
+                {metric === 'rating' ? (
+                    <span style={{ textAlign: 'right' }}>
+                        <Score value={album.rating ?? null} />
+                    </span>
+                ) : (
+                    <Label style={{ textAlign: 'right', whiteSpace: 'nowrap', color: 'var(--fg2)' }}>
+                        {album.runtimeMs > 0 ? formatRuntime(album.runtimeMs) : '—'}
+                    </Label>
+                )}
+                <div
+                    style={{
+                        opacity: hover ? 1 : 0,
+                        transition: 'opacity var(--dur-fast)',
+                        display: 'flex',
+                        gap: 4,
+                    }}
+                    onClick={(event) => event.stopPropagation()}
+                >
+                    {!isReviewedList && mode === 'listening' && (
+                        <Tooltip>
+                            <TooltipTrigger asChild>
+                                <button
+                                    type="button"
+                                    className="listened-button"
+                                    data-album-id={album.id}
+                                    aria-label="I listened to this"
+                                    onClick={(event) => {
+                                        event.stopPropagation();
+                                        onRate();
+                                    }}
+                                    style={{
+                                        width: 32,
+                                        height: 32,
+                                        borderRadius: 8,
+                                        border: 'none',
+                                        cursor: 'pointer',
+                                        display: 'inline-flex',
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                        background: 'var(--accent)',
+                                        color: 'var(--accent-on)',
+                                    }}
+                                >
+                                    <Check size={16} strokeWidth={2} />
+                                </button>
+                            </TooltipTrigger>
+                            <TooltipContent>I listened to this</TooltipContent>
+                        </Tooltip>
+                    )}
+                    <AlbumRowMenu
+                        album={album}
+                        listType={listType}
+                        onMove={onMove}
+                        onRemove={onRemove}
+                        onRate={onRate}
+                    />
+                </div>
+            </div>
+
+            {hasNote && (
+                <div style={{ padding: '0 16px 13px 156px' }}>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 7, maxWidth: 620 }}>
+                        <Label accent>Note</Label>
+                        <p
+                            className="album-review"
+                            style={{
+                                margin: 0,
+                                fontSize: 13.5,
+                                lineHeight: 1.55,
+                                color: 'var(--fg2)',
+                                whiteSpace: 'pre-wrap',
+                            }}
+                        >
+                            {album.note}
+                        </p>
+                    </div>
+                </div>
+            )}
+        </Card>
+    );
+}
+
+function SortableTableRow({
+    album,
+    index,
+    listType,
+    listId,
+    mode,
+    metric,
+    onMove,
+    onRemove,
+    onRate,
+    draggable,
+}: {
+    album: AlbumItem;
+    index: number;
+    listType: ListType;
+    listId: number;
+    mode: ListMode;
+    metric: 'runtime' | 'rating';
+    onMove: (album: { id: number; title: string }) => void;
+    onRemove: (album: { id: number; title: string }) => void;
+    onRate: () => void;
+    draggable: boolean;
+}) {
+    const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
+        id: album.id,
+        disabled: !draggable,
+    });
+
+    return (
+        <div
+            ref={setNodeRef}
+            style={{
+                transform: CSS.Transform.toString(transform),
+                transition,
+                opacity: isDragging ? 0.35 : 1,
+            }}
+        >
+            <TableAlbumRow
+                album={album}
+                index={index}
+                listType={listType}
+                listId={listId}
+                mode={mode}
+                metric={metric}
+                onMove={onMove}
+                onRemove={onRemove}
+                onRate={onRate}
+                draggable={draggable}
+                dragHandleProps={draggable ? { ...attributes, ...listeners } : undefined}
+            />
+        </div>
+    );
+}
+
 export default function Show({ list, albums, sort, direction }: ShowProps) {
     const isManual = sort === 'manual';
+    const isReviewedList = list.type === 'reviewed';
     const [refreshing, setRefreshing] = useState(false);
+
     const [viewMode, setViewMode] = useState<ViewMode>(() => {
-        const stored = localStorage.getItem(`list-${list.id}-view`);
-        return stored === 'grid' ? 'grid' : 'list';
+        if (typeof window === 'undefined') return 'table';
+        const stored = window.localStorage.getItem(`list-${list.id}-view`);
+        return stored === 'grid' ? 'grid' : 'table';
     });
 
     function changeViewMode(mode: ViewMode) {
         setViewMode(mode);
-        localStorage.setItem(`list-${list.id}-view`, mode);
+        try {
+            window.localStorage.setItem(`list-${list.id}-view`, mode);
+        } catch {
+            /* ignore */
+        }
     }
+
     const [orderedAlbums, setOrderedAlbums] = useState<AlbumItem[]>(albums.data);
     const [albumCount, setAlbumCount] = useState(list.albumsCount);
     const [albumToMove, setAlbumToMove] = useState<{ id: number; title: string } | null>(null);
@@ -695,17 +921,13 @@ export default function Show({ list, albums, sort, direction }: ShowProps) {
     const [albumToReview, setAlbumToReview] = useState<RatingDialogAlbum | null>(null);
     const [ratingDialogOpen, setRatingDialogOpen] = useState(false);
 
-    const isReviewedList = list.type === 'reviewed';
+    const metric: 'runtime' | 'rating' = isReviewedList ? 'rating' : 'runtime';
 
     const syncRef = useRef({ count: albums.data.length, firstId: albums.data[0]?.id });
 
     const sensors = useSensors(
-        useSensor(PointerSensor, {
-            activationConstraint: { distance: 5 },
-        }),
-        useSensor(TouchSensor, {
-            activationConstraint: { delay: 150, tolerance: 5 },
-        }),
+        useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
+        useSensor(TouchSensor, { activationConstraint: { delay: 150, tolerance: 5 } }),
     );
 
     useEffect(() => {
@@ -733,25 +955,17 @@ export default function Show({ list, albums, sort, direction }: ShowProps) {
     }, [sort, direction]);
 
     function handleDragStart(event: DragStartEvent) {
-        if (!isManual) {
-            return;
-        }
-
+        if (!isManual) return;
         const album = orderedAlbums.find((a) => a.id === event.active.id);
         setActiveAlbum(album ?? null);
     }
 
     function handleDragEnd(event: DragEndEvent) {
         setActiveAlbum(null);
-
-        if (!isManual) {
-            return;
-        }
+        if (!isManual) return;
 
         const { active, over } = event;
-        if (!over || active.id === over.id) {
-            return;
-        }
+        if (!over || active.id === over.id) return;
 
         setOrderedAlbums((prev) => {
             const oldIndex = prev.findIndex((a) => a.id === active.id);
@@ -798,12 +1012,6 @@ export default function Show({ list, albums, sort, direction }: ShowProps) {
         setAlbumCount((prev) => prev - 1);
     }
 
-    function handleNoteUpdated(albumId: number, note: string | null) {
-        setOrderedAlbums((prev) =>
-            prev.map((a) => (a.id === albumId ? { ...a, note } : a)),
-        );
-    }
-
     function handleRateAlbum(album: AlbumItem) {
         setAlbumToReview({
             id: album.id,
@@ -819,12 +1027,11 @@ export default function Show({ list, albums, sort, direction }: ShowProps) {
             setOrderedAlbums((prev) =>
                 prev.map((a) => (a.id === albumId ? { ...a, rating, review } : a)),
             );
-
             return;
         }
-
         setOrderedAlbums((prev) => prev.filter((a) => a.id !== albumId));
         setAlbumCount((prev) => prev - 1);
+        toast.success('Album moved to Reviewed.');
     }
 
     function handleAlbumUnreviewed(albumId: number) {
@@ -833,163 +1040,357 @@ export default function Show({ list, albums, sort, direction }: ShowProps) {
     }
 
     const hasAlbums = orderedAlbums.length > 0;
+    const totalTracks = orderedAlbums.reduce((sum, album) => sum + (album.totalTracks || 0), 0);
 
     return (
         <>
             <Head title={list.title} />
 
-            <div className="pb-48">
-                <div className="flex justify-between gap-4">
-                    <div className="min-w-0">
-                        <h1 className="text-3xl font-bold tracking-tight sm:text-4xl">
+            <TopBar crumbs={['Library', list.title]}>
+                <Button
+                    id="refresh-button"
+                    variant="ghost"
+                    size="sm"
+                    icon={refreshing ? undefined : RefreshCw}
+                    onClick={handleRefresh}
+                    disabled={refreshing}
+                >
+                    {refreshing && (
+                        <Loader2
+                            id="refresh-spinner"
+                            size={16}
+                            strokeWidth={2}
+                            className="animate-spin"
+                            style={{ marginRight: 4 }}
+                        />
+                    )}
+                    {refreshing ? 'Refreshing...' : 'Refresh'}
+                </Button>
+                {!isReviewedList && (
+                    <Button
+                        variant="primary"
+                        size="sm"
+                        icon={Plus}
+                        onClick={() => setAddAlbumDialogOpen(true)}
+                        id="add-album-button"
+                    >
+                        Add album
+                    </Button>
+                )}
+            </TopBar>
+
+            <div style={{ maxWidth: 1140, margin: '0 auto', padding: '0 40px 96px' }}>
+                <div
+                    style={{
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'center',
+                        padding: '14px 0 12px',
+                        borderBottom: '1px solid var(--line)',
+                    }}
+                >
+                    <Label>{isReviewedList ? '00 / SYSTEM LIST' : list.type === 'system' ? '00 / SYSTEM LIST' : 'YOUR LISTS'}</Label>
+                </div>
+
+                <div
+                    style={{
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'center',
+                        gap: 48,
+                        padding: '26px 0 22px',
+                        flexWrap: 'wrap',
+                    }}
+                >
+                    <div
+                        style={{
+                            display: 'flex',
+                            flexDirection: 'column',
+                            gap: 14,
+                            flex: 1,
+                            minWidth: 320,
+                            maxWidth: 620,
+                        }}
+                    >
+                        <HeroBadge list={list} />
+                        <h1
+                            style={{
+                                fontFamily: 'var(--font-display)',
+                                fontWeight: 800,
+                                fontSize: 54,
+                                lineHeight: 0.98,
+                                letterSpacing: '-0.03em',
+                                margin: 0,
+                                color: 'var(--fg1)',
+                            }}
+                        >
                             {list.title}
                         </h1>
                         {list.description && (
-                            <p className="mt-1 text-muted-foreground">
+                            <p
+                                style={{
+                                    fontSize: 17,
+                                    margin: 0,
+                                    maxWidth: 540,
+                                    color: 'var(--fg2)',
+                                    lineHeight: 1.55,
+                                }}
+                            >
                                 {list.description}
                             </p>
                         )}
-                        <p className="mt-2 text-sm text-muted-foreground">
-                            {albumCount}{' '}
-                            {albumCount === 1 ? 'album' : 'albums'}
-                        </p>
+
+                        <div
+                            style={{
+                                display: 'flex',
+                                gap: 10,
+                                alignItems: 'center',
+                                marginTop: 2,
+                                flexWrap: 'wrap',
+                            }}
+                        >
+                            {!isReviewedList && (
+                                <Button
+                                    variant="primary"
+                                    icon={Plus}
+                                    onClick={() => setAddAlbumDialogOpen(true)}
+                                >
+                                    Add album
+                                </Button>
+                            )}
+                            {!isReviewedList && (
+                                <Button
+                                    variant="secondary"
+                                    icon={Pencil}
+                                    onClick={() => setEditDialogOpen(true)}
+                                    id="edit-list-button"
+                                >
+                                    Edit
+                                </Button>
+                            )}
+                            {list.type === 'custom' && (
+                                <Button
+                                    variant="ghost"
+                                    icon={Trash2}
+                                    onClick={() => setDeleteDialogOpen(true)}
+                                    id="delete-list-button"
+                                >
+                                    Delete
+                                </Button>
+                            )}
+                        </div>
                     </div>
 
-                    <div className="flex shrink-0 flex-col items-end gap-8">
-                        <div className="flex items-center gap-2">
-                        <Button
-                            variant="outline"
-                            onClick={handleRefresh}
-                            disabled={refreshing}
-                            id="refresh-button"
-                        >
-                            {refreshing ? (
-                                <Loader2 id="refresh-spinner" className="mr-2 h-4 w-4 animate-spin" />
-                            ) : (
-                                <RefreshCw className="mr-2 h-4 w-4" />
-                            )}
-                            {refreshing ? 'Refreshing...' : 'Refresh Album Data'}
-                        </Button>
-
-                        {!isReviewedList && (
-                            <Button
-                                onClick={() => setAddAlbumDialogOpen(true)}
-                                id="add-album-button"
-                            >
-                                <Plus className="mr-2 h-4 w-4" />
-                                Add an Album
-                            </Button>
-                        )}
-
-                        {!isReviewedList && (
-                            <Button
-                                variant="outline"
-                                id="edit-list-button"
-                                onClick={() => setEditDialogOpen(true)}
-                            >
-                                Edit
-                            </Button>
-                        )}
-                        {list.type === 'custom' && (
-                            <Button
-                                variant="outline"
-                                id="delete-list-button"
-                                onClick={() => setDeleteDialogOpen(true)}
-                            >
-                                Delete
-                            </Button>
-                        )}
-                        </div>
-
-                        {hasAlbums && (
-                            <div className="flex items-center gap-2">
-                                <SortControl listId={list.id} sort={sort} direction={direction} />
-
-                                <div className="inline-flex items-center rounded-md border">
-                                    <Button
-                                        variant={viewMode === 'list' ? 'default' : 'ghost'}
-                                        size="sm"
-                                        className="rounded-r-none border-0"
-                                        onClick={() => changeViewMode('list')}
-                                        id="view-mode-list"
-                                    >
-                                        <List className="mr-1.5 h-4 w-4" />
-                                        List
-                                    </Button>
-                                    <Button
-                                        variant={viewMode === 'grid' ? 'default' : 'ghost'}
-                                        size="sm"
-                                        className="rounded-l-none border-0"
-                                        onClick={() => changeViewMode('grid')}
-                                        id="view-mode-grid"
-                                    >
-                                        <LayoutGrid className="mr-1.5 h-4 w-4" />
-                                        Grid
-                                    </Button>
-                                </div>
-                            </div>
-                        )}
+                    <div
+                        style={{
+                            display: 'flex',
+                            flexDirection: 'column',
+                            alignItems: 'flex-end',
+                            gap: 28,
+                        }}
+                    >
+                        <CoverMosaic
+                            covers={orderedAlbums.slice(0, 4).map((a) => a.coverUrl)}
+                            size={208}
+                            gap={3}
+                            radius={14}
+                            inner={4}
+                            hard
+                        />
                     </div>
                 </div>
 
-                {!hasAlbums ? (
-                    isReviewedList ? (
-                        <div className="mt-8 text-center text-muted-foreground">
-                            <p>No reviewed albums yet.</p>
-                            <p>Rate an album from any list and it'll show up here.</p>
-                        </div>
-                    ) : (
-                        <p className="mt-8 text-center text-muted-foreground">
-                            No albums yet. Click "Add an Album" to get started.
-                        </p>
-                    )
-                ) : viewMode === 'grid' ? (
-                    <div className="mt-6">
-                        <DndContext
-                            sensors={sensors}
-                            collisionDetection={closestCenter}
-                            onDragStart={handleDragStart}
-                            onDragEnd={handleDragEnd}
-                        >
-                            <SortableContext
-                                items={orderedAlbums.map((a) => a.id)}
-                                strategy={rectSortingStrategy}
-                            >
-                                <InfiniteScroll
-                                    data="albums"
-                                    className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5"
-                                    loading={() => (
-                                        <div
-                                            id="album-scroll-sentinel"
-                                            className="col-span-full flex justify-center py-4"
-                                        >
-                                            <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
-                                        </div>
-                                    )}
-                                >
-                                    {orderedAlbums.map((album) => (
-                                        <AlbumGridItem
-                                            key={album.id}
-                                            album={album}
-                                            listType={list.type}
-                                            onRate={handleRateAlbum}
-                                            draggable={isManual && !isReviewedList}
-                                        />
-                                    ))}
-                                </InfiniteScroll>
-                            </SortableContext>
+                <div
+                    style={{
+                        display: 'flex',
+                        gap: 48,
+                        alignItems: 'center',
+                        padding: '16px 0',
+                        borderTop: '1px solid var(--line)',
+                        borderBottom: '1px solid var(--line)',
+                        flexWrap: 'wrap',
+                    }}
+                >
+                    <StatBlock value={albumCount} caption="Albums filed" />
+                    {totalTracks > 0 && <StatBlock value={totalTracks} caption="Total tracks" />}
+                </div>
 
-                            <DragOverlay>
-                                {activeAlbum && (
-                                    <div className="w-40 scale-[1.05] cursor-grabbing rounded-md shadow-2xl">
-                                        <AlbumGridItemContent album={activeAlbum} showRating={isReviewedList} />
+                <div
+                    style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        margin: '20px 0 22px',
+                        flexWrap: 'wrap',
+                        gap: 14,
+                    }}
+                >
+                    <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
+                        {hasAlbums && (
+                            <>
+                                <Label style={{ marginRight: 4 }}>Sort</Label>
+                                <SortControl listId={list.id} sort={sort} direction={direction} />
+                            </>
+                        )}
+                    </div>
+                    {hasAlbums && (
+                        <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
+                            <Label style={{ fontSize: 10 }}>{viewMode === 'grid' ? 'Grid' : 'Table'}</Label>
+                            <div
+                                style={{
+                                    display: 'flex',
+                                    gap: 4,
+                                    alignItems: 'center',
+                                    background: 'var(--surface-2)',
+                                    borderRadius: 10,
+                                    padding: 3,
+                                }}
+                            >
+                                <IconButton
+                                    icon={ListIcon}
+                                    label="Table"
+                                    size={18}
+                                    boxSize={34}
+                                    active={viewMode === 'table'}
+                                    onClick={() => changeViewMode('table')}
+                                    id="view-mode-list"
+                                />
+                                <IconButton
+                                    icon={LayoutGrid}
+                                    label="Grid"
+                                    size={18}
+                                    boxSize={34}
+                                    active={viewMode === 'grid'}
+                                    onClick={() => changeViewMode('grid')}
+                                    id="view-mode-grid"
+                                />
+                            </div>
+                        </div>
+                    )}
+                </div>
+
+                {!hasAlbums ? (
+                    <div style={{ textAlign: 'center', padding: '96px 0', color: 'var(--fg3)' }}>
+                        <Music
+                            size={42}
+                            strokeWidth={2}
+                            style={{ color: 'var(--line-strong)', margin: '0 auto 16px' }}
+                        />
+                        <div
+                            style={{
+                                fontFamily: 'var(--font-display)',
+                                fontWeight: 700,
+                                fontSize: 24,
+                                color: 'var(--fg1)',
+                                marginBottom: 6,
+                            }}
+                        >
+                            {isReviewedList ? 'No reviewed albums yet.' : 'Nothing filed here yet.'}
+                        </div>
+                        <Label style={{ display: 'block', marginBottom: 20 }}>
+                            {isReviewedList
+                                ? "Rate an album from any list and it'll show up here."
+                                : 'No albums yet. Click "Add an Album" to get started.'}
+                        </Label>
+                        {!isReviewedList && (
+                            <Button
+                                variant="primary"
+                                icon={Plus}
+                                onClick={() => setAddAlbumDialogOpen(true)}
+                                style={{ margin: '0 auto' }}
+                            >
+                                Add albums
+                            </Button>
+                        )}
+                    </div>
+                ) : viewMode === 'grid' ? (
+                    <DndContext
+                        sensors={sensors}
+                        collisionDetection={closestCenter}
+                        onDragStart={handleDragStart}
+                        onDragEnd={handleDragEnd}
+                    >
+                        <SortableContext
+                            items={orderedAlbums.map((album) => album.id)}
+                            strategy={rectSortingStrategy}
+                        >
+                            <InfiniteScroll
+                                data="albums"
+                                style={{
+                                    display: 'grid',
+                                    gridTemplateColumns: 'repeat(auto-fill, minmax(168px, 1fr))',
+                                    gap: 26,
+                                }}
+                                loading={() => (
+                                    <div
+                                        id="album-scroll-sentinel"
+                                        style={{
+                                            display: 'flex',
+                                            justifyContent: 'center',
+                                            padding: 16,
+                                            gridColumn: '1 / -1',
+                                        }}
+                                    >
+                                        <Loader2
+                                            size={20}
+                                            strokeWidth={2}
+                                            className="animate-spin"
+                                            style={{ color: 'var(--fg3)' }}
+                                        />
                                     </div>
                                 )}
-                            </DragOverlay>
-                        </DndContext>
-                    </div>
+                            >
+                                {orderedAlbums.map((album, index) => (
+                                    <GridAlbumItem
+                                        key={album.id}
+                                        album={album}
+                                        index={index}
+                                        listType={list.type}
+                                        onRate={() => handleRateAlbum(album)}
+                                        onMore={() => handleRateAlbum(album)}
+                                        onPlay={() => {}}
+                                        draggable={isManual && !isReviewedList}
+                                    />
+                                ))}
+                            </InfiniteScroll>
+                        </SortableContext>
+                        <DragOverlay>
+                            {activeAlbum && (
+                                <div style={{ width: 168, transform: 'scale(1.05)', cursor: 'grabbing' }}>
+                                    <GridAlbumCard
+                                        album={activeAlbum}
+                                        index={0}
+                                        listType={list.type}
+                                        onRate={() => {}}
+                                        onPlay={() => {}}
+                                    />
+                                </div>
+                            )}
+                        </DragOverlay>
+                    </DndContext>
                 ) : (
-                    <div className="mt-6">
+                    <>
+                        <div
+                            style={{
+                                display: 'grid',
+                                gridTemplateColumns: '20px 26px 56px 1fr 200px 70px 34px',
+                                alignItems: 'center',
+                                gap: 14,
+                                padding: '0 12px 10px',
+                                borderBottom: '1px solid var(--line)',
+                                marginBottom: 6,
+                            }}
+                        >
+                            <span />
+                            <Label style={{ textAlign: 'right' }}>#</Label>
+                            <span />
+                            <Label>Album</Label>
+                            <Label style={{ textAlign: 'right' }}>Year · Tracks</Label>
+                            <Label style={{ textAlign: 'right' }}>
+                                {metric === 'rating' ? 'Rating' : 'Runtime'}
+                            </Label>
+                            <span />
+                        </div>
                         <DndContext
                             sensors={sensors}
                             collisionDetection={closestCenter}
@@ -997,57 +1398,78 @@ export default function Show({ list, albums, sort, direction }: ShowProps) {
                             onDragEnd={handleDragEnd}
                         >
                             <SortableContext
-                                items={orderedAlbums.map((a) => a.id)}
+                                items={orderedAlbums.map((album) => album.id)}
                                 strategy={verticalListSortingStrategy}
                             >
                                 <InfiniteScroll
                                     data="albums"
-                                    className="space-y-3"
+                                    style={{
+                                        display: 'flex',
+                                        flexDirection: 'column',
+                                        gap: 2,
+                                    }}
                                     loading={() => (
                                         <div
                                             id="album-scroll-sentinel"
-                                            className="flex justify-center py-4"
+                                            style={{
+                                                display: 'flex',
+                                                justifyContent: 'center',
+                                                padding: 16,
+                                            }}
                                         >
-                                            <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+                                            <Loader2
+                                                size={20}
+                                                strokeWidth={2}
+                                                className="animate-spin"
+                                                style={{ color: 'var(--fg3)' }}
+                                            />
                                         </div>
                                     )}
                                 >
                                     {orderedAlbums.map((album, index) => (
-                                        <AlbumCard
+                                        <SortableTableRow
                                             key={album.id}
                                             album={album}
-                                            position={index + 1}
-                                            listId={list.id}
+                                            index={index}
                                             listType={list.type}
+                                            listId={list.id}
                                             mode={list.mode}
+                                            metric={metric}
                                             onMove={handleMoveAlbum}
                                             onRemove={handleRemoveAlbum}
-                                            onRate={handleRateAlbum}
-                                            onNoteUpdated={handleNoteUpdated}
+                                            onRate={() => handleRateAlbum(album)}
                                             draggable={isManual && !isReviewedList}
                                         />
                                     ))}
                                 </InfiniteScroll>
                             </SortableContext>
-
                             <DragOverlay>
                                 {activeAlbum && (
-                                    <div className="scale-[1.03] cursor-grabbing rounded-xl shadow-2xl">
-                                        <AlbumCardContent
+                                    <div
+                                        style={{
+                                            background: 'var(--surface)',
+                                            borderRadius: 10,
+                                            boxShadow: 'var(--shadow-lg)',
+                                            transform: 'scale(1.02)',
+                                        }}
+                                    >
+                                        <TableAlbumRow
                                             album={activeAlbum}
-                                            listId={list.id}
+                                            index={0}
                                             listType={list.type}
+                                            listId={list.id}
                                             mode={list.mode}
-                                            onMove={handleMoveAlbum}
-                                            onRemove={handleRemoveAlbum}
-                                            onRate={handleRateAlbum}
-                                            onNoteUpdated={handleNoteUpdated}
+                                            metric={metric}
+                                            onMove={() => undefined}
+                                            onRemove={() => undefined}
+                                            onRate={() => {}}
+                                            draggable={false}
                                         />
                                     </div>
                                 )}
                             </DragOverlay>
                         </DndContext>
-                    </div>
+                    </>
                 )}
             </div>
 

@@ -2,44 +2,45 @@
 
 use App\Models\User;
 
-test('authenticated layout contains dark mode toggle', function () {
-    $content = file_get_contents(resource_path('js/Layouts/AuthenticatedLayout.tsx'));
+test('sidebar contains dark mode toggle', function () {
+    $content = file_get_contents(resource_path('js/components/hoopify/Sidebar.tsx'));
 
-    expect($content)->toContain('aria-label="Toggle dark mode"')
-        ->and($content)->toContain('toggleTheme');
+    expect($content)->toContain('onToggleTheme')
+        ->and($content)->toContain('Switch to light')
+        ->and($content)->toContain('Switch to dark');
 });
 
-test('authenticated layout contains sun and moon theme icons', function () {
-    $content = file_get_contents(resource_path('js/Layouts/AuthenticatedLayout.tsx'));
+test('sidebar contains sun and moon theme icons', function () {
+    $content = file_get_contents(resource_path('js/components/hoopify/Sidebar.tsx'));
 
     expect($content)->toContain('Sun')
         ->and($content)->toContain('Moon')
         ->and($content)->toContain('lucide-react');
 });
 
-test('layout includes inline dark mode initialization script', function () {
+test('layout includes inline data-theme initialization script', function () {
     $this->actingAs(User::factory()->create())
         ->get(route('home'))
         ->assertSuccessful()
-        ->assertSee('localStorage.theme', false)
+        ->assertSee("localStorage.getItem('hoopify-theme')", false)
         ->assertSee('prefers-color-scheme: dark', false);
 });
 
-test('layout includes theme toggle interaction script', function () {
-    $content = file_get_contents(resource_path('js/Layouts/AuthenticatedLayout.tsx'));
+test('theme module updates the data-theme attribute', function () {
+    $content = file_get_contents(resource_path('js/components/hoopify/theme.ts'));
 
-    expect($content)->toContain("document.documentElement.classList.toggle('dark'");
+    expect($content)->toContain("document.documentElement.setAttribute('data-theme'");
 });
 
-test('login page includes dark mode initialization script', function () {
-    $this->get(route('login'))
-        ->assertSuccessful()
-        ->assertSee('localStorage.theme', false)
-        ->assertSee('prefers-color-scheme: dark', false);
+test('login page renders in dark mode', function () {
+    $content = file_get_contents(resource_path('js/Pages/Auth/Login.tsx'));
+
+    expect($content)->toContain('data-theme="dark"');
 });
 
 test('dark mode toggle persists preference to localStorage', function () {
-    $content = file_get_contents(resource_path('js/Layouts/AuthenticatedLayout.tsx'));
+    $content = file_get_contents(resource_path('js/components/hoopify/theme.ts'));
 
-    expect($content)->toContain("localStorage.theme = newDark ? 'dark' : 'light'");
+    expect($content)->toContain('localStorage.setItem(THEME_STORAGE_KEY')
+        ->and($content)->toContain("'hoopify-theme'");
 });

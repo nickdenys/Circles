@@ -30,7 +30,7 @@ class AlbumListController extends Controller
         $query = $request->user()
             ->albumLists()
             ->withCount('albums')
-            ->with(['albums' => fn ($q) => $q->orderBy('position')->limit(3)])
+            ->with(['albums' => fn ($q) => $q->orderBy('position')->limit(4)])
             ->orderByRaw("CASE WHEN type IN ('system', 'reviewed') THEN 0 ELSE 1 END")
             ->orderBy('title');
 
@@ -41,8 +41,11 @@ class AlbumListController extends Controller
                 'data' => $lists->getCollection()->map(fn ($list) => [
                     'id' => $list->id,
                     'title' => $list->title,
+                    'description' => $list->description,
+                    'type' => $list->type,
                     'albums_count' => $list->albums_count ?? 0,
                     'preview_covers' => $list->albums->pluck('cover_url')->values()->all(),
+                    'updated_label' => $this->shortRelative($list->updated_at),
                     'url' => route('lists.show', $list),
                 ]),
                 'next_page_url' => $lists->nextPageUrl(),
@@ -54,12 +57,54 @@ class AlbumListController extends Controller
                 fn () => $query->simplePaginate(20)->through(fn ($list) => [
                     'id' => $list->id,
                     'title' => $list->title,
+                    'description' => $list->description,
+                    'type' => $list->type,
                     'albumsCount' => $list->albums_count ?? 0,
                     'previewCovers' => $list->albums->pluck('cover_url')->values()->all(),
+                    'updatedLabel' => $this->shortRelative($list->updated_at),
                     'url' => route('lists.show', $list),
                 ])
             ),
         ]);
+    }
+
+    /**
+     * Compact relative-time string for catalog labels, e.g. "4H AGO", "YESTERDAY", "2D AGO".
+     */
+    private function shortRelative(?\DateTimeInterface $timestamp): ?string
+    {
+        if (! $timestamp) {
+            return null;
+        }
+
+        $carbon = \Carbon\Carbon::instance($timestamp);
+        $minutes = $carbon->diffInMinutes(now());
+
+        if ($minutes < 1) {
+            return 'JUST NOW';
+        }
+        if ($minutes < 60) {
+            return $minutes.'M AGO';
+        }
+        $hours = (int) $carbon->diffInHours(now());
+        if ($hours < 24) {
+            return $hours.'H AGO';
+        }
+        $days = (int) $carbon->diffInDays(now());
+        if ($days === 1) {
+            return 'YESTERDAY';
+        }
+        if ($days < 7) {
+            return $days.'D AGO';
+        }
+        if ($days < 30) {
+            return ((int) floor($days / 7)).'W AGO';
+        }
+        if ($days < 365) {
+            return ((int) floor($days / 30)).'MO AGO';
+        }
+
+        return ((int) floor($days / 365)).'Y AGO';
     }
 
     /**

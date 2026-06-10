@@ -290,3 +290,6 @@ protected function isAccessible(User $user, ?string $path = null): bool
 - IMPORTANT: Activate `tailwindcss-development` every time you're working with a Tailwind CSS or styling-related task.
 
 </laravel-boost-guidelines>
+
+# Design System
+See /design/HOOPIFY_DESIGN.md for the full Hoopify design system, tokens, and screen-by-screen specs.

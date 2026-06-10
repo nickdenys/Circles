@@ -19,7 +19,6 @@ test('lists page displays all user lists', function () {
     $user = User::factory()->create();
     AlbumList::factory()->count(3)->create(['user_id' => $user->id]);
 
-    // 3 custom + Listen Later (system) + Reviewed = 5
     $this->actingAs($user)
         ->get(route('lists.index'))
         ->assertInertia(fn (AssertableInertia $page) => $page
@@ -94,20 +93,21 @@ test('empty state when user has no lists', function () {
         );
 });
 
-test('each list includes preview covers from the first 3 albums', function () {
+test('each list includes preview covers from the first 4 albums', function () {
     $user = User::factory()->create();
     $list = $user->albumLists->first();
 
-    $albums = \App\Models\Album::factory()->count(4)->create();
+    $albums = \App\Models\Album::factory()->count(5)->create();
     $list->albums()->attach($albums->pluck('id')->mapWithKeys(fn ($id, $i) => [$id => ['position' => $i]]));
 
     $this->actingAs($user)
         ->get(route('lists.index'))
         ->assertInertia(fn (AssertableInertia $page) => $page
-            ->has('lists.data.0.previewCovers', 3)
+            ->has('lists.data.0.previewCovers', 4)
             ->where('lists.data.0.previewCovers.0', $albums[0]->cover_url)
             ->where('lists.data.0.previewCovers.1', $albums[1]->cover_url)
             ->where('lists.data.0.previewCovers.2', $albums[2]->cover_url)
+            ->where('lists.data.0.previewCovers.3', $albums[3]->cover_url)
         );
 });
 
@@ -126,26 +126,28 @@ test('unauthenticated users cannot access the lists page', function () {
         ->assertRedirect(route('login'));
 });
 
-test('page component contains Add List button', function () {
+test('lists overview page exposes the New list trigger', function () {
     $content = file_get_contents(resource_path('js/Pages/Lists/Index.tsx'));
 
-    expect($content)->toContain('Add List');
+    expect($content)->toContain('New list');
 });
 
-test('page component contains empty state message', function () {
+test('lists overview page exposes an empty-filter copy', function () {
     $content = file_get_contents(resource_path('js/Pages/Lists/Index.tsx'));
 
-    expect($content)->toContain('No lists yet. Create one to get started.');
+    expect($content)->toContain('No lists to show.');
 });
 
-test('page component uses shadcn Card and Button', function () {
+test('lists overview page uses the Hoopify design primitives', function () {
     $content = file_get_contents(resource_path('js/Pages/Lists/Index.tsx'));
 
-    expect($content)->toContain("from '@/components/ui/card'");
-    expect($content)->toContain("from '@/components/ui/button'");
+    expect($content)
+        ->toContain("from '@/components/hoopify/")
+        ->toContain('TopBar')
+        ->toContain('CoverSpine');
 });
 
-test('page component uses Inertia Link for navigation', function () {
+test('lists overview page uses Inertia Link for navigation', function () {
     $content = file_get_contents(resource_path('js/Pages/Lists/Index.tsx'));
 
     expect($content)->toContain("from '@inertiajs/react'");

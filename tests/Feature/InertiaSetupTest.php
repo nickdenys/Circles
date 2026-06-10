@@ -26,10 +26,11 @@ test('inertia root template contains required directives', function () {
         ->toContain('@inertiaHead');
 });
 
-test('inertia root template includes anti-FOUC dark mode script', function () {
+test('inertia root template includes anti-FOUC theme script', function () {
     $content = file_get_contents(resource_path('views/app.blade.php'));
 
-    expect($content)->toContain("localStorage.theme === 'dark'");
+    expect($content)->toContain("localStorage.getItem('hoopify-theme')")
+        ->and($content)->toContain("setAttribute('data-theme'");
 });
 
 test('inertia can render a page via a test route', function () {

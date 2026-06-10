@@ -19,20 +19,22 @@ test('home page returns inertia response with shared auth data', function () {
         );
 });
 
-test('authenticated layout contains branding and navigation', function () {
-    $content = file_get_contents(resource_path('js/Layouts/AuthenticatedLayout.tsx'));
+test('sidebar contains branding and navigation', function () {
+    $content = file_get_contents(resource_path('js/components/hoopify/Sidebar.tsx'));
 
-    expect($content)->toContain('Hoopify')
-        ->and($content)->toContain('Home')
-        ->and($content)->toContain('Lists')
-        ->and($content)->toContain('Logout');
+    expect($content)
+        ->toContain('Hoopify')
+        ->toContain('Home')
+        ->toContain('All lists')
+        ->toContain('Log out');
 });
 
-test('authenticated layout displays user name and avatar', function () {
-    $content = file_get_contents(resource_path('js/Layouts/AuthenticatedLayout.tsx'));
+test('sidebar displays user name and avatar', function () {
+    $content = file_get_contents(resource_path('js/components/hoopify/Sidebar.tsx'));
 
-    expect($content)->toContain('auth.user.name')
-        ->and($content)->toContain('auth.user.avatar');
+    expect($content)
+        ->toContain('user.name')
+        ->toContain('user.avatar');
 });
 
 test('home page shares current route name', function () {
@@ -60,10 +62,10 @@ test('layout works without user avatar', function () {
         );
 });
 
-test('home page welcome message uses user name', function () {
+test('home page welcome message uses user first name', function () {
     $content = file_get_contents(resource_path('js/Pages/Home.tsx'));
 
-    expect($content)->toContain('Welcome back, {auth.user.name}');
+    expect($content)->toContain("Welcome back, {auth.user.name.split(' ')[0]}.");
 });
 
 test('lists page uses the app layout', function () {
@@ -74,12 +76,11 @@ test('lists page uses the app layout', function () {
             ->component('Lists/Index')
         );
 
-    // Verify the layout contains branding and the page contains heading
     $layoutContent = file_get_contents(resource_path('js/Layouts/AuthenticatedLayout.tsx'));
-    expect($layoutContent)->toContain('Hoopify');
+    expect($layoutContent)->toContain('Sidebar');
 
     $pageContent = file_get_contents(resource_path('js/Pages/Lists/Index.tsx'));
-    expect($pageContent)->toContain('My Lists');
+    expect($pageContent)->toContain('Your lists');
 });
 
 test('unauthenticated users cannot access layout pages', function () {
