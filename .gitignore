@@ -13,6 +13,7 @@
 /.zed
 /auth.json
 /build
+/design
 /node_modules
 /public/build
 /public/hot
