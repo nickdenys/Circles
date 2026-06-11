@@ -82,7 +82,8 @@ class AlbumListController extends Controller
         }
 
         $carbon = \Carbon\Carbon::instance($timestamp);
-        $minutes = $carbon->diffInMinutes(now());
+        $now = now();
+        $minutes = (int) abs($carbon->diffInMinutes($now));
 
         if ($minutes < 1) {
             return 'JUST NOW';
@@ -90,11 +91,11 @@ class AlbumListController extends Controller
         if ($minutes < 60) {
             return $minutes.'M AGO';
         }
-        $hours = (int) $carbon->diffInHours(now());
+        $hours = (int) abs($carbon->diffInHours($now));
         if ($hours < 24) {
             return $hours.'H AGO';
         }
-        $days = (int) $carbon->diffInDays(now());
+        $days = (int) abs($carbon->diffInDays($now));
         if ($days === 1) {
             return 'YESTERDAY';
         }

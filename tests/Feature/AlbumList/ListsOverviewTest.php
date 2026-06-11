@@ -153,3 +153,17 @@ test('lists overview page uses Inertia Link for navigation', function () {
     expect($content)->toContain("from '@inertiajs/react'");
     expect($content)->toContain('<Link');
 });
+
+test('updatedLabel is rendered as an integer number of minutes, never a float', function () {
+    $user = User::factory()->create();
+    AlbumList::factory()->for($user)->create();
+    // System and reviewed lists sort first; my custom list is the third row.
+    $custom = $user->albumLists()->where('type', 'custom')->first();
+    $custom->forceFill(['updated_at' => now()->subMinutes(29)->subSeconds(35)])->save();
+
+    $this->actingAs($user)
+        ->get(route('lists.index'))
+        ->assertInertia(fn (AssertableInertia $page) => $page
+            ->where('lists.data.2.updatedLabel', '29M AGO')
+        );
+});
