@@ -96,9 +96,11 @@ test('users cannot view another users list', function () {
     $otherUser = User::factory()->create();
     $list = AlbumList::factory()->create(['user_id' => $otherUser->id]);
 
+    // Slug binding is per-user (App\Providers\AppServiceProvider::bindListSlug).
+    // Cross-user access returns 404 rather than 403, so we don't leak existence.
     $this->actingAs($user)
         ->get(route('lists.show', $list))
-        ->assertForbidden();
+        ->assertNotFound();
 });
 
 test('unauthenticated users cannot access the list detail page', function () {
@@ -144,10 +146,69 @@ test('list detail json response includes note field on each album', function () 
         ->assertJsonPath('data.0.note', null);
 });
 
+test('list description is rendered with pre-line so newlines show as line breaks', function () {
+    $show = file_get_contents(resource_path('js/Pages/Lists/Show.tsx'));
+    $index = file_get_contents(resource_path('js/Pages/Lists/Index.tsx'));
+
+    expect($show)->toContain("whiteSpace: 'pre-line'");
+    expect($index)->toContain("whiteSpace: 'pre-line'");
+});
+
 test('list detail page uses Head component with list title', function () {
     $component = file_get_contents(resource_path('js/Pages/Lists/Show.tsx'));
 
     expect($component)
         ->toContain('<Head title={list.title}')
         ->toContain("from '@inertiajs/react'");
+});
+
+test('list detail page renders a Total runtime stat alongside the other stat blocks', function () {
+    $component = file_get_contents(resource_path('js/Pages/Lists/Show.tsx'));
+
+    expect($component)
+        ->toContain('formatRuntimeStat')
+        ->toContain("unit: 'min'")
+        ->toContain("unit: 'hours'")
+        ->toContain('caption="Albums filed"')
+        ->toContain('caption="Total tracks"')
+        ->toContain('caption="Total runtime"');
+});
+
+test('runtime helper switches to hours above 120 minutes and drops decimals above 20 hours', function () {
+    $component = file_get_contents(resource_path('js/Pages/Lists/Show.tsx'));
+
+    expect($component)
+        ->toContain('minutes <= 120')
+        ->toContain('hours > 20')
+        ->toContain('hours * 10');
+});
+
+test('list detail page exposes server-computed totals for tracks and runtime regardless of pagination', function () {
+    $user = User::factory()->create();
+    $list = AlbumList::factory()->create(['user_id' => $user->id]);
+    $a = Album::factory()->create(['total_tracks' => 10, 'runtime_ms' => 1_800_000]);
+    $b = Album::factory()->create(['total_tracks' => 12, 'runtime_ms' => 2_400_000]);
+    $c = Album::factory()->create(['total_tracks' => 8, 'runtime_ms' => 900_000]);
+    $list->albums()->attach($a->id, ['position' => 1]);
+    $list->albums()->attach($b->id, ['position' => 2]);
+    $list->albums()->attach($c->id, ['position' => 3]);
+
+    $this->actingAs($user)
+        ->get(route('lists.show', $list))
+        ->assertInertia(fn ($page) => $page
+            ->where('list.totalTracks', 30)
+            ->where('list.totalRuntimeMs', 5_100_000)
+        );
+});
+
+test('list detail page returns zero totals for an empty list', function () {
+    $user = User::factory()->create();
+    $list = AlbumList::factory()->create(['user_id' => $user->id]);
+
+    $this->actingAs($user)
+        ->get(route('lists.show', $list))
+        ->assertInertia(fn ($page) => $page
+            ->where('list.totalTracks', 0)
+            ->where('list.totalRuntimeMs', 0)
+        );
 });

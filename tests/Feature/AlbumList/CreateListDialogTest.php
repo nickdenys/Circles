@@ -41,11 +41,10 @@ test('create list dialog displays validation errors', function () {
     expect($content)->toContain('text-destructive');
 });
 
-test('create list dialog submits via Inertia post to lists.store', function () {
+test('create list dialog submits a POST to the lists.store endpoint', function () {
     $content = file_get_contents(resource_path('js/Pages/Lists/CreateListDialog.tsx'));
 
-    expect($content)->toContain('useForm');
-    expect($content)->toContain("post('/lists'");
+    expect($content)->toContain(".post('/lists'");
 });
 
 test('create list dialog has Cancel and Save buttons using shadcn Button', function () {
@@ -60,7 +59,6 @@ test('create list dialog has Cancel and Save buttons using shadcn Button', funct
 test('create list dialog closes on successful submission', function () {
     $content = file_get_contents(resource_path('js/Pages/Lists/CreateListDialog.tsx'));
 
-    expect($content)->toContain('onSuccess');
     expect($content)->toContain('onOpenChange(false)');
 });
 

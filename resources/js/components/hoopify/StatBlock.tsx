@@ -23,7 +23,7 @@ export function StatBlock({ value, unit = '', caption, size = 26, align = 'flex-
             >
                 {value}
                 {unit && (
-                    <span style={{ fontSize: Math.round(size * 0.5), color: 'var(--fg3)', marginLeft: 3 }}>
+                    <span style={{ fontSize: Math.round(size * 0.5), color: 'var(--fg3)', marginLeft: 6 }}>
                         {unit}
                     </span>
                 )}

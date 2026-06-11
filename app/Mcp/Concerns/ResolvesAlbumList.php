@@ -17,6 +17,12 @@ trait ResolvesAlbumList
             return $user->albumLists()->where('id', $identifier)->first();
         }
 
+        $bySlug = $user->albumLists()->where('slug', $identifier)->first();
+
+        if ($bySlug) {
+            return $bySlug;
+        }
+
         return $user->albumLists()->whereRaw('LOWER(title) = ?', [strtolower($identifier)])->first();
     }
 }

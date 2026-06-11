@@ -42,11 +42,10 @@ test('edit list dialog displays validation errors', function () {
     expect($content)->toContain('text-destructive');
 });
 
-test('edit list dialog submits via Inertia put to lists.update', function () {
+test('edit list dialog submits a PUT to the list update endpoint', function () {
     $content = file_get_contents(resource_path('js/Pages/Lists/EditListDialog.tsx'));
 
-    expect($content)->toContain('useForm');
-    expect($content)->toContain('put(`/lists/');
+    expect($content)->toContain('.put(`/lists/');
 });
 
 test('edit list dialog has Cancel and Save buttons using shadcn Button', function () {
@@ -61,21 +60,14 @@ test('edit list dialog has Cancel and Save buttons using shadcn Button', functio
 test('edit list dialog closes on successful submission', function () {
     $content = file_get_contents(resource_path('js/Pages/Lists/EditListDialog.tsx'));
 
-    expect($content)->toContain('onSuccess');
     expect($content)->toContain('onOpenChange(false)');
-});
-
-test('edit list dialog resets form on close', function () {
-    $content = file_get_contents(resource_path('js/Pages/Lists/EditListDialog.tsx'));
-
-    expect($content)->toContain('reset()');
 });
 
 test('edit list dialog pre-populates fields with current values', function () {
     $content = file_get_contents(resource_path('js/Pages/Lists/EditListDialog.tsx'));
 
-    expect($content)->toContain('title: title');
-    expect($content)->toContain("description: description ?? ''");
+    expect($content)->toContain('setTitle(initialTitle)');
+    expect($content)->toContain("setDescription(initialDescription ?? '')");
 });
 
 test('edit list dialog syncs form data when opened', function () {
@@ -83,7 +75,7 @@ test('edit list dialog syncs form data when opened', function () {
 
     expect($content)->toContain('useEffect');
     expect($content)->toContain('if (open)');
-    expect($content)->toContain('setData');
+    expect($content)->toContain('setTitle');
 });
 
 test('edit list dialog description field is marked as optional', function () {
@@ -125,9 +117,9 @@ test('update route redirects to list show page on success', function () {
             'title' => 'Updated Title',
             'description' => 'New description',
         ])
-        ->assertRedirect(route('lists.show', $list));
+        ->assertRedirect(route('lists.show', $list->refresh()));
 
-    expect($list->refresh())
+    expect($list)
         ->title->toBe('Updated Title')
         ->description->toBe('New description');
 });

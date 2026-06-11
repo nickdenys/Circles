@@ -71,6 +71,15 @@ test('layout uses a 280px sidebar rail', function () {
     expect($css)->toContain('--sidebar-w: 280px');
 });
 
+test('the dark theme hard shadow is not invisible black', function () {
+    $css = file_get_contents(resource_path('css/app.css'));
+
+    expect($css)
+        ->not->toContain('--shadow-hard: 4px 4px 0 #000000')
+        ->not->toContain('--shadow-hard: 4px 4px 0 #000')
+        ->not->toContain('--shadow-hard: 4px 4px 0 black');
+});
+
 test('sidebar marks the active nav item', function () {
     $content = file_get_contents(resource_path('js/components/hoopify/Sidebar.tsx'));
 

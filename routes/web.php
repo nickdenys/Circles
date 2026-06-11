@@ -25,20 +25,22 @@ Route::middleware('auth')->group(function (): void {
     Route::get('/lists', [AlbumListController::class, 'index'])->name('lists.index');
     Route::get('/lists/search', [AlbumListController::class, 'search'])->name('lists.search');
     Route::post('/lists', [AlbumListController::class, 'store'])->name('lists.store');
-    Route::get('/lists/{albumList}', [AlbumListController::class, 'show'])->name('lists.show');
-    Route::post('/lists/{albumList}/refresh', [AlbumListController::class, 'refresh'])->name('lists.refresh');
-    Route::patch('/lists/{albumList}/sort', [AlbumListController::class, 'updateSort'])->name('lists.sort.update');
-    Route::patch('/lists/{albumList}/mode', [AlbumListController::class, 'updateMode'])->name('lists.mode.update');
-    Route::put('/lists/{albumList}', [AlbumListController::class, 'update'])->name('lists.update');
-    Route::delete('/lists/{albumList}', [AlbumListController::class, 'destroy'])->name('lists.destroy');
+    Route::get('/lists/{listSlug}', [AlbumListController::class, 'show'])
+        ->where('listSlug', '[a-z0-9-]+')
+        ->name('lists.show');
+    Route::post('/lists/{albumList:id}/refresh', [AlbumListController::class, 'refresh'])->name('lists.refresh');
+    Route::patch('/lists/{albumList:id}/sort', [AlbumListController::class, 'updateSort'])->name('lists.sort.update');
+    Route::patch('/lists/{albumList:id}/mode', [AlbumListController::class, 'updateMode'])->name('lists.mode.update');
+    Route::put('/lists/{albumList:id}', [AlbumListController::class, 'update'])->name('lists.update');
+    Route::delete('/lists/{albumList:id}', [AlbumListController::class, 'destroy'])->name('lists.destroy');
 
-    Route::post('/lists/{albumList}/albums', [AlbumListAlbumController::class, 'store'])->name('lists.albums.store');
-    Route::put('/lists/{albumList}/albums/reorder', [AlbumListAlbumController::class, 'reorder'])->name('lists.albums.reorder');
-    Route::post('/lists/{albumList}/albums/{album}/move', [AlbumListAlbumController::class, 'move'])->name('lists.albums.move');
-    Route::patch('/lists/{albumList}/albums/{album}', [AlbumListAlbumController::class, 'update'])->name('lists.albums.update');
-    Route::delete('/lists/{albumList}/albums/{album}', [AlbumListAlbumController::class, 'destroy'])->name('lists.albums.destroy');
-    Route::post('/lists/{albumList}/albums/{album}/review', [AlbumReviewController::class, 'store'])->name('lists.albums.review.store');
-    Route::delete('/lists/{albumList}/albums/{album}/review', [AlbumReviewController::class, 'destroy'])->name('lists.albums.review.destroy');
+    Route::post('/lists/{albumList:id}/albums', [AlbumListAlbumController::class, 'store'])->name('lists.albums.store');
+    Route::put('/lists/{albumList:id}/albums/reorder', [AlbumListAlbumController::class, 'reorder'])->name('lists.albums.reorder');
+    Route::post('/lists/{albumList:id}/albums/{album}/move', [AlbumListAlbumController::class, 'move'])->name('lists.albums.move');
+    Route::patch('/lists/{albumList:id}/albums/{album}', [AlbumListAlbumController::class, 'update'])->name('lists.albums.update');
+    Route::delete('/lists/{albumList:id}/albums/{album}', [AlbumListAlbumController::class, 'destroy'])->name('lists.albums.destroy');
+    Route::post('/lists/{albumList:id}/albums/{album}/review', [AlbumReviewController::class, 'store'])->name('lists.albums.review.store');
+    Route::delete('/lists/{albumList:id}/albums/{album}/review', [AlbumReviewController::class, 'destroy'])->name('lists.albums.review.destroy');
 
     Route::get('/spotify/search/albums', [SpotifySearchController::class, 'albums'])->name('spotify.search.albums');
 

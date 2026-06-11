@@ -205,7 +205,7 @@ test('infinite scroll keeps the stored sort on later pages', function () {
     }
 
     $this->actingAs($user)
-        ->get(route('lists.show', ['albumList' => $list, 'page' => 2]))
+        ->get(route('lists.show', ['listSlug' => $list->slug, 'page' => 2]))
         ->assertInertia(fn (AssertableInertia $page) => $page
             ->where('albums.data.0.title', 'Album 21')
         );

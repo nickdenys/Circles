@@ -45,9 +45,7 @@ test('user can update a custom list title and description', function () {
             'title' => 'Updated Title',
             'description' => 'Updated Description',
         ])
-        ->assertRedirect(route('lists.show', $list));
-
-    $list->refresh();
+        ->assertRedirect(route('lists.show', $list->refresh()));
 
     expect($list)
         ->title->toBe('Updated Title')
@@ -66,9 +64,9 @@ test('user can clear the description when updating', function () {
             'title' => 'Has Description',
             'description' => null,
         ])
-        ->assertRedirect(route('lists.show', $list));
+        ->assertRedirect(route('lists.show', $list->refresh()));
 
-    expect($list->refresh()->description)->toBeNull();
+    expect($list->description)->toBeNull();
 });
 
 test('validation requires a title when updating', function () {

@@ -49,13 +49,14 @@ class HandleInertiaRequests extends Middleware
                     ->withCount('albums')
                     ->orderByRaw("CASE WHEN type IN ('system', 'reviewed') THEN 0 ELSE 1 END")
                     ->orderBy('title')
-                    ->get(['id', 'title', 'type'])
+                    ->get(['id', 'title', 'slug', 'type'])
                     ->map(fn ($list) => [
                         'id' => $list->id,
                         'title' => $list->title,
+                        'slug' => $list->slug,
                         'type' => $list->type,
                         'albumsCount' => $list->albums_count ?? 0,
-                        'url' => route('lists.show', $list),
+                        'url' => route('lists.show', ['listSlug' => $list->slug]),
                     ])
                     ->all()
                 : [],

@@ -187,7 +187,7 @@
     --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.5);
     --shadow-md: 0 6px 18px rgba(0, 0, 0, 0.5);
     --shadow-lg: 0 24px 60px rgba(0, 0, 0, 0.6);
-    --shadow-hard: 4px 4px 0 #000000;
+    --shadow-hard: 4px 4px 0 var(--warm-25);
     --shadow-hard-accent: 4px 4px 0 var(--aqua-500);
 }
 

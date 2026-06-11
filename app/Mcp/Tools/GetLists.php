@@ -28,6 +28,7 @@ class GetLists extends Tool
             ->map(fn ($list) => [
                 'id' => $list->id,
                 'title' => $list->title,
+                'slug' => $list->slug,
                 'description' => $list->description,
                 'type' => $list->type,
                 'albums_count' => $list->albums_count,

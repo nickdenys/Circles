@@ -40,10 +40,11 @@ class HomeController extends Controller
             'lists' => $lists->map(fn ($list) => [
                 'id' => $list->id,
                 'title' => $list->title,
+                'slug' => $list->slug,
                 'type' => $list->type,
                 'albumsCount' => $list->albums_count ?? 0,
                 'previewCovers' => $list->albums->pluck('cover_url')->values()->all(),
-                'url' => route('lists.show', $list),
+                'url' => route('lists.show', ['listSlug' => $list->slug]),
             ])->values(),
         ]);
     }

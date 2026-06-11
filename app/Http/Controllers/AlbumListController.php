@@ -11,7 +11,10 @@ use App\Http\Requests\UpdateAlbumListRequest;
 use App\Http\Requests\UpdateAlbumListSortRequest;
 use App\Jobs\FetchAlbumGenres;
 use App\Models\AlbumList;
+use App\Models\AlbumListAlbum;
+use App\Models\AlbumListSlugHistory;
 use App\Services\SpotifyService;
+use App\Support\AlbumListSlugger;
 use Illuminate\Contracts\Pagination\Paginator;
 use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 use Illuminate\Http\JsonResponse;
@@ -46,7 +49,7 @@ class AlbumListController extends Controller
                     'albums_count' => $list->albums_count ?? 0,
                     'preview_covers' => $list->albums->pluck('cover_url')->values()->all(),
                     'updated_label' => $this->shortRelative($list->updated_at),
-                    'url' => route('lists.show', $list),
+                    'url' => route('lists.show', ['listSlug' => $list->slug]),
                 ]),
                 'next_page_url' => $lists->nextPageUrl(),
             ]);
@@ -57,12 +60,13 @@ class AlbumListController extends Controller
                 fn () => $query->simplePaginate(20)->through(fn ($list) => [
                     'id' => $list->id,
                     'title' => $list->title,
+                    'slug' => $list->slug,
                     'description' => $list->description,
                     'type' => $list->type,
                     'albumsCount' => $list->albums_count ?? 0,
                     'previewCovers' => $list->albums->pluck('cover_url')->values()->all(),
                     'updatedLabel' => $this->shortRelative($list->updated_at),
-                    'url' => route('lists.show', $list),
+                    'url' => route('lists.show', ['listSlug' => $list->slug]),
                 ])
             ),
         ]);
@@ -108,10 +112,14 @@ class AlbumListController extends Controller
     }
 
     /**
-     * Display the list detail page.
+     * Display the list detail page. The route binds {listSlug} to an AlbumList
+     * via App\Providers\AppServiceProvider::bindListSlug (per-user lookup,
+     * 301 from history-slug to current, 404 otherwise).
      */
-    public function show(Request $request, AlbumList $albumList): Response|JsonResponse
+    public function show(Request $request, AlbumList $listSlug): Response|JsonResponse
     {
+        $albumList = $listSlug;
+
         abort_unless($albumList->user_id === $request->user()->id, 403);
 
         $albumList->loadCount('albums');
@@ -143,6 +151,12 @@ class AlbumListController extends Controller
             ]);
         }
 
+        $totals = AlbumListAlbum::query()
+            ->join('albums', 'albums.id', '=', 'album_album_list.album_id')
+            ->where('album_album_list.album_list_id', $albumList->id)
+            ->selectRaw('COALESCE(SUM(albums.total_tracks), 0) as total_tracks, COALESCE(SUM(albums.runtime_ms), 0) as runtime_ms')
+            ->first();
+
         return Inertia::render('Lists/Show', [
             'list' => [
                 'id' => $albumList->id,
@@ -151,6 +165,8 @@ class AlbumListController extends Controller
                 'type' => $albumList->type,
                 'mode' => $albumList->mode->value,
                 'albumsCount' => $albumList->albums_count,
+                'totalTracks' => (int) $totals->total_tracks,
+                'totalRuntimeMs' => (int) $totals->runtime_ms,
             ],
             'sort' => $sort->value,
             'direction' => $direction,
@@ -184,7 +200,7 @@ class AlbumListController extends Controller
     {
         $albumList->update($request->validated());
 
-        return to_route('lists.show', $albumList);
+        return to_route('lists.show', ['listSlug' => $albumList->slug]);
     }
 
     /**
@@ -194,7 +210,7 @@ class AlbumListController extends Controller
     {
         $albumList->update($request->validated());
 
-        return to_route('lists.show', $albumList);
+        return to_route('lists.show', ['listSlug' => $albumList->slug]);
     }
 
     /**
@@ -284,14 +300,34 @@ class AlbumListController extends Controller
     /**
      * Store a newly created custom list.
      */
-    public function store(StoreAlbumListRequest $request): RedirectResponse
+    public function store(StoreAlbumListRequest $request, AlbumListSlugger $slugger): RedirectResponse
     {
-        $request->user()->albumLists()->create([
+        $user = $request->user();
+        $base = $slugger->base($request->validated('title'));
+        $force = $request->boolean('force_slug');
+
+        $resolution = $slugger->resolveForUser($user, $base, ignoreListId: null, force: $force);
+
+        if ($resolution['conflict'] !== null) {
+            abort(response()->json([
+                'error' => 'slug_history_conflict',
+                'conflicting_slug' => $resolution['conflict']['slug'],
+                'previous_owner_title' => $resolution['conflict']['previous_owner_title'],
+                'suggested_alternative' => $resolution['conflict']['suggested_alternative'],
+            ], 422));
+        }
+
+        $user->albumLists()->create([
             'title' => $request->validated('title'),
+            'slug' => $resolution['slug'],
             'description' => $request->validated('description'),
             'type' => 'custom',
             'mode' => $request->validated('mode') ?? AlbumListMode::Default->value,
         ]);
+
+        if ($force) {
+            $slugger->purgeHistoryFor($user, $resolution['slug']);
+        }
 
         return redirect()->route('lists.index');
     }
@@ -299,8 +335,23 @@ class AlbumListController extends Controller
     /**
      * Update the specified custom list.
      */
-    public function update(UpdateAlbumListRequest $request, AlbumList $albumList): RedirectResponse
+    public function update(UpdateAlbumListRequest $request, AlbumList $albumList, AlbumListSlugger $slugger): RedirectResponse
     {
+        $user = $request->user();
+        $base = $slugger->base($request->validated('title'));
+        $force = $request->boolean('force_slug');
+
+        $resolution = $slugger->resolveForUser($user, $base, ignoreListId: $albumList->id, force: $force);
+
+        if ($resolution['conflict'] !== null) {
+            abort(response()->json([
+                'error' => 'slug_history_conflict',
+                'conflicting_slug' => $resolution['conflict']['slug'],
+                'previous_owner_title' => $resolution['conflict']['previous_owner_title'],
+                'suggested_alternative' => $resolution['conflict']['suggested_alternative'],
+            ], 422));
+        }
+
         $data = [
             'title' => $request->validated('title'),
             'description' => $request->validated('description'),
@@ -310,9 +361,27 @@ class AlbumListController extends Controller
             $data['mode'] = $mode;
         }
 
+        $oldSlug = $albumList->slug;
+        $newSlug = $resolution['slug'];
+
+        if ($newSlug !== $oldSlug) {
+            AlbumListSlugHistory::query()->create([
+                'album_list_id' => $albumList->id,
+                'user_id' => $user->id,
+                'slug' => $oldSlug,
+                'created_at' => now(),
+            ]);
+
+            $data['slug'] = $newSlug;
+        }
+
         $albumList->update($data);
 
-        return redirect()->route('lists.show', $albumList);
+        if ($force) {
+            $slugger->purgeHistoryFor($user, $newSlug);
+        }
+
+        return redirect()->route('lists.show', ['listSlug' => $albumList->slug]);
     }
 
     /**
@@ -337,7 +406,7 @@ class AlbumListController extends Controller
             }
         }
 
-        return redirect()->route('lists.show', $albumList);
+        return redirect()->route('lists.show', ['listSlug' => $albumList->slug]);
     }
 
     /**

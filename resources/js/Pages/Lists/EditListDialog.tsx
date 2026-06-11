@@ -1,5 +1,6 @@
-import { useForm } from '@inertiajs/react';
-import { FormEvent, useEffect } from 'react';
+import { router } from '@inertiajs/react';
+import axios, { AxiosError } from 'axios';
+import { FormEvent, useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import {
     Dialog,
@@ -13,6 +14,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import ListModeField, { type ListMode } from '@/Pages/Lists/ListModeField';
+import ConfirmSlugOverrideDialog, { type SlugHistoryConflict } from './ConfirmSlugOverrideDialog';
 
 interface EditListDialogProps {
     listId: number;
@@ -26,51 +28,88 @@ interface EditListDialogProps {
 
 export default function EditListDialog({
     listId,
-    title,
-    description,
-    mode,
+    title: initialTitle,
+    description: initialDescription,
+    mode: initialMode,
     type,
     open,
     onOpenChange,
 }: EditListDialogProps) {
     const isSystem = type === 'system';
 
-    const { data, setData, put, patch, processing, errors, reset } = useForm({
-        title: title,
-        description: description ?? '',
-        mode: mode,
-    });
+    const [title, setTitle] = useState(initialTitle);
+    const [description, setDescription] = useState(initialDescription ?? '');
+    const [mode, setMode] = useState<ListMode>(initialMode);
+    const [processing, setProcessing] = useState(false);
+    const [errors, setErrors] = useState<Record<string, string>>({});
+    const [conflict, setConflict] = useState<SlugHistoryConflict | null>(null);
 
     useEffect(() => {
         if (open) {
-            setData({
-                title: title,
-                description: description ?? '',
-                mode: mode,
-            });
+            setTitle(initialTitle);
+            setDescription(initialDescription ?? '');
+            setMode(initialMode);
+            setErrors({});
+            setConflict(null);
         }
-    }, [open]);
+    }, [open, initialTitle, initialDescription, initialMode]);
 
-    function handleSubmit(e: FormEvent) {
-        e.preventDefault();
-
-        const onSuccess = () => {
-            reset();
-            onOpenChange(false);
-        };
+    function submit(force: boolean) {
+        setProcessing(true);
+        setErrors({});
 
         if (isSystem) {
-            patch(`/lists/${listId}/mode`, { onSuccess });
-
+            router.patch(
+                `/lists/${listId}/mode`,
+                { mode },
+                {
+                    onSuccess: () => onOpenChange(false),
+                    onFinish: () => setProcessing(false),
+                },
+            );
             return;
         }
 
-        put(`/lists/${listId}`, { onSuccess });
+        axios
+            .put(`/lists/${listId}`, {
+                title,
+                description,
+                mode,
+                force_slug: force,
+            })
+            .then(() => {
+                onOpenChange(false);
+                router.reload();
+            })
+            .catch((error: AxiosError<Record<string, unknown>>) => {
+                const data = error.response?.data;
+                if (data && data.error === 'slug_history_conflict') {
+                    setConflict({
+                        conflicting_slug: data.conflicting_slug as string,
+                        previous_owner_title: data.previous_owner_title as string,
+                        suggested_alternative: data.suggested_alternative as string,
+                    });
+                    return;
+                }
+                const fieldErrors = (data?.errors ?? {}) as Record<string, string[]>;
+                const mapped: Record<string, string> = {};
+                Object.entries(fieldErrors).forEach(([k, v]) => {
+                    mapped[k] = Array.isArray(v) ? v[0] : String(v);
+                });
+                setErrors(mapped);
+            })
+            .finally(() => setProcessing(false));
+    }
+
+    function handleSubmit(e: FormEvent) {
+        e.preventDefault();
+        submit(false);
     }
 
     function handleOpenChange(value: boolean) {
         if (!value) {
-            reset();
+            setErrors({});
+            setConflict(null);
         }
         onOpenChange(value);
     }
@@ -90,8 +129,8 @@ export default function EditListDialog({
                         <Label htmlFor="edit-title">Title</Label>
                         <Input
                             id="edit-title"
-                            value={data.title}
-                            onChange={(e) => setData('title', e.target.value)}
+                            value={title}
+                            onChange={(e) => setTitle(e.target.value)}
                             aria-invalid={!!errors.title}
                             disabled={isSystem}
                             className="disabled:pointer-events-auto disabled:cursor-not-allowed"
@@ -112,10 +151,8 @@ export default function EditListDialog({
                         </Label>
                         <Textarea
                             id="edit-description"
-                            value={data.description}
-                            onChange={(e) =>
-                                setData('description', e.target.value)
-                            }
+                            value={description}
+                            onChange={(e) => setDescription(e.target.value)}
                             aria-invalid={!!errors.description}
                             disabled={isSystem}
                         />
@@ -127,8 +164,8 @@ export default function EditListDialog({
                     </div>
 
                     <ListModeField
-                        value={data.mode}
-                        onChange={(value) => setData('mode', value)}
+                        value={mode}
+                        onChange={(value) => setMode(value)}
                     />
 
                     <DialogFooter>
@@ -145,6 +182,15 @@ export default function EditListDialog({
                     </DialogFooter>
                 </form>
             </DialogContent>
+            <ConfirmSlugOverrideDialog
+                open={conflict !== null}
+                conflict={conflict}
+                onUseAnyway={() => {
+                    setConflict(null);
+                    submit(true);
+                }}
+                onCancel={() => setConflict(null)}
+            />
         </Dialog>
     );
 }

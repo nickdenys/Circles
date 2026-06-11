@@ -2,8 +2,10 @@
 
 namespace Database\Factories;
 
+use App\Models\AlbumList;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
+use Illuminate\Support\Str;
 
 /**
  * @extends \Illuminate\Database\Eloquent\Factories\Factory<\App\Models\AlbumList>
@@ -17,9 +19,12 @@ class AlbumListFactory extends Factory
      */
     public function definition(): array
     {
+        $title = fake()->words(3, true);
+
         return [
             'user_id' => User::factory(),
-            'title' => fake()->words(3, true),
+            'title' => $title,
+            'slug' => Str::slug($title).'-'.Str::lower(Str::random(6)),
             'description' => fake()->sentence(),
             'type' => 'custom',
             'mode' => 'default',
@@ -55,6 +60,7 @@ class AlbumListFactory extends Factory
     {
         return $this->state(fn (array $attributes) => [
             'title' => 'Listen Later',
+            'slug' => AlbumList::LISTEN_LATER_SLUG,
             'type' => 'system',
         ]);
     }
@@ -66,6 +72,7 @@ class AlbumListFactory extends Factory
     {
         return $this->state(fn (array $attributes) => [
             'title' => 'Reviewed',
+            'slug' => AlbumList::REVIEWED_SLUG,
             'type' => 'reviewed',
             'sort' => 'added',
             'direction' => 'desc',

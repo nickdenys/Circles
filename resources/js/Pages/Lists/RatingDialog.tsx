@@ -42,6 +42,7 @@ interface RatingDialogProps {
     onSubmitted: (albumId: number, rating: number, review: string | null) => void;
     allowUnreview?: boolean;
     onUnreviewed?: (albumId: number) => void;
+    onMoveUndone?: (albumId: number) => void;
 }
 
 export default function RatingDialog({
@@ -52,6 +53,7 @@ export default function RatingDialog({
     onSubmitted,
     allowUnreview = false,
     onUnreviewed,
+    onMoveUndone,
 }: RatingDialogProps) {
     const [rating, setRating] = useState<number>(0);
     const [review, setReview] = useState<string>('');
@@ -88,13 +90,21 @@ export default function RatingDialog({
                 const submittedRating = response.data?.rating ?? rating;
                 const submittedReview = response.data?.review ?? (review.trim() === '' ? null : review.trim());
                 const reviewedListId = response.data?.reviewedListId;
+                const reviewedListSlug = response.data?.reviewedListSlug;
 
                 if (reviewedListId && reviewedListId !== listId) {
-                    toast.success(`Moved "${album.title}" to Reviewed.`, {
+                    const movedAlbum = album;
+                    toast.success(`Moved "${movedAlbum.title}" to Reviewed.`, {
                         action: {
-                            label: 'View list',
-                            onClick: () => router.visit(`/lists/${reviewedListId}`),
+                            label: 'Undo',
+                            onClick: () => undoReview(reviewedListId, movedAlbum),
                         },
+                        cancel: reviewedListSlug
+                            ? {
+                                  label: 'View list',
+                                  onClick: () => router.visit(`/lists/${reviewedListSlug}`),
+                              }
+                            : undefined,
                     });
                 }
 
@@ -110,6 +120,20 @@ export default function RatingDialog({
             });
     }
 
+    function undoReview(reviewedListId: number, movedAlbum: RatingDialogAlbum) {
+        axios
+            .delete(`/lists/${reviewedListId}/albums/${movedAlbum.id}/review`, {
+                params: { restore_to_source: 1 },
+            })
+            .then(() => {
+                toast.success(`Restored "${movedAlbum.title}".`);
+                onMoveUndone?.(movedAlbum.id);
+            })
+            .catch(() => {
+                toast.error('Could not undo your review.');
+            });
+    }
+
     function handleUnreview() {
         if (!album) { return; }
 
@@ -118,13 +142,13 @@ export default function RatingDialog({
         axios
             .delete(`/lists/${listId}/albums/${album.id}/review`)
             .then((response) => {
-                const listenLaterListId = response.data?.listenLaterListId;
+                const listenLaterListSlug = response.data?.listenLaterListSlug;
 
-                toast.success(`Moved "${album.title}" to Listen Later.`, listenLaterListId
+                toast.success(`Moved "${album.title}" to Listen Later.`, listenLaterListSlug
                     ? {
                           action: {
                               label: 'View list',
-                              onClick: () => router.visit(`/lists/${listenLaterListId}`),
+                              onClick: () => router.visit(`/lists/${listenLaterListSlug}`),
                           },
                       }
                     : undefined);

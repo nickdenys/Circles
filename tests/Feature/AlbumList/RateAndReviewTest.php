@@ -139,6 +139,22 @@ test('the show page wires the listened button to the rating dialog', function ()
         ->toContain('reviewed-card');
 });
 
+test('the show page does not wire a main click action on reviewed-list album cards', function () {
+    $content = file_get_contents(resource_path('js/Pages/Lists/Show.tsx'));
+
+    expect($content)
+        ->not->toContain('isReviewedList ? onRate : onMore')
+        ->not->toContain('isReviewedList ? onRate : undefined');
+});
+
+test('the show page exposes an Edit review menu item for reviewed-list albums', function () {
+    $content = file_get_contents(resource_path('js/Pages/Lists/Show.tsx'));
+
+    expect($content)
+        ->toContain('Edit review')
+        ->toContain('edit-review-button');
+});
+
 test('the rating dialog posts to the review endpoint', function () {
     $content = file_get_contents(resource_path('js/Pages/Lists/RatingDialog.tsx'));
 
@@ -152,6 +168,128 @@ test('the move dialog excludes the Reviewed list as a target', function () {
     $content = file_get_contents(resource_path('js/Pages/Lists/MoveAlbumDialog.tsx'));
 
     expect($content)->toContain('exclude_reviewed');
+});
+
+test('reviewing from a non-Reviewed list records the source list, position, and original added timestamp', function () {
+    $user = User::factory()->create();
+    $list = AlbumList::factory()->for($user)->create();
+    $album = Album::factory()->create();
+    \App\Models\AlbumListAlbum::query()->insert([
+        'album_list_id' => $list->id,
+        'album_id' => $album->id,
+        'position' => 7,
+        'created_at' => '2020-01-15 10:00:00',
+        'updated_at' => '2020-01-15 10:00:00',
+    ]);
+
+    $this->actingAs($user)
+        ->postJson(route('lists.albums.review.store', [$list, $album]), ['rating' => 4.0])
+        ->assertSuccessful();
+
+    $review = AlbumReview::where('user_id', $user->id)->where('album_id', $album->id)->first();
+    expect($review->source_album_list_id)->toBe($list->id);
+    expect($review->source_position)->toBe(7);
+    expect($review->source_created_at?->format('Y-m-d H:i:s'))->toBe('2020-01-15 10:00:00');
+});
+
+test('un-review with restore_to_source preserves the pivot created_at so date-added sort orders match the original', function () {
+    $user = User::factory()->create();
+    $listenLater = $user->listenLaterList;
+    $album = Album::factory()->create();
+    \App\Models\AlbumListAlbum::query()->insert([
+        'album_list_id' => $listenLater->id,
+        'album_id' => $album->id,
+        'position' => 3,
+        'created_at' => '2020-02-01 09:00:00',
+        'updated_at' => '2020-02-01 09:00:00',
+    ]);
+
+    $this->actingAs($user)
+        ->postJson(route('lists.albums.review.store', [$listenLater, $album]), ['rating' => 4.0])
+        ->assertSuccessful();
+
+    $this->actingAs($user)
+        ->deleteJson(route('lists.albums.review.destroy', [$user->reviewedList, $album]).'?restore_to_source=1')
+        ->assertSuccessful();
+
+    $pivot = \App\Models\AlbumListAlbum::query()
+        ->where('album_list_id', $listenLater->id)
+        ->where('album_id', $album->id)
+        ->first();
+
+    expect($pivot)->not->toBeNull();
+    expect($pivot->position)->toBe(3);
+    expect($pivot->created_at->format('Y-m-d H:i:s'))->toBe('2020-02-01 09:00:00');
+});
+
+test('reviewing from the Reviewed list does not overwrite a previously recorded source', function () {
+    $user = User::factory()->create();
+    $list = AlbumList::factory()->for($user)->create();
+    $album = Album::factory()->create();
+    $list->albums()->attach($album->id, ['position' => 3]);
+
+    $this->actingAs($user)
+        ->postJson(route('lists.albums.review.store', [$list, $album]), ['rating' => 3.0])
+        ->assertSuccessful();
+
+    $reviewedList = $user->reviewedList;
+
+    $this->actingAs($user)
+        ->postJson(route('lists.albums.review.store', [$reviewedList, $album]), ['rating' => 4.5])
+        ->assertSuccessful();
+
+    $review = AlbumReview::where('user_id', $user->id)->where('album_id', $album->id)->first();
+    expect($review->source_album_list_id)->toBe($list->id);
+    expect($review->source_position)->toBe(3);
+});
+
+test('un-review with restore_to_source restores the album at its original source position and shifts later albums', function () {
+    $user = User::factory()->create();
+    $sourceList = AlbumList::factory()->for($user)->create();
+    $album = Album::factory()->create();
+    $sourceList->albums()->attach($album->id, ['position' => 2]);
+
+    $other = Album::factory()->create();
+    $another = Album::factory()->create();
+    $sourceList->albums()->attach($other->id, ['position' => 1]);
+    $sourceList->albums()->attach($another->id, ['position' => 3]);
+
+    $this->actingAs($user)
+        ->postJson(route('lists.albums.review.store', [$sourceList, $album]), ['rating' => 4.0])
+        ->assertSuccessful();
+
+    $reviewedList = $user->reviewedList;
+
+    $this->actingAs($user)
+        ->deleteJson(route('lists.albums.review.destroy', [$reviewedList, $album]).'?restore_to_source=1')
+        ->assertSuccessful()
+        ->assertJsonPath('restoredListId', $sourceList->id);
+
+    $sourceList->refresh();
+    expect($sourceList->albums()->where('album_id', $other->id)->first()->pivot->position)->toBe(1);
+    expect($sourceList->albums()->where('album_id', $album->id)->first()->pivot->position)->toBe(2);
+    expect($sourceList->albums()->where('album_id', $another->id)->first()->pivot->position)->toBe(4);
+    expect($user->listenLaterList->albums()->where('album_id', $album->id)->exists())->toBeFalse();
+});
+
+test('un-review with restore_to_source falls back to Listen Later when the source list is gone', function () {
+    $user = User::factory()->create();
+    $sourceList = AlbumList::factory()->for($user)->create();
+    $album = Album::factory()->create();
+    $sourceList->albums()->attach($album->id, ['position' => 2]);
+
+    $this->actingAs($user)
+        ->postJson(route('lists.albums.review.store', [$sourceList, $album]), ['rating' => 4.0])
+        ->assertSuccessful();
+
+    $sourceList->delete();
+
+    $this->actingAs($user)
+        ->deleteJson(route('lists.albums.review.destroy', [$user->reviewedList, $album]).'?restore_to_source=1')
+        ->assertSuccessful()
+        ->assertJsonPath('restoredListId', $user->listenLaterList->id);
+
+    expect($user->listenLaterList->albums()->where('album_id', $album->id)->exists())->toBeTrue();
 });
 
 test('un-review deletes the review row, detaches from Reviewed, and attaches to Listen Later', function () {
@@ -171,7 +309,10 @@ test('un-review deletes the review row, detaches from Reviewed, and attaches to 
         ->assertSuccessful()
         ->assertExactJson([
             'ok' => true,
+            'restoredListId' => $user->listenLaterList->id,
+            'restoredListSlug' => $user->listenLaterList->slug,
             'listenLaterListId' => $user->listenLaterList->id,
+            'listenLaterListSlug' => $user->listenLaterList->slug,
         ]);
 
     expect(AlbumReview::where('user_id', $user->id)->where('album_id', $album->id)->exists())->toBeFalse();
@@ -290,12 +431,15 @@ test('the rating dialog can delete a review via the DELETE endpoint', function (
         ->toContain('Un-review');
 });
 
-test('the rating dialog toasts a link to the Reviewed list after moving an album', function () {
+test('the rating dialog toasts undo and view-list actions after moving an album to Reviewed', function () {
     $content = file_get_contents(resource_path('js/Pages/Lists/RatingDialog.tsx'));
 
     expect($content)
         ->toContain('reviewedListId')
         ->toContain('to Reviewed')
+        ->toContain("label: 'Undo'")
+        ->toContain('undoReview(reviewedListId')
+        ->toContain('restore_to_source')
         ->toContain("label: 'View list'")
         ->toContain('router.visit(`/lists/');
 });
@@ -304,7 +448,7 @@ test('the rating dialog toasts a link to the Listen Later list after un-reviewin
     $content = file_get_contents(resource_path('js/Pages/Lists/RatingDialog.tsx'));
 
     expect($content)
-        ->toContain('listenLaterListId')
+        ->toContain('listenLaterListSlug')
         ->toContain('to Listen Later');
 });
 

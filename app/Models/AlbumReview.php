@@ -19,6 +19,9 @@ class AlbumReview extends Model
         'album_id',
         'rating',
         'review',
+        'source_album_list_id',
+        'source_position',
+        'source_created_at',
     ];
 
     /**
@@ -28,6 +31,7 @@ class AlbumReview extends Model
     {
         return [
             'rating' => 'float',
+            'source_created_at' => 'datetime',
         ];
     }
 

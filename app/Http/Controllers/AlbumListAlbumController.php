@@ -88,7 +88,7 @@ class AlbumListAlbumController extends Controller
         abort_if($destinationList->isReviewed(), 403);
 
         if ($destinationList->albums()->where('album_id', $album->id)->exists()) {
-            return redirect()->route('lists.show', $albumList)
+            return redirect()->route('lists.show', ['listSlug' => $albumList->slug])
                 ->with('error', 'Album already exists in the destination list.');
         }
 
@@ -102,7 +102,7 @@ class AlbumListAlbumController extends Controller
                 'position' => $maxPosition + 1,
             ]);
 
-        return redirect()->route('lists.show', $albumList);
+        return redirect()->route('lists.show', ['listSlug' => $albumList->slug]);
     }
 
     /**
@@ -158,6 +158,6 @@ class AlbumListAlbumController extends Controller
 
         $albumList->albums()->detach($album->id);
 
-        return redirect()->route('lists.show', $albumList);
+        return redirect()->route('lists.show', ['listSlug' => $albumList->slug]);
     }
 }

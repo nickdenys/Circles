@@ -104,6 +104,7 @@ function GridCard({ list }: { list: AlbumListItem }) {
                 border: '1px solid ' + (hover ? 'var(--line-ink)' : 'var(--line-strong)'),
                 borderRadius: 14,
                 overflow: 'hidden',
+                clipPath: 'inset(0 round 14px)',
                 boxShadow: hover ? 'var(--shadow-hard)' : 'none',
                 transform: hover ? 'translate(-2px, -2px)' : 'none',
                 textDecoration: 'none',
@@ -166,7 +167,7 @@ function GridCard({ list }: { list: AlbumListItem }) {
                 </div>
 
                 {list.description && (
-                    <p style={{ margin: 0, fontSize: 13.5, lineHeight: 1.5, color: 'var(--fg2)' }}>
+                    <p style={{ margin: 0, fontSize: 13.5, lineHeight: 1.5, color: 'var(--fg2)', whiteSpace: 'pre-line' }}>
                         {list.description}
                     </p>
                 )}

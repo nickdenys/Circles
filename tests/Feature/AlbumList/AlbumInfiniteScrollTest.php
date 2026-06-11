@@ -151,7 +151,7 @@ test('json endpoint second page returns remaining albums', function () {
     }
 
     $response = $this->actingAs($user)
-        ->getJson(route('lists.show', ['albumList' => $list, 'page' => 2]));
+        ->getJson(route('lists.show', ['listSlug' => $list->slug, 'page' => 2]));
 
     $data = $response->json();
     expect($data['data'])->toHaveCount(5);
@@ -184,7 +184,7 @@ test('albums are ordered by position across pages', function () {
         ->json('data');
 
     $page2 = $this->actingAs($user)
-        ->getJson(route('lists.show', ['albumList' => $list, 'page' => 2]))
+        ->getJson(route('lists.show', ['listSlug' => $list->slug, 'page' => 2]))
         ->json('data');
 
     // Verify we got all 25 unique albums across both pages

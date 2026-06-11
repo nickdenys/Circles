@@ -2,6 +2,7 @@
 
 namespace App\Mcp\Tools;
 
+use App\Support\AlbumListSlugger;
 use Illuminate\Contracts\JsonSchema\JsonSchema;
 use Laravel\Mcp\Request;
 use Laravel\Mcp\Response;
@@ -14,7 +15,7 @@ class CreateList extends Tool
     /**
      * Handle the tool request.
      */
-    public function handle(Request $request): Response
+    public function handle(Request $request, AlbumListSlugger $slugger): Response
     {
         $validated = $request->validate([
             'title' => ['required', 'string', 'max:255'],
@@ -23,8 +24,19 @@ class CreateList extends Tool
 
         $user = $request->user();
 
+        $base = $slugger->base($validated['title']);
+        if ($base === null || $slugger->isReserved($base)) {
+            return Response::error('Title produces an invalid or reserved URL slug.');
+        }
+
+        $resolution = $slugger->resolveForUser($user, $base);
+        if ($resolution['conflict'] !== null) {
+            return Response::error('A list with that URL existed previously. Rename your list.');
+        }
+
         $list = $user->albumLists()->create([
             'title' => $validated['title'],
+            'slug' => $resolution['slug'],
             'description' => $validated['description'] ?? null,
             'type' => 'custom',
         ]);
@@ -32,6 +44,7 @@ class CreateList extends Tool
         return Response::json([
             'id' => $list->id,
             'title' => $list->title,
+            'slug' => $list->slug,
             'description' => $list->description,
             'type' => $list->type,
         ]);

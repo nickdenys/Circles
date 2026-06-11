@@ -42,7 +42,6 @@ import {
     Trash2,
 } from 'lucide-react';
 import { CSSProperties, useEffect, useRef, useState } from 'react';
-import { toast } from 'sonner';
 import { Button } from '@/components/hoopify/Button';
 import { Chip } from '@/components/hoopify/Chip';
 import { CoverMosaic, MiniCover } from '@/components/hoopify/CoverArt';
@@ -73,6 +72,8 @@ interface AlbumListDetail {
     type: ListType;
     mode: ListMode;
     albumsCount: number;
+    totalTracks: number;
+    totalRuntimeMs: number;
 }
 
 interface AlbumItem {
@@ -144,6 +145,22 @@ function formatRuntimeShort(ms: number): string {
 
 function trackCountLabel(count: number): string {
     return count === 1 ? 'track' : 'tracks';
+}
+
+function formatRuntimeStat(ms: number): { value: string; unit: string } | null {
+    if (ms <= 0) {
+        return null;
+    }
+    const minutes = ms / 60000;
+    if (minutes <= 120) {
+        return { value: String(Math.round(minutes)), unit: 'min' };
+    }
+    const hours = minutes / 60;
+    if (hours > 20) {
+        return { value: String(Math.round(hours)), unit: 'hours' };
+    }
+    const rounded = Math.round(hours * 10) / 10;
+    return { value: Number.isInteger(rounded) ? String(rounded) : rounded.toFixed(1), unit: 'hours' };
 }
 
 function HeroBadge({ list }: { list: AlbumListDetail }) {
@@ -307,9 +324,9 @@ function GridAlbumCard({
         <div
             onMouseEnter={() => setHover(true)}
             onMouseLeave={() => setHover(false)}
-            onClick={isReviewedList ? onRate : onMore}
+            onClick={isReviewedList ? undefined : onMore}
             style={{
-                cursor: 'pointer',
+                cursor: isReviewedList ? 'default' : 'pointer',
                 display: 'flex',
                 flexDirection: 'column',
                 gap: 11,
@@ -580,6 +597,23 @@ function AlbumRowMenu({
                         Rate / review
                     </button>
                 )}
+                {isReviewedList && (
+                    <button
+                        type="button"
+                        className="edit-review-button"
+                        data-album-id={album.id}
+                        onClick={() => {
+                            setOpen(false);
+                            onRate();
+                        }}
+                        style={menuItemStyle()}
+                        onMouseEnter={(e) => (e.currentTarget.style.background = 'var(--surface-2)')}
+                        onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
+                    >
+                        <Pencil size={15} strokeWidth={2} style={{ color: 'var(--fg2)' }} />
+                        Edit review
+                    </button>
+                )}
                 {!isReviewedList && (
                     <button
                         type="button"
@@ -686,14 +720,13 @@ function TableAlbumRow({
             }}
         >
             <div
-                onClick={isReviewedList ? onRate : undefined}
                 style={{
                     display: 'grid',
                     gridTemplateColumns: '20px 26px 56px 1fr 200px 70px 34px',
                     alignItems: 'center',
                     gap: 14,
                     padding: '9px 12px',
-                    cursor: isReviewedList ? 'pointer' : 'default',
+                    cursor: 'default',
                 }}
             >
                 <span
@@ -910,6 +943,8 @@ export default function Show({ list, albums, sort, direction }: ShowProps) {
 
     const [orderedAlbums, setOrderedAlbums] = useState<AlbumItem[]>(albums.data);
     const [albumCount, setAlbumCount] = useState(list.albumsCount);
+    const [totalTracks, setTotalTracks] = useState(list.totalTracks);
+    const [totalRuntimeMs, setTotalRuntimeMs] = useState(list.totalRuntimeMs);
     const [albumToMove, setAlbumToMove] = useState<{ id: number; title: string } | null>(null);
     const [moveDialogOpen, setMoveDialogOpen] = useState(false);
     const [albumToRemove, setAlbumToRemove] = useState<{ id: number; title: string } | null>(null);
@@ -924,6 +959,7 @@ export default function Show({ list, albums, sort, direction }: ShowProps) {
     const metric: 'runtime' | 'rating' = isReviewedList ? 'rating' : 'runtime';
 
     const syncRef = useRef({ count: albums.data.length, firstId: albums.data[0]?.id });
+    const removedByReviewRef = useRef<Map<number, { album: AlbumItem; index: number }>>(new Map());
 
     const sensors = useSensors(
         useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
@@ -987,9 +1023,29 @@ export default function Show({ list, albums, sort, direction }: ShowProps) {
         });
     }
 
+    function addToTotals(album: { totalTracks?: number | null; runtimeMs?: number | null }) {
+        setTotalTracks((prev) => prev + (album.totalTracks ?? 0));
+        setTotalRuntimeMs((prev) => prev + (album.runtimeMs ?? 0));
+    }
+
+    function subtractFromTotals(album: { totalTracks?: number | null; runtimeMs?: number | null }) {
+        setTotalTracks((prev) => Math.max(0, prev - (album.totalTracks ?? 0)));
+        setTotalRuntimeMs((prev) => Math.max(0, prev - (album.runtimeMs ?? 0)));
+    }
+
+    function removeAlbumFromList(albumId: number) {
+        const removed = orderedAlbums.find((a) => a.id === albumId);
+        setOrderedAlbums((prev) => prev.filter((a) => a.id !== albumId));
+        setAlbumCount((prev) => prev - 1);
+        if (removed) {
+            subtractFromTotals(removed);
+        }
+    }
+
     function handleAlbumAdded(album: AddedAlbum) {
         setOrderedAlbums((prev) => [...prev, album]);
         setAlbumCount((prev) => prev + 1);
+        addToTotals(album);
     }
 
     function handleMoveAlbum(album: { id: number; title: string }) {
@@ -998,8 +1054,7 @@ export default function Show({ list, albums, sort, direction }: ShowProps) {
     }
 
     function handleAlbumMoved(albumId: number) {
-        setOrderedAlbums((prev) => prev.filter((a) => a.id !== albumId));
-        setAlbumCount((prev) => prev - 1);
+        removeAlbumFromList(albumId);
     }
 
     function handleRemoveAlbum(album: { id: number; title: string }) {
@@ -1008,8 +1063,7 @@ export default function Show({ list, albums, sort, direction }: ShowProps) {
     }
 
     function handleAlbumRemoved(albumId: number) {
-        setOrderedAlbums((prev) => prev.filter((a) => a.id !== albumId));
-        setAlbumCount((prev) => prev - 1);
+        removeAlbumFromList(albumId);
     }
 
     function handleRateAlbum(album: AlbumItem) {
@@ -1029,18 +1083,39 @@ export default function Show({ list, albums, sort, direction }: ShowProps) {
             );
             return;
         }
-        setOrderedAlbums((prev) => prev.filter((a) => a.id !== albumId));
-        setAlbumCount((prev) => prev - 1);
-        toast.success('Album moved to Reviewed.');
+        const index = orderedAlbums.findIndex((a) => a.id === albumId);
+        if (index !== -1) {
+            removedByReviewRef.current.set(albumId, {
+                album: orderedAlbums[index],
+                index,
+            });
+        }
+        removeAlbumFromList(albumId);
+    }
+
+    function handleReviewUndone(albumId: number) {
+        const entry = removedByReviewRef.current.get(albumId);
+        if (!entry) {
+            return;
+        }
+        removedByReviewRef.current.delete(albumId);
+        setOrderedAlbums((prev) => {
+            if (prev.some((a) => a.id === albumId)) {
+                return prev;
+            }
+            const insertAt = Math.min(entry.index, prev.length);
+            return [...prev.slice(0, insertAt), entry.album, ...prev.slice(insertAt)];
+        });
+        setAlbumCount((prev) => prev + 1);
+        addToTotals(entry.album);
     }
 
     function handleAlbumUnreviewed(albumId: number) {
-        setOrderedAlbums((prev) => prev.filter((a) => a.id !== albumId));
-        setAlbumCount((prev) => prev - 1);
+        removeAlbumFromList(albumId);
     }
 
     const hasAlbums = orderedAlbums.length > 0;
-    const totalTracks = orderedAlbums.reduce((sum, album) => sum + (album.totalTracks || 0), 0);
+    const runtimeStat = formatRuntimeStat(totalRuntimeMs);
 
     return (
         <>
@@ -1134,6 +1209,7 @@ export default function Show({ list, albums, sort, direction }: ShowProps) {
                                     maxWidth: 540,
                                     color: 'var(--fg2)',
                                     lineHeight: 1.55,
+                                    whiteSpace: 'pre-line',
                                 }}
                             >
                                 {list.description}
@@ -1213,6 +1289,9 @@ export default function Show({ list, albums, sort, direction }: ShowProps) {
                 >
                     <StatBlock value={albumCount} caption="Albums filed" />
                     {totalTracks > 0 && <StatBlock value={totalTracks} caption="Total tracks" />}
+                    {runtimeStat && (
+                        <StatBlock value={runtimeStat.value} unit={runtimeStat.unit} caption="Total runtime" />
+                    )}
                 </div>
 
                 <div
@@ -1520,6 +1599,7 @@ export default function Show({ list, albums, sort, direction }: ShowProps) {
                 onSubmitted={handleReviewSubmitted}
                 allowUnreview={isReviewedList}
                 onUnreviewed={handleAlbumUnreviewed}
+                onMoveUndone={handleReviewUndone}
             />
         </>
     );

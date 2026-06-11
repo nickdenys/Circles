@@ -73,6 +73,14 @@ export function CoverMosaic({
     while (four.length < 4) {
         four.push(four[four.length - 1] ?? null);
     }
+    const outer = Math.max(0, radius - gap);
+    const cornerRadii = [
+        `${outer}px ${inner}px ${inner}px ${inner}px`,
+        `${inner}px ${outer}px ${inner}px ${inner}px`,
+        `${inner}px ${inner}px ${inner}px ${outer}px`,
+        `${inner}px ${inner}px ${outer}px ${inner}px`,
+    ];
+
     return (
         <div
             style={{
@@ -91,7 +99,7 @@ export function CoverMosaic({
             }}
         >
             {four.map((src, i) => (
-                <div key={i} style={{ overflow: 'hidden', borderRadius: inner }}>
+                <div key={i} style={{ overflow: 'hidden', borderRadius: cornerRadii[i] }}>
                     <MiniCover src={src ?? undefined} size="100%" radius={0} style={{ width: '100%', height: '100%' }} />
                 </div>
             ))}

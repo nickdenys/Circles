@@ -7,11 +7,20 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class AlbumList extends Model
 {
     /** @use HasFactory<\Database\Factories\AlbumListFactory> */
     use HasFactory;
+
+    public const LISTEN_LATER_DESCRIPTION = 'The on-deck pile — albums flagged for a proper first listen, nothing rated yet.';
+
+    public const REVIEWED_DESCRIPTION = "Everything you've sat with and scored. The settled record of your taste.";
+
+    public const LISTEN_LATER_SLUG = 'listen-later';
+
+    public const REVIEWED_SLUG = 'reviewed';
 
     /**
      * The attributes that are mass assignable.
@@ -21,6 +30,7 @@ class AlbumList extends Model
     protected $fillable = [
         'user_id',
         'title',
+        'slug',
         'description',
         'type',
         'mode',
@@ -38,6 +48,15 @@ class AlbumList extends Model
         return [
             'mode' => AlbumListMode::class,
         ];
+    }
+
+    /**
+     * Route-bound lookups use the per-user slug. Action routes that still need
+     * id binding declare {albumList:id} explicitly.
+     */
+    public function getRouteKeyName(): string
+    {
+        return 'slug';
     }
 
     /**
@@ -82,5 +101,13 @@ class AlbumList extends Model
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
+    }
+
+    /**
+     * History of slugs this list used to have; each is reachable via 301.
+     */
+    public function previousSlugs(): HasMany
+    {
+        return $this->hasMany(AlbumListSlugHistory::class);
     }
 }

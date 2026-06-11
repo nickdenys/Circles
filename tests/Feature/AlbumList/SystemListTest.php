@@ -94,7 +94,7 @@ test('system lists are flagged with type system', function () {
 });
 
 test('the Reviewed list is flagged with type reviewed', function () {
-    $list = AlbumList::factory()->reviewed()->create();
+    $list = User::factory()->create()->reviewedList;
 
     expect($list->type)->toBe('reviewed');
     expect($list->isReviewed())->toBeTrue();
@@ -122,4 +122,26 @@ test('user has many album lists', function () {
 
     // 3 custom + Listen Later (system) + Reviewed = 5
     expect($user->fresh()->albumLists)->toHaveCount(5);
+});
+
+test('new users get a default description on Listen Later and Reviewed', function () {
+    $user = User::factory()->create();
+
+    $listenLater = $user->listenLaterList;
+    $reviewed = $user->reviewedList;
+
+    expect($listenLater->description)->toBe(AlbumList::LISTEN_LATER_DESCRIPTION);
+    expect($reviewed->description)->toBe(AlbumList::REVIEWED_DESCRIPTION);
+});
+
+test('ensureSystemLists does not overwrite descriptions on lists that already exist', function () {
+    $user = User::factory()->create();
+
+    $user->listenLaterList->update(['description' => 'My own note']);
+    $user->reviewedList->update(['description' => 'Custom']);
+
+    $user->ensureSystemLists();
+
+    expect($user->listenLaterList->fresh()->description)->toBe('My own note');
+    expect($user->reviewedList->fresh()->description)->toBe('Custom');
 });

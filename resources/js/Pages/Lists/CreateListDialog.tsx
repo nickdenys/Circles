@@ -1,5 +1,6 @@
-import { useForm } from '@inertiajs/react';
-import { FormEvent } from 'react';
+import { router } from '@inertiajs/react';
+import axios, { AxiosError } from 'axios';
+import { FormEvent, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import {
     Dialog,
@@ -13,6 +14,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import ListModeField, { type ListMode } from '@/Pages/Lists/ListModeField';
+import ConfirmSlugOverrideDialog, { type SlugHistoryConflict } from './ConfirmSlugOverrideDialog';
 
 interface CreateListDialogProps {
     open: boolean;
@@ -23,21 +25,60 @@ export default function CreateListDialog({
     open,
     onOpenChange,
 }: CreateListDialogProps) {
-    const { data, setData, post, processing, errors, reset } = useForm({
-        title: '',
-        description: '',
-        mode: 'default' as ListMode,
-    });
+    const [title, setTitle] = useState('');
+    const [description, setDescription] = useState('');
+    const [mode, setMode] = useState<ListMode>('default');
+    const [processing, setProcessing] = useState(false);
+    const [errors, setErrors] = useState<Record<string, string>>({});
+    const [conflict, setConflict] = useState<SlugHistoryConflict | null>(null);
+
+    function reset() {
+        setTitle('');
+        setDescription('');
+        setMode('default');
+        setErrors({});
+        setConflict(null);
+    }
+
+    function submit(force: boolean) {
+        setProcessing(true);
+        setErrors({});
+
+        axios
+            .post('/lists', {
+                title,
+                description,
+                mode,
+                force_slug: force,
+            })
+            .then(() => {
+                reset();
+                onOpenChange(false);
+                router.reload({ only: ['lists'] });
+            })
+            .catch((error: AxiosError<Record<string, unknown>>) => {
+                const data = error.response?.data;
+                if (data && data.error === 'slug_history_conflict') {
+                    setConflict({
+                        conflicting_slug: data.conflicting_slug as string,
+                        previous_owner_title: data.previous_owner_title as string,
+                        suggested_alternative: data.suggested_alternative as string,
+                    });
+                    return;
+                }
+                const fieldErrors = (data?.errors ?? {}) as Record<string, string[]>;
+                const mapped: Record<string, string> = {};
+                Object.entries(fieldErrors).forEach(([k, v]) => {
+                    mapped[k] = Array.isArray(v) ? v[0] : String(v);
+                });
+                setErrors(mapped);
+            })
+            .finally(() => setProcessing(false));
+    }
 
     function handleSubmit(e: FormEvent) {
         e.preventDefault();
-
-        post('/lists', {
-            onSuccess: () => {
-                reset();
-                onOpenChange(false);
-            },
-        });
+        submit(false);
     }
 
     function handleOpenChange(value: boolean) {
@@ -62,8 +103,8 @@ export default function CreateListDialog({
                         <Label htmlFor="title">Title</Label>
                         <Input
                             id="title"
-                            value={data.title}
-                            onChange={(e) => setData('title', e.target.value)}
+                            value={title}
+                            onChange={(e) => setTitle(e.target.value)}
                             aria-invalid={!!errors.title}
                         />
                         {errors.title && (
@@ -82,10 +123,8 @@ export default function CreateListDialog({
                         </Label>
                         <Textarea
                             id="description"
-                            value={data.description}
-                            onChange={(e) =>
-                                setData('description', e.target.value)
-                            }
+                            value={description}
+                            onChange={(e) => setDescription(e.target.value)}
                             aria-invalid={!!errors.description}
                         />
                         {errors.description && (
@@ -96,8 +135,8 @@ export default function CreateListDialog({
                     </div>
 
                     <ListModeField
-                        value={data.mode}
-                        onChange={(mode) => setData('mode', mode)}
+                        value={mode}
+                        onChange={(value) => setMode(value)}
                     />
 
                     <DialogFooter>
@@ -114,6 +153,15 @@ export default function CreateListDialog({
                     </DialogFooter>
                 </form>
             </DialogContent>
+            <ConfirmSlugOverrideDialog
+                open={conflict !== null}
+                conflict={conflict}
+                onUseAnyway={() => {
+                    setConflict(null);
+                    submit(true);
+                }}
+                onCancel={() => setConflict(null)}
+            />
         </Dialog>
     );
 }

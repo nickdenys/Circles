@@ -79,13 +79,19 @@ class User extends Authenticatable
     {
         $this->albumLists()->firstOrCreate(
             ['type' => 'system'],
-            ['title' => 'Listen Later'],
+            [
+                'title' => 'Listen Later',
+                'slug' => AlbumList::LISTEN_LATER_SLUG,
+                'description' => AlbumList::LISTEN_LATER_DESCRIPTION,
+            ],
         );
 
         $this->albumLists()->firstOrCreate(
             ['type' => 'reviewed'],
             [
                 'title' => 'Reviewed',
+                'slug' => AlbumList::REVIEWED_SLUG,
+                'description' => AlbumList::REVIEWED_DESCRIPTION,
                 'sort' => 'added',
                 'direction' => 'desc',
             ],

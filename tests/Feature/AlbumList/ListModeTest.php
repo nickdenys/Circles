@@ -55,7 +55,7 @@ test('updating a custom list changes its mode', function () {
             'title' => 'My list',
             'mode' => 'listening',
         ])
-        ->assertRedirect(route('lists.show', $list));
+        ->assertRedirect(route('lists.show', $list->refresh()));
 
     expect($list->fresh()->mode)->toBe(AlbumListMode::Listening);
 });
@@ -69,7 +69,7 @@ test('updating a custom list without a mode keeps the current mode', function ()
             'title' => 'Renamed list',
             'description' => 'Updated',
         ])
-        ->assertRedirect(route('lists.show', $list));
+        ->assertRedirect(route('lists.show', $list->refresh()));
 
     expect($list->fresh())
         ->title->toBe('Renamed list')
@@ -82,7 +82,7 @@ test('the mode endpoint updates a custom list mode', function () {
 
     $this->actingAs($user)
         ->patch(route('lists.mode.update', $list), ['mode' => 'listening'])
-        ->assertRedirect(route('lists.show', $list));
+        ->assertRedirect(route('lists.show', $list->refresh()));
 
     expect($list->fresh()->mode)->toBe(AlbumListMode::Listening);
 });
@@ -93,7 +93,7 @@ test('system lists can change mode through the mode endpoint', function () {
 
     $this->actingAs($user)
         ->patch(route('lists.mode.update', $list), ['mode' => 'listening'])
-        ->assertRedirect(route('lists.show', $list));
+        ->assertRedirect(route('lists.show', $list->refresh()));
 
     expect($list->fresh()->mode)->toBe(AlbumListMode::Listening);
 });
