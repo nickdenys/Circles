@@ -37,6 +37,7 @@ import {
     MoreHorizontal,
     Music,
     Pencil,
+    Play,
     Plus,
     RefreshCw,
     Trash2,
@@ -51,7 +52,6 @@ import { Score } from '@/components/hoopify/Score';
 import { StatBlock } from '@/components/hoopify/StatBlock';
 import { listColor } from '@/components/hoopify/theme';
 import { TopBar } from '@/components/hoopify/TopBar';
-import { Card } from '@/components/ui/card';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import AddAlbumDialog from './AddAlbumDialog';
@@ -559,7 +559,7 @@ function AlbumRowMenu({
             <PopoverContent
                 align="end"
                 style={{
-                    width: 200,
+                    width: 232,
                     padding: 6,
                     background: 'var(--surface)',
                     borderColor: 'var(--line-strong)',
@@ -573,19 +573,19 @@ function AlbumRowMenu({
                     style={{
                         display: 'flex',
                         alignItems: 'center',
-                        gap: 10,
-                        padding: '8px 10px',
+                        gap: 12,
+                        padding: '9px 12px',
                         borderRadius: 8,
                         fontFamily: 'var(--font-sans)',
-                        fontSize: 13.5,
+                        fontSize: 15,
                         fontWeight: 500,
                         color: 'var(--fg1)',
                         textDecoration: 'none',
                     }}
-                    onMouseEnter={(e) => (e.currentTarget.style.background = 'var(--surface-2)')}
+                    onMouseEnter={(e) => (e.currentTarget.style.background = 'var(--surface-3)')}
                     onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
                 >
-                    <ExternalLink size={15} strokeWidth={2} style={{ color: 'var(--fg2)' }} />
+                    <ExternalLink size={17} strokeWidth={2} style={{ color: 'var(--fg2)' }} />
                     Open in Spotify
                 </a>
                 {!isReviewedList && (
@@ -596,10 +596,10 @@ function AlbumRowMenu({
                             onRate();
                         }}
                         style={menuItemStyle()}
-                        onMouseEnter={(e) => (e.currentTarget.style.background = 'var(--surface-2)')}
+                        onMouseEnter={(e) => (e.currentTarget.style.background = 'var(--surface-3)')}
                         onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
                     >
-                        <Check size={15} strokeWidth={2} style={{ color: 'var(--fg2)' }} />
+                        <Check size={17} strokeWidth={2} style={{ color: 'var(--fg2)' }} />
                         Rate / review
                     </button>
                 )}
@@ -613,10 +613,10 @@ function AlbumRowMenu({
                             onRate();
                         }}
                         style={menuItemStyle()}
-                        onMouseEnter={(e) => (e.currentTarget.style.background = 'var(--surface-2)')}
+                        onMouseEnter={(e) => (e.currentTarget.style.background = 'var(--surface-3)')}
                         onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
                     >
-                        <Pencil size={15} strokeWidth={2} style={{ color: 'var(--fg2)' }} />
+                        <Pencil size={17} strokeWidth={2} style={{ color: 'var(--fg2)' }} />
                         Edit review
                     </button>
                 )}
@@ -628,10 +628,10 @@ function AlbumRowMenu({
                         data-album-title={album.title}
                         onClick={() => onMove({ id: album.id, title: album.title })}
                         style={menuItemStyle()}
-                        onMouseEnter={(e) => (e.currentTarget.style.background = 'var(--surface-2)')}
+                        onMouseEnter={(e) => (e.currentTarget.style.background = 'var(--surface-3)')}
                         onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
                     >
-                        <ArrowRightLeft size={15} strokeWidth={2} style={{ color: 'var(--fg2)' }} />
+                        <ArrowRightLeft size={17} strokeWidth={2} style={{ color: 'var(--fg2)' }} />
                         Move to list
                     </button>
                 )}
@@ -650,7 +650,7 @@ function AlbumRowMenu({
                             }
                             onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
                         >
-                            <Trash2 size={15} strokeWidth={2} style={{ color: 'var(--critical)' }} />
+                            <Trash2 size={17} strokeWidth={2} style={{ color: 'var(--critical)' }} />
                             Remove from list
                         </button>
                     </>
@@ -664,19 +664,132 @@ function menuItemStyle(danger = false): CSSProperties {
     return {
         display: 'flex',
         alignItems: 'center',
-        gap: 10,
+        gap: 12,
         width: '100%',
-        padding: '8px 10px',
+        padding: '9px 12px',
         borderRadius: 8,
         border: 'none',
         background: 'transparent',
         cursor: 'pointer',
         textAlign: 'left',
         fontFamily: 'var(--font-sans)',
-        fontSize: 13.5,
+        fontSize: 15,
         fontWeight: 500,
         color: danger ? 'var(--critical)' : 'var(--fg1)',
     };
+}
+
+function RowActionBar({
+    album,
+    listType,
+    onRate,
+    shown,
+}: {
+    album: AlbumItem;
+    listType: ListType;
+    onRate: () => void;
+    shown: boolean;
+}) {
+    const isReviewedList = listType === 'reviewed';
+    const checked = isReviewedList;
+    const [hoverCheck, setHoverCheck] = useState(false);
+    const [hoverPlay, setHoverPlay] = useState(false);
+
+    const checkBg = checked
+        ? hoverCheck
+            ? 'var(--accent-hover)'
+            : 'var(--accent)'
+        : hoverCheck
+            ? 'var(--accent)'
+            : 'var(--accent-weak)';
+    const checkFg = checked
+        ? 'var(--accent-on)'
+        : hoverCheck
+            ? 'var(--accent-on)'
+            : 'var(--accent)';
+
+    const checkLabel = checked ? 'Reviewed' : 'Mark reviewed';
+
+    return (
+        <div
+            style={{
+                display: 'flex',
+                gap: 6,
+                justifyContent: 'flex-end',
+                alignItems: 'center',
+                opacity: shown ? 1 : 0,
+                transition: 'opacity var(--dur-fast)',
+                pointerEvents: shown ? 'auto' : 'none',
+            }}
+            onClick={(event) => event.stopPropagation()}
+        >
+            <Tooltip>
+                <TooltipTrigger asChild>
+                    <button
+                        type="button"
+                        className="listened-button"
+                        data-album-id={album.id}
+                        aria-label={checkLabel}
+                        onClick={(event) => {
+                            event.stopPropagation();
+                            onRate();
+                        }}
+                        onMouseEnter={() => setHoverCheck(true)}
+                        onMouseLeave={() => setHoverCheck(false)}
+                        style={{
+                            width: 30,
+                            height: 30,
+                            borderRadius: 8,
+                            flex: 'none',
+                            cursor: 'pointer',
+                            border: 'none',
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            background: checkBg,
+                            color: checkFg,
+                            transition:
+                                'background var(--dur-fast) var(--ease-out), color var(--dur-fast)',
+                        }}
+                    >
+                        <Check size={16} strokeWidth={2} />
+                    </button>
+                </TooltipTrigger>
+                <TooltipContent>{checkLabel}</TooltipContent>
+            </Tooltip>
+            <Tooltip>
+                <TooltipTrigger asChild>
+                    <a
+                        href={album.spotifyUri}
+                        aria-label="Play"
+                        onClick={(event) => event.stopPropagation()}
+                        onMouseEnter={() => setHoverPlay(true)}
+                        onMouseLeave={() => setHoverPlay(false)}
+                        style={{
+                            width: 30,
+                            height: 30,
+                            borderRadius: 8,
+                            flex: 'none',
+                            cursor: 'pointer',
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            border:
+                                '1px solid ' +
+                                (hoverPlay ? 'var(--line-ink)' : 'var(--line-strong)'),
+                            background: hoverPlay ? 'var(--surface-3)' : 'transparent',
+                            color: hoverPlay ? 'var(--fg1)' : 'var(--fg2)',
+                            transition: 'all var(--dur-fast) var(--ease-out)',
+                            textDecoration: 'none',
+                        }}
+                    >
+                        <Play size={14} strokeWidth={2} style={{ marginLeft: 1 }} />
+                    </a>
+                </TooltipTrigger>
+                <TooltipContent>Play</TooltipContent>
+            </Tooltip>
+        </div>
+    );
 }
 
 function TableAlbumRow({
@@ -710,7 +823,7 @@ function TableAlbumRow({
     const hasNote = !!album.note && album.note.trim().length > 0;
 
     return (
-        <Card
+        <div
             data-album-db-id={album.id}
             onMouseEnter={() => setHover(true)}
             onMouseLeave={() => setHover(false)}
@@ -720,18 +833,16 @@ function TableAlbumRow({
             style={{
                 borderRadius: 10,
                 background: hover ? 'var(--surface-3)' : 'transparent',
-                border: 'none',
-                boxShadow: 'none',
                 transition: 'background var(--dur-fast)',
             }}
         >
             <div
                 style={{
                     display: 'grid',
-                    gridTemplateColumns: '20px 26px 56px 1fr 200px 70px 34px',
+                    gridTemplateColumns: '20px 26px 76px 1fr 72px 200px 50px 34px',
                     alignItems: 'center',
                     gap: 14,
-                    padding: '9px 12px',
+                    padding: '10px 12px',
                     cursor: 'default',
                 }}
             >
@@ -752,20 +863,23 @@ function TableAlbumRow({
                 <Label style={{ textAlign: 'right' }}>{String(index + 1).padStart(2, '0')}</Label>
                 <div
                     style={{
-                        width: 56,
-                        height: 56,
-                        borderRadius: 7,
+                        width: 76,
+                        height: 76,
+                        borderRadius: 9,
                         overflow: 'hidden',
                         border: '1px solid var(--line)',
+                        boxShadow: hover ? 'var(--shadow-sm)' : 'none',
+                        transition: 'box-shadow var(--dur-fast)',
                     }}
                 >
-                    <AlbumCover album={album} size={56} radius={0} />
+                    <AlbumCover album={album} size={76} radius={0} />
                 </div>
                 <div style={{ minWidth: 0 }}>
                     <div
                         style={{
-                            fontSize: 15,
+                            fontSize: 17,
                             fontWeight: 600,
+                            letterSpacing: '-0.01em',
                             whiteSpace: 'nowrap',
                             overflow: 'hidden',
                             textOverflow: 'ellipsis',
@@ -775,8 +889,9 @@ function TableAlbumRow({
                     </div>
                     <div
                         style={{
-                            fontSize: 13,
+                            fontSize: 13.5,
                             color: 'var(--fg2)',
+                            marginTop: 1,
                             whiteSpace: 'nowrap',
                             overflow: 'hidden',
                             textOverflow: 'ellipsis',
@@ -785,6 +900,12 @@ function TableAlbumRow({
                         {album.artists}
                     </div>
                 </div>
+                <RowActionBar
+                    album={album}
+                    listType={listType}
+                    onRate={onRate}
+                    shown={hover}
+                />
                 <Label
                     style={{ textAlign: 'right', whiteSpace: 'nowrap' }}
                     aria-label={`${album.totalTracks} ${trackCountLabel(album.totalTracks)}`}
@@ -805,41 +926,10 @@ function TableAlbumRow({
                         opacity: hover ? 1 : 0,
                         transition: 'opacity var(--dur-fast)',
                         display: 'flex',
-                        gap: 4,
+                        justifyContent: 'flex-end',
                     }}
                     onClick={(event) => event.stopPropagation()}
                 >
-                    {!isReviewedList && mode === 'listening' && (
-                        <Tooltip>
-                            <TooltipTrigger asChild>
-                                <button
-                                    type="button"
-                                    className="listened-button"
-                                    data-album-id={album.id}
-                                    aria-label="I listened to this"
-                                    onClick={(event) => {
-                                        event.stopPropagation();
-                                        onRate();
-                                    }}
-                                    style={{
-                                        width: 32,
-                                        height: 32,
-                                        borderRadius: 8,
-                                        border: 'none',
-                                        cursor: 'pointer',
-                                        display: 'inline-flex',
-                                        alignItems: 'center',
-                                        justifyContent: 'center',
-                                        background: 'var(--accent)',
-                                        color: 'var(--accent-on)',
-                                    }}
-                                >
-                                    <Check size={16} strokeWidth={2} />
-                                </button>
-                            </TooltipTrigger>
-                            <TooltipContent>I listened to this</TooltipContent>
-                        </Tooltip>
-                    )}
                     <AlbumRowMenu
                         album={album}
                         listType={listType}
@@ -851,7 +941,7 @@ function TableAlbumRow({
             </div>
 
             {hasNote && (
-                <div style={{ padding: '0 16px 13px 156px' }}>
+                <div style={{ padding: '0 16px 13px 176px' }}>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: 7, maxWidth: 620 }}>
                         <Label accent>Note</Label>
                         <p
@@ -869,7 +959,7 @@ function TableAlbumRow({
                     </div>
                 </div>
             )}
-        </Card>
+        </div>
     );
 }
 
@@ -1165,19 +1255,7 @@ export default function Show({ list, albums, sort, direction }: ShowProps) {
                     style={{
                         display: 'flex',
                         justifyContent: 'space-between',
-                        alignItems: 'center',
-                        padding: '14px 0 12px',
-                        borderBottom: '1px solid var(--line)',
-                    }}
-                >
-                    <Label>{isReviewedList ? '00 / SYSTEM LIST' : list.type === 'system' ? '00 / SYSTEM LIST' : 'YOUR LISTS'}</Label>
-                </div>
-
-                <div
-                    style={{
-                        display: 'flex',
-                        justifyContent: 'space-between',
-                        alignItems: 'center',
+                        alignItems: 'flex-start',
                         gap: 48,
                         padding: '26px 0 22px',
                         flexWrap: 'wrap',
@@ -1458,7 +1536,7 @@ export default function Show({ list, albums, sort, direction }: ShowProps) {
                         <div
                             style={{
                                 display: 'grid',
-                                gridTemplateColumns: '20px 26px 56px 1fr 200px 70px 34px',
+                                gridTemplateColumns: '20px 26px 76px 1fr 72px 200px 50px 34px',
                                 alignItems: 'center',
                                 gap: 14,
                                 padding: '0 12px 10px',
@@ -1470,6 +1548,7 @@ export default function Show({ list, albums, sort, direction }: ShowProps) {
                             <Label style={{ textAlign: 'right' }}>#</Label>
                             <span />
                             <Label>Album</Label>
+                            <span />
                             <Label style={{ textAlign: 'right' }}>Year · Tracks</Label>
                             <Label style={{ textAlign: 'right' }}>
                                 {metric === 'rating' ? 'Rating' : 'Runtime'}
