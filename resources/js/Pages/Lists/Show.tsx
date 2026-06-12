@@ -360,6 +360,9 @@ function GridAlbumCard({
                         padding: '3px 6px',
                         borderRadius: 6,
                         backdropFilter: 'blur(2px)',
+                        opacity: hover ? 1 : 0,
+                        transition: 'opacity var(--dur-fast) var(--ease-out)',
+                        pointerEvents: 'none',
                     }}
                 >
                     {String(index + 1).padStart(2, '0')}
@@ -396,6 +399,9 @@ function GridAlbumCard({
                             letterSpacing: '0.02em',
                             padding: '3px 7px',
                             borderRadius: 7,
+                            opacity: hover ? 1 : 0,
+                            transition: 'opacity var(--dur-fast) var(--ease-out)',
+                            pointerEvents: 'none',
                         }}
                     >
                         {formatRuntimeShort(album.runtimeMs)}

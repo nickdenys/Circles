@@ -10,12 +10,13 @@ import {
     Search,
     Star,
 } from 'lucide-react';
-import { CSSProperties, useEffect, useState } from 'react';
+import { CSSProperties, useState } from 'react';
 import { Button } from '@/components/hoopify/Button';
 import { CoverStack } from '@/components/hoopify/CoverArt';
 import { Label } from '@/components/hoopify/Label';
 import { listColor } from '@/components/hoopify/theme';
 import { TopBar } from '@/components/hoopify/TopBar';
+import { useCountUp } from '@/hooks/use-count-up';
 
 interface AuthUser {
     id: number;
@@ -53,39 +54,6 @@ const SYSTEM_ICON: Record<HomeList['type'], LucideIcon | null> = {
     custom: null,
 };
 
-function useCountUp(target: number, decimals = 0, dur = 900): string {
-    const [value, setValue] = useState(() => {
-        if (typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
-            return target;
-        }
-        return 0;
-    });
-
-    useEffect(() => {
-        if (typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
-            setValue(target);
-            return;
-        }
-        let raf = 0;
-        let start: number | null = null;
-        const ease = (t: number) => 1 - Math.pow(1 - t, 3);
-        const tick = (now: number) => {
-            if (start === null) start = now;
-            const progress = Math.min(1, (now - start) / dur);
-            setValue(target * ease(progress));
-            if (progress < 1) {
-                raf = requestAnimationFrame(tick);
-            } else {
-                setValue(target);
-            }
-        };
-        raf = requestAnimationFrame(tick);
-        return () => cancelAnimationFrame(raf);
-    }, [target, dur]);
-
-    return decimals ? value.toFixed(decimals) : Math.round(value).toLocaleString();
-}
-
 function StatTile({
     label,
     value,
@@ -101,7 +69,7 @@ function StatTile({
     delay: number;
     decimals?: number;
 }) {
-    const display = useCountUp(value, decimals);
+    const display = useCountUp(value, { decimals });
     const [hover, setHover] = useState(false);
     return (
         <div className="rise" style={{ animationDelay: `${delay}ms` }}>
