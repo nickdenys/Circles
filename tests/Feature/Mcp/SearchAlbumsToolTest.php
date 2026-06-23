@@ -71,3 +71,15 @@ test('it surfaces a reconnect message when the spotify refresh token is invalid'
         ->assertSee('Your Spotify connection has expired')
         ->assertSee('/auth/spotify/reconnect');
 });
+
+test('it surfaces a try again message when spotify is temporarily unavailable', function () {
+    $user = User::factory()->withExpiredToken()->create();
+
+    Http::fake([
+        'accounts.spotify.com/api/token' => Http::response(['error' => 'server_error'], 500),
+    ]);
+
+    HoopifyServer::actingAs($user)
+        ->tool(SearchAlbums::class, ['query' => 'doesnt matter'])
+        ->assertSee('Spotify is temporarily unavailable');
+});

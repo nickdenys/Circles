@@ -3,7 +3,9 @@
 namespace App\Services;
 
 use App\Exceptions\SpotifyAuthExpired;
+use App\Exceptions\SpotifyUnavailable;
 use App\Models\User;
+use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\Client\Response;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
@@ -258,19 +260,35 @@ class SpotifyService
      */
     private function refreshTokenIfExpired(): void
     {
+        if (! $this->user->isConnectedToSpotify()) {
+            throw new SpotifyAuthExpired;
+        }
+
         if (! $this->user->isSpotifyTokenExpired()) {
             return;
         }
 
-        $response = Http::asForm()->post('https://accounts.spotify.com/api/token', [
-            'grant_type' => 'refresh_token',
-            'refresh_token' => $this->user->spotify_refresh_token,
-            'client_id' => config('services.spotify.client_id'),
-            'client_secret' => config('services.spotify.client_secret'),
-        ]);
+        try {
+            $response = Http::asForm()->post('https://accounts.spotify.com/api/token', [
+                'grant_type' => 'refresh_token',
+                'refresh_token' => $this->user->spotify_refresh_token,
+                'client_id' => config('services.spotify.client_id'),
+                'client_secret' => config('services.spotify.client_secret'),
+            ]);
+        } catch (ConnectionException $exception) {
+            throw new SpotifyUnavailable(previous: $exception);
+        }
+
+        if ($response->status() === 400) {
+            if ($response->json('error') === 'invalid_grant') {
+                $this->user->disconnectSpotify();
+
+                throw new SpotifyAuthExpired;
+            }
+        }
 
         if (! $response->successful()) {
-            throw new SpotifyAuthExpired;
+            throw new SpotifyUnavailable;
         }
 
         $this->user->update([

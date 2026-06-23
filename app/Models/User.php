@@ -65,11 +65,31 @@ class User extends Authenticatable
     }
 
     /**
+     * Determine if the user still has a Spotify connection.
+     */
+    public function isConnectedToSpotify(): bool
+    {
+        return ! is_null($this->spotify_refresh_token);
+    }
+
+    /**
      * Determine if the user's Spotify token has expired.
      */
     public function isSpotifyTokenExpired(): bool
     {
-        return $this->spotify_token_expires_at->isPast();
+        return $this->spotify_token_expires_at?->isPast() ?? true;
+    }
+
+    /**
+     * Discard the stored Spotify tokens so the user must reconnect.
+     */
+    public function disconnectSpotify(): void
+    {
+        $this->update([
+            'spotify_token' => null,
+            'spotify_refresh_token' => null,
+            'spotify_token_expires_at' => null,
+        ]);
     }
 
     /**

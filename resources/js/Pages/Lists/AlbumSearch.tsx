@@ -59,7 +59,12 @@ export default function AlbumSearch({ listId, onAlbumAdded, popoverContainer }: 
             });
             setResults(response.data.data);
             setIsOpen(true);
-        } catch {
+        } catch (error) {
+            if (axios.isAxiosError(error) && error.response?.status === 401 && error.response.data?.reconnect_url) {
+                window.location.href = error.response.data.reconnect_url;
+                return;
+            }
+
             setResults([]);
             setError('Failed to search. Please try again.');
             setIsOpen(true);

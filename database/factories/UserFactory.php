@@ -38,4 +38,16 @@ class UserFactory extends Factory
             'spotify_token_expires_at' => now()->subMinute(),
         ]);
     }
+
+    /**
+     * Indicate the user has no Spotify connection.
+     */
+    public function disconnectedFromSpotify(): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'spotify_token' => null,
+            'spotify_refresh_token' => null,
+            'spotify_token_expires_at' => null,
+        ]);
+    }
 }
