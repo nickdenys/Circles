@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Enums\AlbumListMode;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
@@ -103,6 +104,7 @@ class User extends Authenticatable
                 'title' => 'Listen Later',
                 'slug' => AlbumList::LISTEN_LATER_SLUG,
                 'description' => AlbumList::LISTEN_LATER_DESCRIPTION,
+                'mode' => AlbumListMode::Listening->value,
             ],
         );
 

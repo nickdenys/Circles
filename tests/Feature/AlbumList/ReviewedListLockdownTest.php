@@ -24,15 +24,6 @@ test('the Reviewed list cannot be deleted', function () {
         ->assertForbidden();
 });
 
-test('the Reviewed list rejects mode updates', function () {
-    $user = User::factory()->create();
-    $reviewedList = $user->reviewedList;
-
-    $this->actingAs($user)
-        ->patch(route('lists.mode.update', $reviewedList), ['mode' => 'listening'])
-        ->assertForbidden();
-});
-
 test('albums cannot be added to the Reviewed list manually', function () {
     $user = User::factory()->create();
     $reviewedList = $user->reviewedList;

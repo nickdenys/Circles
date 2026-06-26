@@ -13,7 +13,6 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import ListModeField, { type ListMode } from '@/Pages/Lists/ListModeField';
 import ConfirmSlugOverrideDialog, { type SlugHistoryConflict } from './ConfirmSlugOverrideDialog';
 
 interface CreateListDialogProps {
@@ -27,7 +26,6 @@ export default function CreateListDialog({
 }: CreateListDialogProps) {
     const [title, setTitle] = useState('');
     const [description, setDescription] = useState('');
-    const [mode, setMode] = useState<ListMode>('default');
     const [processing, setProcessing] = useState(false);
     const [errors, setErrors] = useState<Record<string, string>>({});
     const [conflict, setConflict] = useState<SlugHistoryConflict | null>(null);
@@ -35,7 +33,6 @@ export default function CreateListDialog({
     function reset() {
         setTitle('');
         setDescription('');
-        setMode('default');
         setErrors({});
         setConflict(null);
     }
@@ -48,7 +45,6 @@ export default function CreateListDialog({
             .post('/lists', {
                 title,
                 description,
-                mode,
                 force_slug: force,
             })
             .then(() => {
@@ -133,11 +129,6 @@ export default function CreateListDialog({
                             </p>
                         )}
                     </div>
-
-                    <ListModeField
-                        value={mode}
-                        onChange={(value) => setMode(value)}
-                    />
 
                     <DialogFooter>
                         <Button

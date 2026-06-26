@@ -58,12 +58,12 @@ import AddAlbumDialog from './AddAlbumDialog';
 import { type AddedAlbum } from './AlbumSearch';
 import DeleteListDialog from './DeleteListDialog';
 import EditListDialog from './EditListDialog';
-import { type ListMode } from './ListModeField';
 import MoveAlbumDialog from './MoveAlbumDialog';
 import RatingDialog, { type RatingDialogAlbum } from './RatingDialog';
 import RemoveAlbumDialog from './RemoveAlbumDialog';
 
 type ListType = 'system' | 'custom' | 'reviewed';
+type ListMode = 'default' | 'listening';
 
 interface AlbumListDetail {
     id: number;
@@ -682,11 +682,13 @@ function menuItemStyle(danger = false): CSSProperties {
 function RowActionBar({
     album,
     listType,
+    mode,
     onRate,
     shown,
 }: {
     album: AlbumItem;
     listType: ListType;
+    mode: ListMode;
     onRate: () => void;
     shown: boolean;
 }) {
@@ -708,7 +710,12 @@ function RowActionBar({
             ? 'var(--accent-on)'
             : 'var(--accent)';
 
-    const checkLabel = checked ? 'Reviewed' : 'Mark reviewed';
+    const checkLabel =
+        mode === 'listening'
+            ? 'I listened to this'
+            : checked
+                ? 'Reviewed'
+                : 'Mark reviewed';
 
     return (
         <div
@@ -903,6 +910,7 @@ function TableAlbumRow({
                 <RowActionBar
                     album={album}
                     listType={listType}
+                    mode={mode}
                     onRate={onRate}
                     shown={hover}
                 />
@@ -1318,7 +1326,7 @@ export default function Show({ list, albums, sort, direction }: ShowProps) {
                                     Add album
                                 </Button>
                             )}
-                            {!isReviewedList && (
+                            {list.type === 'custom' && (
                                 <Button
                                     variant="secondary"
                                     icon={Pencil}
@@ -1654,8 +1662,6 @@ export default function Show({ list, albums, sort, direction }: ShowProps) {
                 listId={list.id}
                 title={list.title}
                 description={list.description}
-                mode={list.mode}
-                type={list.type}
                 open={editDialogOpen}
                 onOpenChange={setEditDialogOpen}
             />

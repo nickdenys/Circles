@@ -2,11 +2,9 @@
 
 namespace App\Http\Controllers;
 
-use App\Enums\AlbumListMode;
 use App\Enums\AlbumSort;
 use App\Http\Requests\DestroyAlbumListRequest;
 use App\Http\Requests\StoreAlbumListRequest;
-use App\Http\Requests\UpdateAlbumListModeRequest;
 use App\Http\Requests\UpdateAlbumListRequest;
 use App\Http\Requests\UpdateAlbumListSortRequest;
 use App\Jobs\FetchAlbumGenres;
@@ -205,16 +203,6 @@ class AlbumListController extends Controller
     }
 
     /**
-     * Update the list's stored mode setting.
-     */
-    public function updateMode(UpdateAlbumListModeRequest $request, AlbumList $albumList): RedirectResponse
-    {
-        $albumList->update($request->validated());
-
-        return to_route('lists.show', ['listSlug' => $albumList->slug]);
-    }
-
-    /**
      * Paginate a list's albums with the list's stored sort applied.
      */
     private function sortedAlbums(AlbumList $albumList, AlbumSort $sort, string $direction): Paginator
@@ -323,7 +311,6 @@ class AlbumListController extends Controller
             'slug' => $resolution['slug'],
             'description' => $request->validated('description'),
             'type' => 'custom',
-            'mode' => $request->validated('mode') ?? AlbumListMode::Default->value,
         ]);
 
         if ($force) {
@@ -357,10 +344,6 @@ class AlbumListController extends Controller
             'title' => $request->validated('title'),
             'description' => $request->validated('description'),
         ];
-
-        if ($mode = $request->validated('mode')) {
-            $data['mode'] = $mode;
-        }
 
         $oldSlug = $albumList->slug;
         $newSlug = $resolution['slug'];

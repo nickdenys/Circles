@@ -2,11 +2,9 @@
 
 namespace App\Http\Requests;
 
-use App\Enums\AlbumListMode;
 use App\Rules\ValidAlbumListTitleSlug;
 use Illuminate\Container\Container;
 use Illuminate\Foundation\Http\FormRequest;
-use Illuminate\Validation\Rule;
 
 class UpdateAlbumListRequest extends FormRequest
 {
@@ -31,7 +29,6 @@ class UpdateAlbumListRequest extends FormRequest
         return [
             'title' => ['required', 'string', 'max:255', Container::getInstance()->make(ValidAlbumListTitleSlug::class)],
             'description' => ['nullable', 'string', 'max:1000'],
-            'mode' => ['nullable', Rule::enum(AlbumListMode::class)],
             'force_slug' => ['nullable', 'boolean'],
         ];
     }

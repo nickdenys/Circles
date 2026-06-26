@@ -30,7 +30,6 @@ Route::middleware('auth')->group(function (): void {
         ->name('lists.show');
     Route::post('/lists/{albumList:id}/refresh', [AlbumListController::class, 'refresh'])->name('lists.refresh');
     Route::patch('/lists/{albumList:id}/sort', [AlbumListController::class, 'updateSort'])->name('lists.sort.update');
-    Route::patch('/lists/{albumList:id}/mode', [AlbumListController::class, 'updateMode'])->name('lists.mode.update');
     Route::put('/lists/{albumList:id}', [AlbumListController::class, 'update'])->name('lists.update');
     Route::delete('/lists/{albumList:id}', [AlbumListController::class, 'destroy'])->name('lists.destroy');
 

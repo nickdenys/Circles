@@ -13,15 +13,12 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import ListModeField, { type ListMode } from '@/Pages/Lists/ListModeField';
 import ConfirmSlugOverrideDialog, { type SlugHistoryConflict } from './ConfirmSlugOverrideDialog';
 
 interface EditListDialogProps {
     listId: number;
     title: string;
     description: string | null;
-    mode: ListMode;
-    type: 'system' | 'custom' | 'reviewed';
     open: boolean;
     onOpenChange: (open: boolean) => void;
 }
@@ -30,16 +27,11 @@ export default function EditListDialog({
     listId,
     title: initialTitle,
     description: initialDescription,
-    mode: initialMode,
-    type,
     open,
     onOpenChange,
 }: EditListDialogProps) {
-    const isSystem = type === 'system';
-
     const [title, setTitle] = useState(initialTitle);
     const [description, setDescription] = useState(initialDescription ?? '');
-    const [mode, setMode] = useState<ListMode>(initialMode);
     const [processing, setProcessing] = useState(false);
     const [errors, setErrors] = useState<Record<string, string>>({});
     const [conflict, setConflict] = useState<SlugHistoryConflict | null>(null);
@@ -48,33 +40,19 @@ export default function EditListDialog({
         if (open) {
             setTitle(initialTitle);
             setDescription(initialDescription ?? '');
-            setMode(initialMode);
             setErrors({});
             setConflict(null);
         }
-    }, [open, initialTitle, initialDescription, initialMode]);
+    }, [open, initialTitle, initialDescription]);
 
     function submit(force: boolean) {
         setProcessing(true);
         setErrors({});
 
-        if (isSystem) {
-            router.patch(
-                `/lists/${listId}/mode`,
-                { mode },
-                {
-                    onSuccess: () => onOpenChange(false),
-                    onFinish: () => setProcessing(false),
-                },
-            );
-            return;
-        }
-
         axios
             .put(`/lists/${listId}`, {
                 title,
                 description,
-                mode,
                 force_slug: force,
             })
             .then(() => {
@@ -132,8 +110,6 @@ export default function EditListDialog({
                             value={title}
                             onChange={(e) => setTitle(e.target.value)}
                             aria-invalid={!!errors.title}
-                            disabled={isSystem}
-                            className="disabled:pointer-events-auto disabled:cursor-not-allowed"
                         />
                         {errors.title && (
                             <p className="text-sm text-destructive">
@@ -154,7 +130,6 @@ export default function EditListDialog({
                             value={description}
                             onChange={(e) => setDescription(e.target.value)}
                             aria-invalid={!!errors.description}
-                            disabled={isSystem}
                         />
                         {errors.description && (
                             <p className="text-sm text-destructive">
@@ -162,11 +137,6 @@ export default function EditListDialog({
                             </p>
                         )}
                     </div>
-
-                    <ListModeField
-                        value={mode}
-                        onChange={(value) => setMode(value)}
-                    />
 
                     <DialogFooter>
                         <Button

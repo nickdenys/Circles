@@ -44,16 +44,6 @@ class AlbumListFactory extends Factory
     }
 
     /**
-     * Indicate the list uses the listening mode.
-     */
-    public function listening(): static
-    {
-        return $this->state(fn (array $attributes) => [
-            'mode' => 'listening',
-        ]);
-    }
-
-    /**
      * Create a Listen Later system list.
      */
     public function watchlist(): static
@@ -62,6 +52,7 @@ class AlbumListFactory extends Factory
             'title' => 'Listen Later',
             'slug' => AlbumList::LISTEN_LATER_SLUG,
             'type' => 'system',
+            'mode' => 'listening',
         ]);
     }
 
