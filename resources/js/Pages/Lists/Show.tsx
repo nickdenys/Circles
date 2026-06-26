@@ -305,6 +305,7 @@ function GridAlbumCard({
     album,
     index,
     listType,
+    mode,
     onRate,
     onMore,
     onPlay,
@@ -312,21 +313,23 @@ function GridAlbumCard({
     album: AlbumItem;
     index: number;
     listType: ListType;
+    mode: ListMode;
     onRate: () => void;
     onMore?: () => void;
     onPlay: () => void;
 }) {
     const [hover, setHover] = useState(false);
     const isReviewedList = listType === 'reviewed';
+    const isListening = mode === 'listening';
     const releaseYear = album.releaseDate ? album.releaseDate.slice(0, 4) : '';
 
     return (
         <div
             onMouseEnter={() => setHover(true)}
             onMouseLeave={() => setHover(false)}
-            onClick={isReviewedList ? undefined : onMore}
+            onClick={isListening ? onMore : undefined}
             style={{
-                cursor: isReviewedList ? 'default' : 'pointer',
+                cursor: isListening ? 'pointer' : 'default',
                 display: 'flex',
                 flexDirection: 'column',
                 gap: 11,
@@ -485,6 +488,7 @@ function GridAlbumItem({
     album,
     index,
     listType,
+    mode,
     onRate,
     onMore,
     onPlay,
@@ -493,6 +497,7 @@ function GridAlbumItem({
     album: AlbumItem;
     index: number;
     listType: ListType;
+    mode: ListMode;
     onRate: () => void;
     onMore?: () => void;
     onPlay: () => void;
@@ -517,6 +522,7 @@ function GridAlbumItem({
                 album={album}
                 index={index}
                 listType={listType}
+                mode={mode}
                 onRate={onRate}
                 onMore={onMore}
                 onPlay={onPlay}
@@ -528,18 +534,21 @@ function GridAlbumItem({
 function AlbumRowMenu({
     album,
     listType,
+    mode,
     onMove,
     onRemove,
     onRate,
 }: {
     album: AlbumItem;
     listType: ListType;
+    mode: ListMode;
     onMove: (album: { id: number; title: string }) => void;
     onRemove: (album: { id: number; title: string }) => void;
     onRate: () => void;
 }) {
     const [open, setOpen] = useState(false);
     const isReviewedList = listType === 'reviewed';
+    const isListening = mode === 'listening';
 
     return (
         <Popover open={open} onOpenChange={setOpen}>
@@ -588,7 +597,7 @@ function AlbumRowMenu({
                     <ExternalLink size={17} strokeWidth={2} style={{ color: 'var(--fg2)' }} />
                     Open in Spotify
                 </a>
-                {!isReviewedList && (
+                {isListening && (
                     <button
                         type="button"
                         onClick={() => {
@@ -681,41 +690,21 @@ function menuItemStyle(danger = false): CSSProperties {
 
 function RowActionBar({
     album,
-    listType,
     mode,
     onRate,
     shown,
 }: {
     album: AlbumItem;
-    listType: ListType;
     mode: ListMode;
     onRate: () => void;
     shown: boolean;
 }) {
-    const isReviewedList = listType === 'reviewed';
-    const checked = isReviewedList;
+    const isListening = mode === 'listening';
     const [hoverCheck, setHoverCheck] = useState(false);
     const [hoverPlay, setHoverPlay] = useState(false);
 
-    const checkBg = checked
-        ? hoverCheck
-            ? 'var(--accent-hover)'
-            : 'var(--accent)'
-        : hoverCheck
-            ? 'var(--accent)'
-            : 'var(--accent-weak)';
-    const checkFg = checked
-        ? 'var(--accent-on)'
-        : hoverCheck
-            ? 'var(--accent-on)'
-            : 'var(--accent)';
-
-    const checkLabel =
-        mode === 'listening'
-            ? 'I listened to this'
-            : checked
-                ? 'Reviewed'
-                : 'Mark reviewed';
+    const checkBg = hoverCheck ? 'var(--accent)' : 'var(--accent-weak)';
+    const checkFg = hoverCheck ? 'var(--accent-on)' : 'var(--accent)';
 
     return (
         <div
@@ -730,40 +719,42 @@ function RowActionBar({
             }}
             onClick={(event) => event.stopPropagation()}
         >
-            <Tooltip>
-                <TooltipTrigger asChild>
-                    <button
-                        type="button"
-                        className="listened-button"
-                        data-album-id={album.id}
-                        aria-label={checkLabel}
-                        onClick={(event) => {
-                            event.stopPropagation();
-                            onRate();
-                        }}
-                        onMouseEnter={() => setHoverCheck(true)}
-                        onMouseLeave={() => setHoverCheck(false)}
-                        style={{
-                            width: 30,
-                            height: 30,
-                            borderRadius: 8,
-                            flex: 'none',
-                            cursor: 'pointer',
-                            border: 'none',
-                            display: 'inline-flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            background: checkBg,
-                            color: checkFg,
-                            transition:
-                                'background var(--dur-fast) var(--ease-out), color var(--dur-fast)',
-                        }}
-                    >
-                        <Check size={16} strokeWidth={2} />
-                    </button>
-                </TooltipTrigger>
-                <TooltipContent>{checkLabel}</TooltipContent>
-            </Tooltip>
+            {isListening && (
+                <Tooltip>
+                    <TooltipTrigger asChild>
+                        <button
+                            type="button"
+                            className="listened-button"
+                            data-album-id={album.id}
+                            aria-label="I listened to this"
+                            onClick={(event) => {
+                                event.stopPropagation();
+                                onRate();
+                            }}
+                            onMouseEnter={() => setHoverCheck(true)}
+                            onMouseLeave={() => setHoverCheck(false)}
+                            style={{
+                                width: 30,
+                                height: 30,
+                                borderRadius: 8,
+                                flex: 'none',
+                                cursor: 'pointer',
+                                border: 'none',
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                background: checkBg,
+                                color: checkFg,
+                                transition:
+                                    'background var(--dur-fast) var(--ease-out), color var(--dur-fast)',
+                            }}
+                        >
+                            <Check size={16} strokeWidth={2} />
+                        </button>
+                    </TooltipTrigger>
+                    <TooltipContent>I listened to this</TooltipContent>
+                </Tooltip>
+            )}
             <Tooltip>
                 <TooltipTrigger asChild>
                     <a
@@ -909,7 +900,6 @@ function TableAlbumRow({
                 </div>
                 <RowActionBar
                     album={album}
-                    listType={listType}
                     mode={mode}
                     onRate={onRate}
                     shown={hover}
@@ -941,6 +931,7 @@ function TableAlbumRow({
                     <AlbumRowMenu
                         album={album}
                         listType={listType}
+                        mode={mode}
                         onMove={onMove}
                         onRemove={onRemove}
                         onRate={onRate}
@@ -1517,6 +1508,7 @@ export default function Show({ list, albums, sort, direction }: ShowProps) {
                                         album={album}
                                         index={index}
                                         listType={list.type}
+                                        mode={list.mode}
                                         onRate={() => handleRateAlbum(album)}
                                         onMore={() => handleRateAlbum(album)}
                                         onPlay={() => {}}
@@ -1532,6 +1524,7 @@ export default function Show({ list, albums, sort, direction }: ShowProps) {
                                         album={activeAlbum}
                                         index={0}
                                         listType={list.type}
+                                        mode={list.mode}
                                         onRate={() => {}}
                                         onPlay={() => {}}
                                     />

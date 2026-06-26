@@ -84,6 +84,15 @@ test('the show page renders the listening mode action bar', function () {
         ->toContain('I listened to this');
 });
 
+test('the listened button and grid click are gated to the listening mode', function () {
+    $content = file_get_contents(resource_path('js/Pages/Lists/Show.tsx'));
+
+    expect($content)
+        ->toContain("const isListening = mode === 'listening'")
+        ->toContain('isListening ? onMore : undefined')
+        ->toContain('{isListening && (');
+});
+
 test('the list dialogs no longer expose a mode field', function () {
     $create = file_get_contents(resource_path('js/Pages/Lists/CreateListDialog.tsx'));
     $edit = file_get_contents(resource_path('js/Pages/Lists/EditListDialog.tsx'));

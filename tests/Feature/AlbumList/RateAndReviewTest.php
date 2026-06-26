@@ -5,9 +5,9 @@ use App\Models\AlbumList;
 use App\Models\AlbumReview;
 use App\Models\User;
 
-test('submitting a review from a custom list upserts the review, detaches the album, and ensures it lives in Reviewed', function () {
+test('submitting a review from a listening list upserts the review, detaches the album, and ensures it lives in Reviewed', function () {
     $user = User::factory()->create();
-    $list = AlbumList::factory()->for($user)->create();
+    $list = $user->listenLaterList;
     $album = Album::factory()->create();
     $list->albums()->attach($album->id, ['position' => 1]);
 
@@ -28,9 +28,26 @@ test('submitting a review from a custom list upserts the review, detaches the al
     expect($user->reviewedList->albums()->where('album_id', $album->id)->exists())->toBeTrue();
 });
 
-test('submitting a second review updates the same row and does not duplicate the Reviewed attachment', function () {
+test('submitting a review from a default custom list is forbidden', function () {
     $user = User::factory()->create();
     $list = AlbumList::factory()->for($user)->create();
+    $album = Album::factory()->create();
+    $list->albums()->attach($album->id, ['position' => 1]);
+
+    $this->actingAs($user)
+        ->postJson(route('lists.albums.review.store', [$list, $album]), [
+            'rating' => 4.5,
+            'review' => 'Solid record',
+        ])
+        ->assertForbidden();
+
+    expect(AlbumReview::where('user_id', $user->id)->where('album_id', $album->id)->exists())->toBeFalse();
+    expect($list->fresh()->albums()->where('album_id', $album->id)->exists())->toBeTrue();
+});
+
+test('submitting a second review updates the same row and does not duplicate the Reviewed attachment', function () {
+    $user = User::factory()->create();
+    $list = $user->listenLaterList;
     $album = Album::factory()->create();
     $list->albums()->attach($album->id, ['position' => 1]);
 
@@ -72,7 +89,7 @@ test('submitting a review from the Reviewed list does not detach the album', fun
 
 test('reviewing an album that is not in any list still attaches it to Reviewed', function () {
     $user = User::factory()->create();
-    $list = AlbumList::factory()->for($user)->create();
+    $list = $user->listenLaterList;
     $album = Album::factory()->create();
 
     $this->actingAs($user)
@@ -84,7 +101,7 @@ test('reviewing an album that is not in any list still attaches it to Reviewed',
 
 test('rating validation rejects out-of-range and wrong-step values', function () {
     $user = User::factory()->create();
-    $list = AlbumList::factory()->for($user)->create();
+    $list = $user->listenLaterList;
     $album = Album::factory()->create();
 
     $this->actingAs($user)
@@ -172,7 +189,7 @@ test('the move dialog excludes the Reviewed list as a target', function () {
 
 test('reviewing from a non-Reviewed list records the source list, position, and original added timestamp', function () {
     $user = User::factory()->create();
-    $list = AlbumList::factory()->for($user)->create();
+    $list = $user->listenLaterList;
     $album = Album::factory()->create();
     \App\Models\AlbumListAlbum::query()->insert([
         'album_list_id' => $list->id,
@@ -224,7 +241,7 @@ test('un-review with restore_to_source preserves the pivot created_at so date-ad
 
 test('reviewing from the Reviewed list does not overwrite a previously recorded source', function () {
     $user = User::factory()->create();
-    $list = AlbumList::factory()->for($user)->create();
+    $list = $user->listenLaterList;
     $album = Album::factory()->create();
     $list->albums()->attach($album->id, ['position' => 3]);
 
@@ -245,7 +262,7 @@ test('reviewing from the Reviewed list does not overwrite a previously recorded 
 
 test('un-review with restore_to_source restores the album at its original source position and shifts later albums', function () {
     $user = User::factory()->create();
-    $sourceList = AlbumList::factory()->for($user)->create();
+    $sourceList = AlbumList::factory()->for($user)->create(['mode' => 'listening']);
     $album = Album::factory()->create();
     $sourceList->albums()->attach($album->id, ['position' => 2]);
 
@@ -274,7 +291,7 @@ test('un-review with restore_to_source restores the album at its original source
 
 test('un-review with restore_to_source falls back to Listen Later when the source list is gone', function () {
     $user = User::factory()->create();
-    $sourceList = AlbumList::factory()->for($user)->create();
+    $sourceList = AlbumList::factory()->for($user)->create(['mode' => 'listening']);
     $album = Album::factory()->create();
     $sourceList->albums()->attach($album->id, ['position' => 2]);
 
