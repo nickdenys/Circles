@@ -719,6 +719,37 @@ function RowActionBar({
             }}
             onClick={(event) => event.stopPropagation()}
         >
+            <Tooltip>
+                <TooltipTrigger asChild>
+                    <a
+                        href={album.spotifyUri}
+                        aria-label="Play"
+                        onClick={(event) => event.stopPropagation()}
+                        onMouseEnter={() => setHoverPlay(true)}
+                        onMouseLeave={() => setHoverPlay(false)}
+                        style={{
+                            width: 30,
+                            height: 30,
+                            borderRadius: 8,
+                            flex: 'none',
+                            cursor: 'pointer',
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            border:
+                                '1px solid ' +
+                                (hoverPlay ? 'var(--line-ink)' : 'var(--line-strong)'),
+                            background: hoverPlay ? 'var(--surface-3)' : 'transparent',
+                            color: hoverPlay ? 'var(--fg1)' : 'var(--fg2)',
+                            transition: 'all var(--dur-fast) var(--ease-out)',
+                            textDecoration: 'none',
+                        }}
+                    >
+                        <Play size={14} strokeWidth={2} style={{ marginLeft: 1 }} />
+                    </a>
+                </TooltipTrigger>
+                <TooltipContent>Play</TooltipContent>
+            </Tooltip>
             {isListening && (
                 <Tooltip>
                     <TooltipTrigger asChild>
@@ -755,37 +786,6 @@ function RowActionBar({
                     <TooltipContent>I listened to this</TooltipContent>
                 </Tooltip>
             )}
-            <Tooltip>
-                <TooltipTrigger asChild>
-                    <a
-                        href={album.spotifyUri}
-                        aria-label="Play"
-                        onClick={(event) => event.stopPropagation()}
-                        onMouseEnter={() => setHoverPlay(true)}
-                        onMouseLeave={() => setHoverPlay(false)}
-                        style={{
-                            width: 30,
-                            height: 30,
-                            borderRadius: 8,
-                            flex: 'none',
-                            cursor: 'pointer',
-                            display: 'inline-flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            border:
-                                '1px solid ' +
-                                (hoverPlay ? 'var(--line-ink)' : 'var(--line-strong)'),
-                            background: hoverPlay ? 'var(--surface-3)' : 'transparent',
-                            color: hoverPlay ? 'var(--fg1)' : 'var(--fg2)',
-                            transition: 'all var(--dur-fast) var(--ease-out)',
-                            textDecoration: 'none',
-                        }}
-                    >
-                        <Play size={14} strokeWidth={2} style={{ marginLeft: 1 }} />
-                    </a>
-                </TooltipTrigger>
-                <TooltipContent>Play</TooltipContent>
-            </Tooltip>
         </div>
     );
 }
@@ -905,10 +905,21 @@ function TableAlbumRow({
                     shown={hover}
                 />
                 <Label
-                    style={{ textAlign: 'right', whiteSpace: 'nowrap' }}
+                    style={{
+                        textAlign: 'right',
+                        whiteSpace: 'nowrap',
+                        fontVariantNumeric: 'tabular-nums',
+                    }}
                     aria-label={`${album.totalTracks} ${trackCountLabel(album.totalTracks)}`}
                 >
-                    {releaseYear} · {album.totalTracks} TRK
+                    <span style={{ display: 'inline-block', minWidth: '4ch', textAlign: 'right' }}>
+                        {releaseYear}
+                    </span>
+                    {' · '}
+                    <span style={{ display: 'inline-block', minWidth: '3ch', textAlign: 'right' }}>
+                        {album.totalTracks}
+                    </span>
+                    {' TRK'}
                 </Label>
                 {metric === 'rating' ? (
                     <span style={{ textAlign: 'right' }}>
