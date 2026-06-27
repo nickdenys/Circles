@@ -305,31 +305,23 @@ function GridAlbumCard({
     album,
     index,
     listType,
-    mode,
-    onRate,
-    onMore,
     onPlay,
 }: {
     album: AlbumItem;
     index: number;
     listType: ListType;
-    mode: ListMode;
-    onRate: () => void;
-    onMore?: () => void;
     onPlay: () => void;
 }) {
     const [hover, setHover] = useState(false);
     const isReviewedList = listType === 'reviewed';
-    const isListening = mode === 'listening';
     const releaseYear = album.releaseDate ? album.releaseDate.slice(0, 4) : '';
 
     return (
         <div
             onMouseEnter={() => setHover(true)}
             onMouseLeave={() => setHover(false)}
-            onClick={isListening ? onMore : undefined}
             style={{
-                cursor: isListening ? 'pointer' : 'default',
+                cursor: 'default',
                 display: 'flex',
                 flexDirection: 'column',
                 gap: 11,
@@ -448,7 +440,7 @@ function GridAlbumCard({
                             textDecoration: 'none',
                         }}
                     >
-                        <ExternalLink size={17} strokeWidth={2} style={{ marginLeft: 1 }} />
+                        <Play size={17} strokeWidth={2} style={{ marginLeft: 1 }} />
                     </a>
                 </span>
             </div>
@@ -488,18 +480,12 @@ function GridAlbumItem({
     album,
     index,
     listType,
-    mode,
-    onRate,
-    onMore,
     onPlay,
     draggable,
 }: {
     album: AlbumItem;
     index: number;
     listType: ListType;
-    mode: ListMode;
-    onRate: () => void;
-    onMore?: () => void;
     onPlay: () => void;
     draggable: boolean;
 }) {
@@ -522,9 +508,6 @@ function GridAlbumItem({
                 album={album}
                 index={index}
                 listType={listType}
-                mode={mode}
-                onRate={onRate}
-                onMore={onMore}
                 onPlay={onPlay}
             />
         </div>
@@ -1519,9 +1502,6 @@ export default function Show({ list, albums, sort, direction }: ShowProps) {
                                         album={album}
                                         index={index}
                                         listType={list.type}
-                                        mode={list.mode}
-                                        onRate={() => handleRateAlbum(album)}
-                                        onMore={() => handleRateAlbum(album)}
                                         onPlay={() => {}}
                                         draggable={isManual && !isReviewedList}
                                     />
@@ -1535,8 +1515,6 @@ export default function Show({ list, albums, sort, direction }: ShowProps) {
                                         album={activeAlbum}
                                         index={0}
                                         listType={list.type}
-                                        mode={list.mode}
-                                        onRate={() => {}}
                                         onPlay={() => {}}
                                     />
                                 </div>
