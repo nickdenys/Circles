@@ -1159,6 +1159,11 @@ export default function Show({ list, albums, sort, direction }: ShowProps) {
         setAlbumToReview({
             id: album.id,
             title: album.title,
+            artist: album.artists,
+            coverUrl: album.coverUrl,
+            releaseDate: album.releaseDate,
+            albumType: album.albumType,
+            totalTracks: album.totalTracks,
             currentRating: album.rating ?? null,
             currentReview: album.review ?? null,
         });

@@ -1,8 +1,10 @@
 export { Button } from './Button';
 export type { ButtonVariant, ButtonSize } from './Button';
 export { IconButton } from './IconButton';
+export { CardModal } from './CardModal';
 export { Chip } from './Chip';
 export { Label } from './Label';
+export { StarRating, ScoreReadout } from './StarRating';
 export { Logomark, Wordmark } from './Logomark';
 export { Score, DotRating } from './Score';
 export { CoverMosaic, CoverStack, CoverSpine, CoverRow, MiniCover } from './CoverArt';

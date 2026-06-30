@@ -187,6 +187,29 @@ test('the move dialog excludes the Reviewed list as a target', function () {
     expect($content)->toContain('exclude_reviewed');
 });
 
+test('the rating dialog renders the index-card review design', function () {
+    $content = file_get_contents(resource_path('js/Pages/Lists/RatingDialog.tsx'));
+
+    expect($content)
+        ->toContain('CardModal')
+        ->toContain('StarRating')
+        ->toContain('ScoreReadout')
+        ->toContain('Your rating')
+        ->toContain('Save review');
+});
+
+test('the hoopify kit exposes the review-card primitives', function () {
+    $index = file_get_contents(resource_path('js/components/hoopify/index.ts'));
+
+    expect($index)
+        ->toContain('CardModal')
+        ->toContain('StarRating')
+        ->toContain('ScoreReadout');
+
+    expect(file_exists(resource_path('js/components/hoopify/CardModal.tsx')))->toBeTrue();
+    expect(file_exists(resource_path('js/components/hoopify/StarRating.tsx')))->toBeTrue();
+});
+
 test('reviewing from a non-Reviewed list records the source list, position, and original added timestamp', function () {
     $user = User::factory()->create();
     $list = $user->listenLaterList;

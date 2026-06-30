@@ -1,9 +1,14 @@
 import { router } from '@inertiajs/react';
 import axios from 'axios';
-import { Loader2, Trash2 } from 'lucide-react';
-import { FormEvent, useEffect, useState } from 'react';
+import { Check, Loader2, Trash2 } from 'lucide-react';
+import { CSSProperties, FormEvent, useEffect, useState } from 'react';
 import { toast } from 'sonner';
 
+import { Button } from '@/components/hoopify/Button';
+import { CardModal } from '@/components/hoopify/CardModal';
+import { MiniCover } from '@/components/hoopify/CoverArt';
+import { Label } from '@/components/hoopify/Label';
+import { ScoreReadout, StarRating } from '@/components/hoopify/StarRating';
 import {
     AlertDialog,
     AlertDialogAction,
@@ -14,22 +19,16 @@ import {
     AlertDialogHeader,
     AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { Button } from '@/components/ui/button';
-import {
-    Dialog,
-    DialogContent,
-    DialogDescription,
-    DialogFooter,
-    DialogHeader,
-    DialogTitle,
-} from '@/components/ui/dialog';
-import { Label } from '@/components/ui/label';
-import { StarRating } from '@/components/ui/star-rating';
 import { Textarea } from '@/components/ui/textarea';
 
 export interface RatingDialogAlbum {
     id: number;
     title: string;
+    artist?: string | null;
+    coverUrl?: string | null;
+    releaseDate?: string | null;
+    albumType?: string | null;
+    totalTracks?: number | null;
     currentRating?: number | null;
     currentReview?: string | null;
 }
@@ -45,6 +44,24 @@ interface RatingDialogProps {
     onMoveUndone?: (albumId: number) => void;
 }
 
+function reviewFieldStyle(focused: boolean): CSSProperties {
+    return {
+        width: '100%',
+        minHeight: 104,
+        resize: 'none',
+        padding: '13px 15px',
+        borderRadius: 10,
+        border: `1.5px solid ${focused ? 'var(--accent)' : 'var(--line-strong)'}`,
+        boxShadow: focused ? '0 0 0 3px var(--accent-weak)' : 'none',
+        background: 'var(--surface-2)',
+        fontFamily: 'var(--font-sans)',
+        fontSize: 14.5,
+        color: 'var(--fg1)',
+        lineHeight: 1.55,
+        transition: 'border-color var(--dur-fast), box-shadow var(--dur-fast)',
+    };
+}
+
 export default function RatingDialog({
     listId,
     album,
@@ -57,6 +74,7 @@ export default function RatingDialog({
 }: RatingDialogProps) {
     const [rating, setRating] = useState<number>(0);
     const [review, setReview] = useState<string>('');
+    const [reviewFocused, setReviewFocused] = useState(false);
     const [processing, setProcessing] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [confirmUnreviewOpen, setConfirmUnreviewOpen] = useState(false);
@@ -66,6 +84,7 @@ export default function RatingDialog({
             setRating(album.currentRating ?? 0);
             setReview(album.currentReview ?? '');
             setError(null);
+            setReviewFocused(false);
         }
     }, [open, album]);
 
@@ -174,91 +193,192 @@ export default function RatingDialog({
         onOpenChange(value);
     }
 
+    const dirty =
+        !!album && (rating !== (album.currentRating ?? 0) || review !== (album.currentReview ?? ''));
+    const canSave = dirty && rating >= 0.5 && !processing;
+
+    const metadataParts = album
+        ? [
+              album.releaseDate ? album.releaseDate.slice(0, 4) : null,
+              album.albumType ? album.albumType.toUpperCase() : null,
+              album.totalTracks ? `${album.totalTracks} TRACKS` : null,
+          ].filter((part): part is string => Boolean(part))
+        : [];
+
     return (
         <>
-            <Dialog open={open} onOpenChange={handleOpenChange}>
-                <DialogContent>
-                    <DialogHeader>
-                        <DialogTitle>Rate &amp; review</DialogTitle>
-                        <DialogDescription>
-                            How would you rate{' '}
-                            <span className="font-medium text-foreground">
-                                {album?.title}
-                            </span>
-                            ?
-                        </DialogDescription>
-                    </DialogHeader>
-
-                    <form
-                        id="rating-dialog-form"
-                        onSubmit={handleSubmit}
-                        className="space-y-5"
-                    >
-                        <div className="space-y-2">
-                            <Label>Rating</Label>
-                            <StarRating
-                                value={rating}
-                                size="lg"
-                                interactive
-                                onChange={setRating}
-                            />
-                            {error && (
-                                <p className="text-sm text-destructive">{error}</p>
-                            )}
-                        </div>
-
-                        <div className="space-y-2">
-                            <Label htmlFor="rating-dialog-review">
-                                Review{' '}
-                                <span className="font-normal text-muted-foreground">
-                                    (optional)
-                                </span>
-                            </Label>
-                            <Textarea
-                                id="rating-dialog-review"
-                                value={review}
-                                onChange={(event) => setReview(event.target.value)}
-                                rows={4}
-                                placeholder="Anything you want to remember about it?"
-                            />
-                        </div>
-
-                        <DialogFooter className="sm:justify-between">
-                            {allowUnreview ? (
+            {open && album && (
+                <CardModal
+                    label=""
+                    ariaLabel="Review card"
+                    width={600}
+                    onClose={() => handleOpenChange(false)}
+                    footer={
+                        <div
+                            style={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: allowUnreview ? 'space-between' : 'flex-end',
+                                gap: 12,
+                            }}
+                        >
+                            {allowUnreview && (
                                 <Button
+                                    variant="danger"
+                                    size="sm"
                                     type="button"
-                                    variant="destructive"
+                                    icon={Trash2}
                                     id="unreview-button"
                                     onClick={() => setConfirmUnreviewOpen(true)}
                                     disabled={processing}
                                 >
-                                    <Trash2 className="mr-1 h-3 w-3" />
-                                    Un-review &amp; move to Listen Later
+                                    Un-review
                                 </Button>
-                            ) : (
-                                <span />
                             )}
-
-                            <div className="flex gap-2">
+                            <div style={{ display: 'flex', gap: 10 }}>
                                 <Button
+                                    variant="ghost"
                                     type="button"
-                                    variant="outline"
                                     onClick={() => handleOpenChange(false)}
                                     disabled={processing}
                                 >
                                     Cancel
                                 </Button>
-                                <Button type="submit" disabled={processing}>
+                                <Button
+                                    variant="primary"
+                                    type="submit"
+                                    form="rating-dialog-form"
+                                    icon={processing ? undefined : Check}
+                                    disabled={!canSave}
+                                >
                                     {processing && (
-                                        <Loader2 className="mr-1 h-3 w-3 animate-spin" />
+                                        <Loader2 size={15} strokeWidth={2} className="animate-spin" />
                                     )}
-                                    Save
+                                    Save review
                                 </Button>
                             </div>
-                        </DialogFooter>
+                        </div>
+                    }
+                >
+                    <form
+                        id="rating-dialog-form"
+                        onSubmit={handleSubmit}
+                        style={{ display: 'flex', flexDirection: 'column', gap: 24 }}
+                    >
+                        <div style={{ display: 'flex', gap: 18, alignItems: 'center' }}>
+                            <div
+                                style={{
+                                    width: 92,
+                                    height: 92,
+                                    flex: 'none',
+                                    borderRadius: 12,
+                                    overflow: 'hidden',
+                                    border: '1px solid var(--line)',
+                                    boxShadow: 'var(--shadow-md)',
+                                }}
+                            >
+                                <MiniCover
+                                    src={album.coverUrl}
+                                    alt={album.title}
+                                    size={92}
+                                    radius={0}
+                                    style={{ width: 92, height: 92 }}
+                                />
+                            </div>
+                            <div style={{ minWidth: 0 }}>
+                                <h2
+                                    style={{
+                                        fontFamily: 'var(--font-display)',
+                                        fontWeight: 800,
+                                        fontSize: 30,
+                                        letterSpacing: '-0.025em',
+                                        margin: 0,
+                                        lineHeight: 1.02,
+                                    }}
+                                >
+                                    {album.title}
+                                </h2>
+                                {album.artist && (
+                                    <div
+                                        style={{
+                                            fontSize: 16,
+                                            color: 'var(--fg2)',
+                                            fontWeight: 500,
+                                            marginTop: 4,
+                                        }}
+                                    >
+                                        {album.artist}
+                                    </div>
+                                )}
+                                {metadataParts.length > 0 && (
+                                    <Label style={{ display: 'block', marginTop: 8 }}>
+                                        {metadataParts.join(' · ')}
+                                    </Label>
+                                )}
+                            </div>
+                        </div>
+
+                        <div
+                            style={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'space-between',
+                                gap: 16,
+                                padding: '18px 20px',
+                                borderRadius: 12,
+                                background: 'var(--surface-2)',
+                                border: '1px solid var(--line)',
+                            }}
+                        >
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                                <Label>Your rating</Label>
+                                <StarRating
+                                    value={rating}
+                                    onChange={(next) => {
+                                        setRating(next);
+                                        setError(null);
+                                    }}
+                                    size={38}
+                                    gap={8}
+                                />
+                            </div>
+                            <div style={{ textAlign: 'right' }}>
+                                <ScoreReadout value={rating} size={48} />
+                                <Label style={{ display: 'block', marginTop: 4, fontSize: 10 }}>
+                                    {rating ? '' : 'tap to rate'}
+                                </Label>
+                            </div>
+                        </div>
+
+                        {error && (
+                            <p style={{ margin: '-12px 0 0', fontSize: 13, color: 'var(--critical)' }}>
+                                {error}
+                            </p>
+                        )}
+
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                            <Label>Review</Label>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                                <Textarea
+                                    id="rating-dialog-review"
+                                    value={review}
+                                    onChange={(event) => setReview(event.target.value)}
+                                    onFocus={() => setReviewFocused(true)}
+                                    onBlur={() => setReviewFocused(false)}
+                                    rows={1}
+                                    placeholder="Sit with it, then write. Your words, filed with the album."
+                                    style={reviewFieldStyle(reviewFocused)}
+                                />
+                                <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+                                    <Label style={{ fontSize: 10 }}>
+                                        {review.trim().length} chars · saved to this album
+                                    </Label>
+                                </div>
+                            </div>
+                        </div>
                     </form>
-                </DialogContent>
-            </Dialog>
+                </CardModal>
+            )}
 
             <AlertDialog open={confirmUnreviewOpen} onOpenChange={setConfirmUnreviewOpen}>
                 <AlertDialogContent>
