@@ -1,11 +1,10 @@
 <?php
 
-test('delete list dialog uses shadcn AlertDialog', function () {
+test('delete list dialog uses the index-card CardModal', function () {
     $content = file_get_contents(resource_path('js/Pages/Lists/DeleteListDialog.tsx'));
 
-    expect($content)->toContain("from '@/components/ui/alert-dialog'");
-    expect($content)->toContain('<AlertDialog');
-    expect($content)->toContain('<AlertDialogContent');
+    expect($content)->toContain("from '@/components/hoopify/CardModal'");
+    expect($content)->toContain('<CardModal');
 });
 
 test('delete list dialog displays permanent deletion warning', function () {
@@ -16,19 +15,16 @@ test('delete list dialog displays permanent deletion warning', function () {
     expect($content)->toContain('cannot be undone');
 });
 
-test('delete list dialog uses destructive variant for confirm button', function () {
+test('delete list dialog uses danger variant for confirm button', function () {
     $content = file_get_contents(resource_path('js/Pages/Lists/DeleteListDialog.tsx'));
 
-    expect($content)->toContain('variant="destructive"');
-    expect($content)->toContain('<AlertDialogAction');
+    expect($content)->toContain('variant="danger"');
 });
 
 test('delete list dialog has cancel and confirm buttons', function () {
     $content = file_get_contents(resource_path('js/Pages/Lists/DeleteListDialog.tsx'));
 
-    expect($content)->toContain('<AlertDialogCancel');
     expect($content)->toContain('Cancel');
-    expect($content)->toContain('<AlertDialogAction');
     expect($content)->toContain('Delete');
 });
 
@@ -50,7 +46,7 @@ test('delete list dialog supports controlled open state via onOpenChange', funct
     $content = file_get_contents(resource_path('js/Pages/Lists/DeleteListDialog.tsx'));
 
     expect($content)->toContain('onOpenChange');
-    expect($content)->toContain('<AlertDialog open={open} onOpenChange={onOpenChange}');
+    expect($content)->toContain('if (!open)');
 });
 
 test('delete list dialog shows processing state during deletion', function () {

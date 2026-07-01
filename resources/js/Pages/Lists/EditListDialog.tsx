@@ -1,19 +1,12 @@
 import { router } from '@inertiajs/react';
 import axios, { AxiosError } from 'axios';
+import { Check, Loader2 } from 'lucide-react';
 import { FormEvent, useEffect, useState } from 'react';
-import { Button } from '@/components/ui/button';
-import {
-    Dialog,
-    DialogContent,
-    DialogFooter,
-    DialogHeader,
-    DialogTitle,
-    DialogDescription,
-} from '@/components/ui/dialog';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
+
+import { Button } from '@/components/hoopify/Button';
+import { CardModal } from '@/components/hoopify/CardModal';
 import ConfirmSlugOverrideDialog, { type SlugHistoryConflict } from './ConfirmSlugOverrideDialog';
+import { DialogField } from './DialogField';
 
 interface EditListDialogProps {
     listId: number;
@@ -93,65 +86,67 @@ export default function EditListDialog({
     }
 
     return (
-        <Dialog open={open} onOpenChange={handleOpenChange}>
-            <DialogContent>
-                <DialogHeader>
-                    <DialogTitle>Edit List</DialogTitle>
-                    <DialogDescription>
-                        Update your list details.
-                    </DialogDescription>
-                </DialogHeader>
-
-                <form onSubmit={handleSubmit} className="space-y-4">
-                    <div className="space-y-2">
-                        <Label htmlFor="edit-title">Title</Label>
-                        <Input
+        <>
+            {open && (
+                <CardModal
+                    label="EDIT LIST"
+                    ariaLabel="Edit list"
+                    width={520}
+                    onClose={() => {
+                        if (conflict) {
+                            return;
+                        }
+                        handleOpenChange(false);
+                    }}
+                    footer={
+                        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10 }}>
+                            <Button
+                                variant="ghost"
+                                type="button"
+                                onClick={() => handleOpenChange(false)}
+                                disabled={processing}
+                            >
+                                Cancel
+                            </Button>
+                            <Button
+                                variant="primary"
+                                type="submit"
+                                form="edit-list-form"
+                                icon={processing ? undefined : Check}
+                                disabled={processing}
+                            >
+                                {processing && <Loader2 size={15} strokeWidth={2} className="animate-spin" />}
+                                Save
+                            </Button>
+                        </div>
+                    }
+                >
+                    <form
+                        id="edit-list-form"
+                        onSubmit={handleSubmit}
+                        style={{ display: 'flex', flexDirection: 'column', gap: 20 }}
+                    >
+                        <DialogField
                             id="edit-title"
+                            label="Title"
                             value={title}
-                            onChange={(e) => setTitle(e.target.value)}
-                            aria-invalid={!!errors.title}
+                            onChange={setTitle}
+                            error={errors.title}
+                            autoFocus
                         />
-                        {errors.title && (
-                            <p className="text-sm text-destructive">
-                                {errors.title}
-                            </p>
-                        )}
-                    </div>
-
-                    <div className="space-y-2">
-                        <Label htmlFor="edit-description">
-                            Description{' '}
-                            <span className="text-muted-foreground font-normal">
-                                (optional)
-                            </span>
-                        </Label>
-                        <Textarea
+                        <DialogField
                             id="edit-description"
+                            label="Description"
                             value={description}
-                            onChange={(e) => setDescription(e.target.value)}
-                            aria-invalid={!!errors.description}
+                            onChange={setDescription}
+                            error={errors.description}
+                            optional
+                            multiline
                         />
-                        {errors.description && (
-                            <p className="text-sm text-destructive">
-                                {errors.description}
-                            </p>
-                        )}
-                    </div>
+                    </form>
+                </CardModal>
+            )}
 
-                    <DialogFooter>
-                        <Button
-                            type="button"
-                            variant="outline"
-                            onClick={() => handleOpenChange(false)}
-                        >
-                            Cancel
-                        </Button>
-                        <Button type="submit" disabled={processing}>
-                            Save
-                        </Button>
-                    </DialogFooter>
-                </form>
-            </DialogContent>
             <ConfirmSlugOverrideDialog
                 open={conflict !== null}
                 conflict={conflict}
@@ -161,6 +156,6 @@ export default function EditListDialog({
                 }}
                 onCancel={() => setConflict(null)}
             />
-        </Dialog>
+        </>
     );
 }

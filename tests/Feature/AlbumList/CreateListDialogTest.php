@@ -2,12 +2,11 @@
 
 use App\Models\User;
 
-test('create list dialog component uses shadcn Dialog', function () {
+test('create list dialog uses the index-card CardModal', function () {
     $content = file_get_contents(resource_path('js/Pages/Lists/CreateListDialog.tsx'));
 
-    expect($content)->toContain("from '@/components/ui/dialog'");
-    expect($content)->toContain('<Dialog');
-    expect($content)->toContain('<DialogContent');
+    expect($content)->toContain("from '@/components/hoopify/CardModal'");
+    expect($content)->toContain('<CardModal');
 });
 
 test('create list dialog includes title and description form fields', function () {
@@ -17,20 +16,11 @@ test('create list dialog includes title and description form fields', function (
     expect($content)->toContain('id="description"');
 });
 
-test('create list dialog uses shadcn Input and Textarea', function () {
+test('create list dialog uses the shared DialogField component', function () {
     $content = file_get_contents(resource_path('js/Pages/Lists/CreateListDialog.tsx'));
 
-    expect($content)->toContain("from '@/components/ui/input'");
-    expect($content)->toContain("from '@/components/ui/textarea'");
-    expect($content)->toContain('<Input');
-    expect($content)->toContain('<Textarea');
-});
-
-test('create list dialog uses shadcn Label for form fields', function () {
-    $content = file_get_contents(resource_path('js/Pages/Lists/CreateListDialog.tsx'));
-
-    expect($content)->toContain("from '@/components/ui/label'");
-    expect($content)->toContain('<Label');
+    expect($content)->toContain("from './DialogField'");
+    expect($content)->toContain('<DialogField');
 });
 
 test('create list dialog displays validation errors', function () {
@@ -38,7 +28,6 @@ test('create list dialog displays validation errors', function () {
 
     expect($content)->toContain('errors.title');
     expect($content)->toContain('errors.description');
-    expect($content)->toContain('text-destructive');
 });
 
 test('create list dialog submits a POST to the lists.store endpoint', function () {
@@ -47,10 +36,10 @@ test('create list dialog submits a POST to the lists.store endpoint', function (
     expect($content)->toContain(".post('/lists'");
 });
 
-test('create list dialog has Cancel and Save buttons using shadcn Button', function () {
+test('create list dialog has Cancel and Save buttons using the hoopify Button', function () {
     $content = file_get_contents(resource_path('js/Pages/Lists/CreateListDialog.tsx'));
 
-    expect($content)->toContain("from '@/components/ui/button'");
+    expect($content)->toContain("from '@/components/hoopify/Button'");
     expect($content)->toContain('Cancel');
     expect($content)->toContain('Save');
     expect($content)->toContain('<Button');
@@ -107,5 +96,5 @@ test('store route returns validation errors for missing title', function () {
 test('description field is marked as optional', function () {
     $content = file_get_contents(resource_path('js/Pages/Lists/CreateListDialog.tsx'));
 
-    expect($content)->toContain('(optional)');
+    expect($content)->toContain('optional');
 });

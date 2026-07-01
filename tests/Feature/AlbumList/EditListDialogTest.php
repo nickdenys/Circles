@@ -3,12 +3,11 @@
 use App\Models\AlbumList;
 use App\Models\User;
 
-test('edit list dialog component uses shadcn Dialog', function () {
+test('edit list dialog uses the index-card CardModal', function () {
     $content = file_get_contents(resource_path('js/Pages/Lists/EditListDialog.tsx'));
 
-    expect($content)->toContain("from '@/components/ui/dialog'");
-    expect($content)->toContain('<Dialog');
-    expect($content)->toContain('<DialogContent');
+    expect($content)->toContain("from '@/components/hoopify/CardModal'");
+    expect($content)->toContain('<CardModal');
 });
 
 test('edit list dialog includes title and description form fields', function () {
@@ -18,20 +17,11 @@ test('edit list dialog includes title and description form fields', function () 
     expect($content)->toContain('id="edit-description"');
 });
 
-test('edit list dialog uses shadcn Input and Textarea', function () {
+test('edit list dialog uses the shared DialogField component', function () {
     $content = file_get_contents(resource_path('js/Pages/Lists/EditListDialog.tsx'));
 
-    expect($content)->toContain("from '@/components/ui/input'");
-    expect($content)->toContain("from '@/components/ui/textarea'");
-    expect($content)->toContain('<Input');
-    expect($content)->toContain('<Textarea');
-});
-
-test('edit list dialog uses shadcn Label for form fields', function () {
-    $content = file_get_contents(resource_path('js/Pages/Lists/EditListDialog.tsx'));
-
-    expect($content)->toContain("from '@/components/ui/label'");
-    expect($content)->toContain('<Label');
+    expect($content)->toContain("from './DialogField'");
+    expect($content)->toContain('<DialogField');
 });
 
 test('edit list dialog displays validation errors', function () {
@@ -39,7 +29,6 @@ test('edit list dialog displays validation errors', function () {
 
     expect($content)->toContain('errors.title');
     expect($content)->toContain('errors.description');
-    expect($content)->toContain('text-destructive');
 });
 
 test('edit list dialog submits a PUT to the list update endpoint', function () {
@@ -48,10 +37,10 @@ test('edit list dialog submits a PUT to the list update endpoint', function () {
     expect($content)->toContain('.put(`/lists/');
 });
 
-test('edit list dialog has Cancel and Save buttons using shadcn Button', function () {
+test('edit list dialog has Cancel and Save buttons using the hoopify Button', function () {
     $content = file_get_contents(resource_path('js/Pages/Lists/EditListDialog.tsx'));
 
-    expect($content)->toContain("from '@/components/ui/button'");
+    expect($content)->toContain("from '@/components/hoopify/Button'");
     expect($content)->toContain('Cancel');
     expect($content)->toContain('Save');
     expect($content)->toContain('<Button');
@@ -81,7 +70,7 @@ test('edit list dialog syncs form data when opened', function () {
 test('edit list dialog description field is marked as optional', function () {
     $content = file_get_contents(resource_path('js/Pages/Lists/EditListDialog.tsx'));
 
-    expect($content)->toContain('(optional)');
+    expect($content)->toContain('optional');
 });
 
 test('show page integrates the edit list dialog', function () {

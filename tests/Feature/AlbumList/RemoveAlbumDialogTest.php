@@ -1,11 +1,10 @@
 <?php
 
-test('remove album dialog uses shadcn AlertDialog', function () {
+test('remove album dialog uses the index-card CardModal', function () {
     $content = file_get_contents(resource_path('js/Pages/Lists/RemoveAlbumDialog.tsx'));
 
-    expect($content)->toContain("from '@/components/ui/alert-dialog'");
-    expect($content)->toContain('<AlertDialog');
-    expect($content)->toContain('<AlertDialogContent');
+    expect($content)->toContain("from '@/components/hoopify/CardModal'");
+    expect($content)->toContain('<CardModal');
 });
 
 test('remove album dialog displays album title in confirmation message', function () {
@@ -15,19 +14,16 @@ test('remove album dialog displays album title in confirmation message', functio
     expect($content)->toContain('Are you sure you want to remove');
 });
 
-test('remove album dialog uses destructive variant for confirm button', function () {
+test('remove album dialog uses danger variant for confirm button', function () {
     $content = file_get_contents(resource_path('js/Pages/Lists/RemoveAlbumDialog.tsx'));
 
-    expect($content)->toContain('variant="destructive"');
-    expect($content)->toContain('<AlertDialogAction');
+    expect($content)->toContain('variant="danger"');
 });
 
 test('remove album dialog has cancel and confirm buttons', function () {
     $content = file_get_contents(resource_path('js/Pages/Lists/RemoveAlbumDialog.tsx'));
 
-    expect($content)->toContain('<AlertDialogCancel');
     expect($content)->toContain('Cancel');
-    expect($content)->toContain('<AlertDialogAction');
     expect($content)->toContain('Remove');
 });
 
@@ -55,7 +51,7 @@ test('remove album dialog supports controlled open state via onOpenChange', func
     $content = file_get_contents(resource_path('js/Pages/Lists/RemoveAlbumDialog.tsx'));
 
     expect($content)->toContain('onOpenChange');
-    expect($content)->toContain('<AlertDialog open={open} onOpenChange={onOpenChange}');
+    expect($content)->toContain('if (!open)');
 });
 
 test('remove button in album card triggers the remove dialog', function () {
