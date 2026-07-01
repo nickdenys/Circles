@@ -57,7 +57,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip
 import AddAlbumDialog, { type AddedAlbum } from './AddAlbumDialog';
 import DeleteListDialog from './DeleteListDialog';
 import EditListDialog from './EditListDialog';
-import MoveAlbumDialog from './MoveAlbumDialog';
+import MoveAlbumDialog, { MoveTarget } from './MoveAlbumDialog';
 import RatingDialog, { type RatingDialogAlbum } from './RatingDialog';
 import RemoveAlbumDialog from './RemoveAlbumDialog';
 
@@ -524,7 +524,7 @@ function AlbumRowMenu({
     album: AlbumItem;
     listType: ListType;
     mode: ListMode;
-    onMove: (album: { id: number; title: string }) => void;
+    onMove: (album: MoveTarget) => void;
     onRemove: (album: { id: number; title: string }) => void;
     onRate: () => void;
 }) {
@@ -617,7 +617,15 @@ function AlbumRowMenu({
                         className="move-album-button"
                         data-album-id={album.id}
                         data-album-title={album.title}
-                        onClick={() => onMove({ id: album.id, title: album.title })}
+                        onClick={() =>
+                            onMove({
+                                id: album.id,
+                                title: album.title,
+                                artists: album.artists,
+                                coverUrl: album.coverUrl,
+                                releaseDate: album.releaseDate,
+                            })
+                        }
                         style={menuItemStyle()}
                         onMouseEnter={(e) => (e.currentTarget.style.background = 'var(--surface-3)')}
                         onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
@@ -791,7 +799,7 @@ function TableAlbumRow({
     listId: number;
     mode: ListMode;
     metric: 'runtime' | 'rating';
-    onMove: (album: { id: number; title: string }) => void;
+    onMove: (album: MoveTarget) => void;
     onRemove: (album: { id: number; title: string }) => void;
     onRate: () => void;
     dragHandleProps?: React.HTMLAttributes<HTMLSpanElement>;
@@ -973,7 +981,7 @@ function SortableTableRow({
     listId: number;
     mode: ListMode;
     metric: 'runtime' | 'rating';
-    onMove: (album: { id: number; title: string }) => void;
+    onMove: (album: MoveTarget) => void;
     onRemove: (album: { id: number; title: string }) => void;
     onRate: () => void;
     draggable: boolean;
@@ -1033,7 +1041,7 @@ export default function Show({ list, albums, sort, direction }: ShowProps) {
     const [albumCount, setAlbumCount] = useState(list.albumsCount);
     const [totalTracks, setTotalTracks] = useState(list.totalTracks);
     const [totalRuntimeMs, setTotalRuntimeMs] = useState(list.totalRuntimeMs);
-    const [albumToMove, setAlbumToMove] = useState<{ id: number; title: string } | null>(null);
+    const [albumToMove, setAlbumToMove] = useState<MoveTarget | null>(null);
     const [moveDialogOpen, setMoveDialogOpen] = useState(false);
     const [albumToRemove, setAlbumToRemove] = useState<{ id: number; title: string } | null>(null);
     const [removeDialogOpen, setRemoveDialogOpen] = useState(false);
@@ -1136,7 +1144,7 @@ export default function Show({ list, albums, sort, direction }: ShowProps) {
         addToTotals(album);
     }
 
-    function handleMoveAlbum(album: { id: number; title: string }) {
+    function handleMoveAlbum(album: MoveTarget) {
         setAlbumToMove(album);
         setMoveDialogOpen(true);
     }

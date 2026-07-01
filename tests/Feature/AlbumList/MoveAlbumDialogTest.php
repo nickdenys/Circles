@@ -1,93 +1,149 @@
 <?php
 
-test('move album dialog uses shadcn Dialog component', function () {
+test('move album dialog uses the index-card CardModal', function () {
     $content = file_get_contents(resource_path('js/Pages/Lists/MoveAlbumDialog.tsx'));
 
     expect($content)
-        ->toContain("from '@/components/ui/dialog'")
-        ->toContain('<Dialog')
-        ->toContain('<DialogContent');
+        ->toContain("from '@/components/hoopify/CardModal'")
+        ->toContain('<CardModal')
+        ->toContain('MOVE ALBUM');
 });
 
-test('move album dialog displays album title being moved', function () {
+test('move album dialog shows the album being moved with cover and source list', function () {
     $content = file_get_contents(resource_path('js/Pages/Lists/MoveAlbumDialog.tsx'));
 
     expect($content)
-        ->toContain('album?.title')
-        ->toContain('Move Album')
-        ->toContain('to another list');
+        ->toContain('function MovingAlbum')
+        ->toContain('MiniCover')
+        ->toContain('album.title')
+        ->toContain('album.artists')
+        ->toContain('FROM')
+        ->toContain('source.title');
 });
 
-test('move album dialog includes searchable list picker with debounced search', function () {
+test('move album dialog offers a move and copy mode toggle', function () {
     $content = file_get_contents(resource_path('js/Pages/Lists/MoveAlbumDialog.tsx'));
 
     expect($content)
-        ->toContain('list-search-input')
-        ->toContain('Search for a list...')
-        ->toContain('setTimeout')
-        ->toContain('300');
+        ->toContain('function ModeToggle')
+        ->toContain('mode-toggle-')
+        ->toContain("id: 'move'")
+        ->toContain("id: 'copy'")
+        ->toContain('CornerUpRight')
+        ->toContain('Copy');
 });
 
-test('move album dialog search requires minimum 1 character', function () {
-    $content = file_get_contents(resource_path('js/Pages/Lists/MoveAlbumDialog.tsx'));
-
-    expect($content)->toContain('q.length < 1');
-});
-
-test('move album dialog excludes the current list from search results', function () {
-    $content = file_get_contents(resource_path('js/Pages/Lists/MoveAlbumDialog.tsx'));
-
-    expect($content)->toContain('exclude: listId');
-});
-
-test('move album dialog searches via the lists.search endpoint', function () {
+test('move album dialog filters the shared sidebar lists client-side', function () {
     $content = file_get_contents(resource_path('js/Pages/Lists/MoveAlbumDialog.tsx'));
 
     expect($content)
-        ->toContain("'/lists/search'")
-        ->toContain('axios.get');
+        ->toContain('usePage')
+        ->toContain('sidebarLists')
+        ->toContain('list-filter-input')
+        ->toContain('Filter your lists');
 });
 
-test('move album dialog shows selected destination list with Badge', function () {
+test('move album dialog excludes the current list and reviewed lists as destinations', function () {
     $content = file_get_contents(resource_path('js/Pages/Lists/MoveAlbumDialog.tsx'));
 
     expect($content)
-        ->toContain("from '@/components/ui/badge'")
-        ->toContain('<Badge')
-        ->toContain('selected-list-badge')
-        ->toContain('selectedList.title')
-        ->toContain('Destination:');
+        ->toContain('list.id !== listId')
+        ->toContain("list.type !== 'reviewed'");
 });
 
-test('move album dialog disables confirm button until destination list is selected', function () {
+test('move album dialog renders single-select destination rows with counts and glyph', function () {
     $content = file_get_contents(resource_path('js/Pages/Lists/MoveAlbumDialog.tsx'));
 
-    expect($content)->toContain('disabled={!selectedList || processing}');
+    expect($content)
+        ->toContain('function DestRow')
+        ->toContain('dest-list-row')
+        ->toContain('filtered.map')
+        ->toContain('selectedListId')
+        ->toContain('listColor')
+        ->toContain('albumsCount')
+        ->toContain('SYSTEM');
 });
 
-test('move album dialog submits via router.post to lists.albums.move', function () {
+test('move album dialog fetches the albums existing list memberships on open', function () {
+    $content = file_get_contents(resource_path('js/Pages/Lists/MoveAlbumDialog.tsx'));
+
+    expect($content)
+        ->toContain('axios')
+        ->toContain('.get(`/albums/${album.id}/list-memberships`)')
+        ->toContain('setLockedListIds');
+});
+
+test('move album dialog locks destination lists that already contain the album', function () {
+    $content = file_get_contents(resource_path('js/Pages/Lists/MoveAlbumDialog.tsx'));
+
+    expect($content)
+        ->toContain('lockedSet')
+        ->toContain('disabled={lockedSet.has(list.id)}')
+        ->toContain('Already here');
+});
+
+test('move album dialog posts to the move endpoint in move mode', function () {
     $content = file_get_contents(resource_path('js/Pages/Lists/MoveAlbumDialog.tsx'));
 
     expect($content)
         ->toContain('router.post')
-        ->toContain('/albums/')
         ->toContain('/move')
         ->toContain('destination_list_id: selectedList.id');
 });
 
-test('move album dialog preserves scroll position on move', function () {
+test('move album dialog posts to the copy endpoint in copy mode', function () {
+    $content = file_get_contents(resource_path('js/Pages/Lists/MoveAlbumDialog.tsx'));
+
+    expect($content)
+        ->toContain('/copy')
+        ->toContain("mode === 'move'");
+});
+
+test('move album dialog preserves scroll position on submit', function () {
     $content = file_get_contents(resource_path('js/Pages/Lists/MoveAlbumDialog.tsx'));
 
     expect($content)->toContain('preserveScroll: true');
 });
 
-test('move album dialog closes on success and calls onMoved', function () {
+test('move album dialog removes the album on move but keeps it on copy', function () {
     $content = file_get_contents(resource_path('js/Pages/Lists/MoveAlbumDialog.tsx'));
 
     expect($content)
-        ->toContain('onSuccess')
         ->toContain('onMoved(album.id)')
-        ->toContain('onOpenChange(false)');
+        ->toContain('toast.success');
+});
+
+test('move album dialog surfaces a duplicate destination error from the flash', function () {
+    $content = file_get_contents(resource_path('js/Pages/Lists/MoveAlbumDialog.tsx'));
+
+    expect($content)
+        ->toContain('flash?.error')
+        ->toContain('toast.error');
+});
+
+test('move album dialog has cancel and confirm buttons using the hoopify Button', function () {
+    $content = file_get_contents(resource_path('js/Pages/Lists/MoveAlbumDialog.tsx'));
+
+    expect($content)
+        ->toContain("from '@/components/hoopify/Button'")
+        ->toContain('<Button')
+        ->toContain('Cancel')
+        ->toContain('} to ${selectedList.title}');
+});
+
+test('move album dialog disables confirm until a destination is selected', function () {
+    $content = file_get_contents(resource_path('js/Pages/Lists/MoveAlbumDialog.tsx'));
+
+    expect($content)->toContain('disabled={!selectedList || processing}');
+});
+
+test('move album dialog shows a processing state during submission', function () {
+    $content = file_get_contents(resource_path('js/Pages/Lists/MoveAlbumDialog.tsx'));
+
+    expect($content)
+        ->toContain('processing')
+        ->toContain('Moving')
+        ->toContain('Copying');
 });
 
 test('move album dialog resets state on close', function () {
@@ -95,34 +151,28 @@ test('move album dialog resets state on close', function () {
 
     expect($content)
         ->toContain('handleOpenChange')
-        ->toContain("setQuery('')")
-        ->toContain('setResults([])')
-        ->toContain('setSelectedList(null)');
+        ->toContain('resetState')
+        ->toContain('setSelectedListId(null)')
+        ->toContain("setFilter('')")
+        ->toContain("setMode('move')");
 });
 
-test('move album dialog has cancel and confirm buttons using shadcn Button', function () {
+test('move album dialog handles controlled open state via onOpenChange', function () {
     $content = file_get_contents(resource_path('js/Pages/Lists/MoveAlbumDialog.tsx'));
 
     expect($content)
-        ->toContain("from '@/components/ui/button'")
-        ->toContain('<Button')
-        ->toContain('Cancel')
-        ->toContain('Confirm');
+        ->toContain('onOpenChange')
+        ->toContain('if (!open || !album)');
 });
 
-test('move album dialog uses shadcn Input for search field', function () {
-    $content = file_get_contents(resource_path('js/Pages/Lists/MoveAlbumDialog.tsx'));
-
-    expect($content)
-        ->toContain("from '@/components/ui/input'")
-        ->toContain('<Input');
-});
-
-test('move button in album card triggers the move dialog', function () {
+test('move button in album card passes the album details to the move dialog', function () {
     $content = file_get_contents(resource_path('js/Pages/Lists/Show.tsx'));
 
     expect($content)
-        ->toContain('onClick={() => onMove({ id: album.id, title: album.title })')
+        ->toContain('onMove({')
+        ->toContain('artists: album.artists')
+        ->toContain('coverUrl: album.coverUrl')
+        ->toContain('releaseDate: album.releaseDate')
         ->toContain('handleMoveAlbum')
         ->toContain('setMoveDialogOpen(true)');
 });
@@ -146,35 +196,10 @@ test('show page decrements album count on move', function () {
         ->toContain('setAlbumCount((prev) => prev - 1)');
 });
 
-test('show page removes added album from local state on move', function () {
+test('show page removes the moved album from local state', function () {
     $content = file_get_contents(resource_path('js/Pages/Lists/Show.tsx'));
 
-    expect($content)->toContain('handleAlbumMoved');
-
-    // handleAlbumMoved filters orderedAlbums
-    expect($content)->toContain('setOrderedAlbums((prev) => prev.filter((a) => a.id !== albumId))');
-});
-
-test('move album dialog shows processing state during submission', function () {
-    $content = file_get_contents(resource_path('js/Pages/Lists/MoveAlbumDialog.tsx'));
-
     expect($content)
-        ->toContain('processing')
-        ->toContain("'Moving...'")
-        ->toContain('disabled={!selectedList || processing}');
-});
-
-test('move album dialog displays search results in a list', function () {
-    $content = file_get_contents(resource_path('js/Pages/Lists/MoveAlbumDialog.tsx'));
-
-    expect($content)
-        ->toContain('list-search-results')
-        ->toContain('list-search-result')
-        ->toContain('results.map');
-});
-
-test('move album dialog handles controlled open state via onOpenChange', function () {
-    $content = file_get_contents(resource_path('js/Pages/Lists/MoveAlbumDialog.tsx'));
-
-    expect($content)->toContain('<Dialog open={open} onOpenChange={handleOpenChange}');
+        ->toContain('handleAlbumMoved')
+        ->toContain('setOrderedAlbums((prev) => prev.filter((a) => a.id !== albumId))');
 });

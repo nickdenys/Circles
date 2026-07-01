@@ -184,7 +184,7 @@ test('the rating dialog posts to the review endpoint', function () {
 test('the move dialog excludes the Reviewed list as a target', function () {
     $content = file_get_contents(resource_path('js/Pages/Lists/MoveAlbumDialog.tsx'));
 
-    expect($content)->toContain('exclude_reviewed');
+    expect($content)->toContain("list.type !== 'reviewed'");
 });
 
 test('the rating dialog renders the index-card review design', function () {

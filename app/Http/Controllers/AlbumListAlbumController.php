@@ -106,6 +106,38 @@ class AlbumListAlbumController extends Controller
     }
 
     /**
+     * Copy an album into another list, keeping it in the source list.
+     */
+    public function copy(Request $request, AlbumList $albumList, Album $album): RedirectResponse
+    {
+        abort_unless($albumList->user_id === $request->user()->id, 403);
+
+        $request->validate([
+            'destination_list_id' => ['required', 'integer', 'exists:album_lists,id'],
+        ]);
+
+        $destinationList = AlbumList::findOrFail($request->input('destination_list_id'));
+
+        abort_unless($destinationList->user_id === $request->user()->id, 403);
+        abort_if($destinationList->isReviewed(), 403);
+
+        if ($destinationList->albums()->where('album_id', $album->id)->exists()) {
+            return redirect()->route('lists.show', ['listSlug' => $albumList->slug])
+                ->with('error', 'Album already exists in the destination list.');
+        }
+
+        $sourcePivot = $albumList->albums()->where('album_id', $album->id)->first()?->pivot;
+        $maxPosition = $destinationList->albums()->max('album_album_list.position') ?? 0;
+
+        $destinationList->albums()->attach($album->id, [
+            'position' => $maxPosition + 1,
+            'note' => $sourcePivot?->note,
+        ]);
+
+        return redirect()->route('lists.show', ['listSlug' => $albumList->slug]);
+    }
+
+    /**
      * Update the pivot data for an album in the given list.
      */
     public function update(UpdateAlbumListAlbumRequest $request, AlbumList $albumList, Album $album): JsonResponse

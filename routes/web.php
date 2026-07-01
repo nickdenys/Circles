@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\AlbumListAlbumController;
 use App\Http\Controllers\AlbumListController;
+use App\Http\Controllers\AlbumListMembershipController;
 use App\Http\Controllers\AlbumReviewController;
 use App\Http\Controllers\Auth\SpotifyAuthController;
 use App\Http\Controllers\HomeController;
@@ -36,10 +37,13 @@ Route::middleware('auth')->group(function (): void {
     Route::post('/lists/{albumList:id}/albums', [AlbumListAlbumController::class, 'store'])->name('lists.albums.store');
     Route::put('/lists/{albumList:id}/albums/reorder', [AlbumListAlbumController::class, 'reorder'])->name('lists.albums.reorder');
     Route::post('/lists/{albumList:id}/albums/{album}/move', [AlbumListAlbumController::class, 'move'])->name('lists.albums.move');
+    Route::post('/lists/{albumList:id}/albums/{album}/copy', [AlbumListAlbumController::class, 'copy'])->name('lists.albums.copy');
     Route::patch('/lists/{albumList:id}/albums/{album}', [AlbumListAlbumController::class, 'update'])->name('lists.albums.update');
     Route::delete('/lists/{albumList:id}/albums/{album}', [AlbumListAlbumController::class, 'destroy'])->name('lists.albums.destroy');
     Route::post('/lists/{albumList:id}/albums/{album}/review', [AlbumReviewController::class, 'store'])->name('lists.albums.review.store');
     Route::delete('/lists/{albumList:id}/albums/{album}/review', [AlbumReviewController::class, 'destroy'])->name('lists.albums.review.destroy');
+
+    Route::get('/albums/{album}/list-memberships', AlbumListMembershipController::class)->name('albums.list-memberships');
 
     Route::get('/spotify/search/albums', [SpotifySearchController::class, 'albums'])->name('spotify.search.albums');
 
