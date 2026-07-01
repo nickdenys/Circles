@@ -31,22 +31,17 @@ function sampleSpotifyAlbum(array $overrides = []): array
 }
 
 test('search bar is displayed on the list detail page', function () {
-    $component = file_get_contents(resource_path('js/Pages/Lists/AlbumSearch.tsx'));
+    $component = file_get_contents(resource_path('js/Pages/Lists/AddAlbumDialog.tsx'));
 
     expect($component)
         ->toContain('id="album-search-input"')
-        ->toContain('Add an album from Spotify');
-
-    $dialogComponent = file_get_contents(resource_path('js/Pages/Lists/AddAlbumDialog.tsx'));
-    expect($dialogComponent)->toContain('<AlbumSearch');
+        ->toContain('Search Spotify and hit enter');
 });
 
-test('search dropdown container exists on the page', function () {
-    $component = file_get_contents(resource_path('js/Pages/Lists/AlbumSearch.tsx'));
+test('search results container exists in the add album dialog', function () {
+    $component = file_get_contents(resource_path('js/Pages/Lists/AddAlbumDialog.tsx'));
 
-    expect($component)
-        ->toContain('id="album-search-dropdown"')
-        ->toContain('id="album-search-results"');
+    expect($component)->toContain('id="album-search-results"');
 });
 
 test('search endpoint returns album results from spotify', function () {
@@ -209,7 +204,7 @@ test('search endpoint handles spotify api failure gracefully', function () {
 });
 
 test('search bar is displayed on system list detail page', function () {
-    $component = file_get_contents(resource_path('js/Pages/Lists/AlbumSearch.tsx'));
+    $component = file_get_contents(resource_path('js/Pages/Lists/AddAlbumDialog.tsx'));
 
     // Search input is not conditionally hidden based on list type
     expect($component)->toContain('id="album-search-input"');

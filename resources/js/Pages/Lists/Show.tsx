@@ -54,8 +54,7 @@ import { listColor } from '@/components/hoopify/theme';
 import { TopBar } from '@/components/hoopify/TopBar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
-import AddAlbumDialog from './AddAlbumDialog';
-import { type AddedAlbum } from './AlbumSearch';
+import AddAlbumDialog, { type AddedAlbum } from './AddAlbumDialog';
 import DeleteListDialog from './DeleteListDialog';
 import EditListDialog from './EditListDialog';
 import MoveAlbumDialog from './MoveAlbumDialog';
@@ -1634,9 +1633,12 @@ export default function Show({ list, albums, sort, direction }: ShowProps) {
 
             <AddAlbumDialog
                 listId={list.id}
+                listName={list.title}
+                existingSpotifyIds={orderedAlbums.map((album) => album.spotifyId)}
                 open={addAlbumDialogOpen}
                 onOpenChange={setAddAlbumDialogOpen}
                 onAlbumAdded={handleAlbumAdded}
+                onAlbumRemoved={handleAlbumRemoved}
             />
 
             <DeleteListDialog

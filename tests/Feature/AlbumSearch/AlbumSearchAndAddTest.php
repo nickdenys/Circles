@@ -1,15 +1,15 @@
 <?php
 
-test('album search component is rendered on the list detail page', function () {
-    $component = file_get_contents(resource_path('js/Pages/Lists/AlbumSearch.tsx'));
+test('add album dialog renders the rapid-add search input', function () {
+    $component = file_get_contents(resource_path('js/Pages/Lists/AddAlbumDialog.tsx'));
 
     expect($component)
         ->toContain('id="album-search-input"')
-        ->toContain('Add an album from Spotify');
+        ->toContain('Search Spotify and hit enter');
 });
 
-test('album search uses debounced input with 300ms delay', function () {
-    $component = file_get_contents(resource_path('js/Pages/Lists/AlbumSearch.tsx'));
+test('add album dialog uses debounced input with 300ms delay', function () {
+    $component = file_get_contents(resource_path('js/Pages/Lists/AddAlbumDialog.tsx'));
 
     expect($component)
         ->toContain('setTimeout')
@@ -17,93 +17,112 @@ test('album search uses debounced input with 300ms delay', function () {
         ->toContain('clearTimeout');
 });
 
-test('album search requires minimum 2 characters before searching', function () {
-    $component = file_get_contents(resource_path('js/Pages/Lists/AlbumSearch.tsx'));
+test('add album dialog requires minimum 2 characters before searching', function () {
+    $component = file_get_contents(resource_path('js/Pages/Lists/AddAlbumDialog.tsx'));
 
-    expect($component)->toContain('q.length < 2');
+    expect($component)->toContain('value.trim().length < 2');
 });
 
-test('album search dropdown displays results with image name and artist', function () {
-    $component = file_get_contents(resource_path('js/Pages/Lists/AlbumSearch.tsx'));
+test('add album dialog displays results with image name and artist', function () {
+    $component = file_get_contents(resource_path('js/Pages/Lists/AddAlbumDialog.tsx'));
 
     expect($component)
-        ->toContain('id="album-search-dropdown"')
         ->toContain('id="album-search-results"')
         ->toContain('result.name')
         ->toContain('result.artists')
         ->toContain('result.image');
 });
 
-test('album search calls the spotify search endpoint', function () {
-    $component = file_get_contents(resource_path('js/Pages/Lists/AlbumSearch.tsx'));
+test('add album dialog calls the spotify search endpoint', function () {
+    $component = file_get_contents(resource_path('js/Pages/Lists/AddAlbumDialog.tsx'));
 
     expect($component)->toContain('/spotify/search/albums');
 });
 
-test('clicking a search result posts to the album store endpoint', function () {
-    $component = file_get_contents(resource_path('js/Pages/Lists/AlbumSearch.tsx'));
+test('add album dialog posts to the album store endpoint', function () {
+    $component = file_get_contents(resource_path('js/Pages/Lists/AddAlbumDialog.tsx'));
 
     expect($component)
-        ->toContain('axios.post')
+        ->toContain('axios')
         ->toContain('`/lists/${listId}/albums`')
         ->toContain('spotify_id');
 });
 
-test('album search handles 409 conflict gracefully', function () {
-    $component = file_get_contents(resource_path('js/Pages/Lists/AlbumSearch.tsx'));
+test('add album dialog handles 409 conflict gracefully', function () {
+    $component = file_get_contents(resource_path('js/Pages/Lists/AddAlbumDialog.tsx'));
 
     expect($component)
         ->toContain('409')
-        ->toContain('Album already in this list.');
+        ->toContain('already in this list');
 });
 
-test('search input is cleared and dropdown closes after adding an album', function () {
-    $component = file_get_contents(resource_path('js/Pages/Lists/AlbumSearch.tsx'));
+test('add album dialog clears and refocuses the input after adding an album', function () {
+    $component = file_get_contents(resource_path('js/Pages/Lists/AddAlbumDialog.tsx'));
 
-    // After successful add, query is reset and dropdown closes
     expect($component)
         ->toContain("setQuery('')")
         ->toContain('setResults([])')
-        ->toContain('setIsOpen(false)');
+        ->toContain('inputRef.current?.focus()');
 });
 
-test('dropdown closes on click outside via popover', function () {
-    $component = file_get_contents(resource_path('js/Pages/Lists/AlbumSearch.tsx'));
+test('add album dialog commits the top result on enter', function () {
+    $component = file_get_contents(resource_path('js/Pages/Lists/AddAlbumDialog.tsx'));
 
     expect($component)
-        ->toContain('Popover')
-        ->toContain('onOpenChange')
-        ->toContain('PopoverContent');
+        ->toContain("event.key === 'Enter'")
+        ->toContain('addAlbum(visibleResults[0])');
 });
 
-test('dropdown closes on escape key', function () {
-    $component = file_get_contents(resource_path('js/Pages/Lists/AlbumSearch.tsx'));
+test('add album dialog keeps a running added-this-session log', function () {
+    $component = file_get_contents(resource_path('js/Pages/Lists/AddAlbumDialog.tsx'));
 
     expect($component)
-        ->toContain('Escape')
-        ->toContain('onKeyDown');
+        ->toContain('Added this session')
+        ->toContain('setAdded');
 });
 
-test('album search uses shadcn input component', function () {
-    $component = file_get_contents(resource_path('js/Pages/Lists/AlbumSearch.tsx'));
+test('add album dialog can undo an add via the album destroy endpoint', function () {
+    $component = file_get_contents(resource_path('js/Pages/Lists/AddAlbumDialog.tsx'));
 
-    expect($component)->toContain("from '@/components/ui/input'");
+    expect($component)
+        ->toContain('axios')
+        ->toContain('.delete(`/lists/${listId}/albums/${album.id}`)')
+        ->toContain('onAlbumRemoved');
 });
 
-test('show page integrates album search component via dialog', function () {
+test('add album dialog renders the index-card modal chrome', function () {
+    $component = file_get_contents(resource_path('js/Pages/Lists/AddAlbumDialog.tsx'));
+
+    expect($component)
+        ->toContain('CardModal')
+        ->toContain('ADD TO LIST')
+        ->toContain('Done');
+});
+
+test('added album callback maps snake_case response to camelCase props', function () {
+    $component = file_get_contents(resource_path('js/Pages/Lists/AddAlbumDialog.tsx'));
+
+    expect($component)
+        ->toContain('spotifyId: data.spotify_id')
+        ->toContain('coverUrl: data.cover_url')
+        ->toContain('runtimeMs: data.runtime_ms')
+        ->toContain('albumType: data.album_type')
+        ->toContain('totalTracks: data.total_tracks')
+        ->toContain('releaseDate: data.release_date')
+        ->toContain('spotifyUri: data.spotify_uri')
+        ->toContain('genres: data.genres');
+});
+
+test('show page integrates the add album dialog', function () {
     $showComponent = file_get_contents(resource_path('js/Pages/Lists/Show.tsx'));
 
     expect($showComponent)
         ->toContain("from './AddAlbumDialog'")
         ->toContain('<AddAlbumDialog')
         ->toContain('listId={list.id}')
-        ->toContain('onAlbumAdded');
-
-    $dialogComponent = file_get_contents(resource_path('js/Pages/Lists/AddAlbumDialog.tsx'));
-
-    expect($dialogComponent)
-        ->toContain("from './AlbumSearch'")
-        ->toContain('<AlbumSearch');
+        ->toContain('onAlbumAdded')
+        ->toContain('onAlbumRemoved')
+        ->toContain('existingSpotifyIds');
 });
 
 test('show page updates album count after adding an album', function () {
@@ -120,18 +139,4 @@ test('show page appends new album to the list after adding', function () {
     expect($component)
         ->toContain('setOrderedAlbums')
         ->toContain('[...prev, album]');
-});
-
-test('added album callback maps snake_case response to camelCase props', function () {
-    $component = file_get_contents(resource_path('js/Pages/Lists/AlbumSearch.tsx'));
-
-    expect($component)
-        ->toContain('spotifyId: data.spotify_id')
-        ->toContain('coverUrl: data.cover_url')
-        ->toContain('runtimeMs: data.runtime_ms')
-        ->toContain('albumType: data.album_type')
-        ->toContain('totalTracks: data.total_tracks')
-        ->toContain('releaseDate: data.release_date')
-        ->toContain('spotifyUri: data.spotify_uri')
-        ->toContain('genres: data.genres');
 });
