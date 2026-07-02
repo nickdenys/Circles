@@ -40,6 +40,7 @@ import {
     Play,
     Plus,
     RefreshCw,
+    Star,
     Trash2,
 } from 'lucide-react';
 import { CSSProperties, useEffect, useRef, useState } from 'react';
@@ -578,6 +579,31 @@ function AlbumRowMenu({
                 >
                     <ExternalLink size={17} strokeWidth={2} style={{ color: 'var(--fg2)' }} />
                     Open in Spotify
+                </a>
+                <a
+                    href={`https://www.albumoftheyear.org/search/?q=${encodeURIComponent(
+                        `${album.artists} ${album.title}`,
+                    )}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    onClick={() => setOpen(false)}
+                    style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 12,
+                        padding: '9px 12px',
+                        borderRadius: 8,
+                        fontFamily: 'var(--font-sans)',
+                        fontSize: 15,
+                        fontWeight: 500,
+                        color: 'var(--fg1)',
+                        textDecoration: 'none',
+                    }}
+                    onMouseEnter={(e) => (e.currentTarget.style.background = 'var(--surface-3)')}
+                    onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
+                >
+                    <Star size={17} strokeWidth={2} style={{ color: 'var(--fg2)' }} />
+                    Open in Album of the Year
                 </a>
                 {isListening && (
                     <button
