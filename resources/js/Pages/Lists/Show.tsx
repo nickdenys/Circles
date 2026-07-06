@@ -41,6 +41,7 @@ import {
     Plus,
     RefreshCw,
     Star,
+    StickyNote,
     Trash2,
 } from 'lucide-react';
 import { CSSProperties, useEffect, useRef, useState } from 'react';
@@ -59,6 +60,7 @@ import AddAlbumDialog, { type AddedAlbum } from './AddAlbumDialog';
 import DeleteListDialog from './DeleteListDialog';
 import EditListDialog from './EditListDialog';
 import MoveAlbumDialog, { MoveTarget } from './MoveAlbumDialog';
+import NoteDialog, { type NoteDialogAlbum } from './NoteDialog';
 import RatingDialog, { type RatingDialogAlbum } from './RatingDialog';
 import RemoveAlbumDialog from './RemoveAlbumDialog';
 
@@ -521,6 +523,7 @@ function AlbumRowMenu({
     onMove,
     onRemove,
     onRate,
+    onEditNote,
 }: {
     album: AlbumItem;
     listType: ListType;
@@ -528,10 +531,12 @@ function AlbumRowMenu({
     onMove: (album: MoveTarget) => void;
     onRemove: (album: { id: number; title: string }) => void;
     onRate: () => void;
+    onEditNote: () => void;
 }) {
     const [open, setOpen] = useState(false);
     const isReviewedList = listType === 'reviewed';
     const isListening = mode === 'listening';
+    const hasNote = !!album.note && album.note.trim().length > 0;
 
     return (
         <Popover open={open} onOpenChange={setOpen}>
@@ -635,6 +640,23 @@ function AlbumRowMenu({
                     >
                         <Pencil size={17} strokeWidth={2} style={{ color: 'var(--fg2)' }} />
                         Edit review
+                    </button>
+                )}
+                {!isReviewedList && (
+                    <button
+                        type="button"
+                        className="edit-note-button"
+                        data-album-id={album.id}
+                        onClick={() => {
+                            setOpen(false);
+                            onEditNote();
+                        }}
+                        style={menuItemStyle()}
+                        onMouseEnter={(e) => (e.currentTarget.style.background = 'var(--surface-3)')}
+                        onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
+                    >
+                        <StickyNote size={17} strokeWidth={2} style={{ color: 'var(--fg2)' }} />
+                        {hasNote ? 'Edit note' : 'Add note'}
                     </button>
                 )}
                 {!isReviewedList && (
@@ -816,6 +838,7 @@ function TableAlbumRow({
     onMove,
     onRemove,
     onRate,
+    onEditNote,
     dragHandleProps,
     draggable,
 }: {
@@ -828,6 +851,7 @@ function TableAlbumRow({
     onMove: (album: MoveTarget) => void;
     onRemove: (album: { id: number; title: string }) => void;
     onRate: () => void;
+    onEditNote: () => void;
     dragHandleProps?: React.HTMLAttributes<HTMLSpanElement>;
     draggable: boolean;
 }) {
@@ -962,6 +986,7 @@ function TableAlbumRow({
                         onMove={onMove}
                         onRemove={onRemove}
                         onRate={onRate}
+                        onEditNote={onEditNote}
                     />
                 </div>
             </div>
@@ -999,6 +1024,7 @@ function SortableTableRow({
     onMove,
     onRemove,
     onRate,
+    onEditNote,
     draggable,
 }: {
     album: AlbumItem;
@@ -1010,6 +1036,7 @@ function SortableTableRow({
     onMove: (album: MoveTarget) => void;
     onRemove: (album: { id: number; title: string }) => void;
     onRate: () => void;
+    onEditNote: () => void;
     draggable: boolean;
 }) {
     const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
@@ -1036,6 +1063,7 @@ function SortableTableRow({
                 onMove={onMove}
                 onRemove={onRemove}
                 onRate={onRate}
+                onEditNote={onEditNote}
                 draggable={draggable}
                 dragHandleProps={draggable ? { ...attributes, ...listeners } : undefined}
             />
@@ -1077,6 +1105,8 @@ export default function Show({ list, albums, sort, direction }: ShowProps) {
     const [activeAlbum, setActiveAlbum] = useState<AlbumItem | null>(null);
     const [albumToReview, setAlbumToReview] = useState<RatingDialogAlbum | null>(null);
     const [ratingDialogOpen, setRatingDialogOpen] = useState(false);
+    const [albumToNote, setAlbumToNote] = useState<NoteDialogAlbum | null>(null);
+    const [noteDialogOpen, setNoteDialogOpen] = useState(false);
 
     const metric: 'runtime' | 'rating' = isReviewedList ? 'rating' : 'runtime';
 
@@ -1201,6 +1231,26 @@ export default function Show({ list, albums, sort, direction }: ShowProps) {
             currentReview: album.review ?? null,
         });
         setRatingDialogOpen(true);
+    }
+
+    function handleEditNote(album: AlbumItem) {
+        setAlbumToNote({
+            id: album.id,
+            title: album.title,
+            artist: album.artists,
+            coverUrl: album.coverUrl,
+            releaseDate: album.releaseDate,
+            albumType: album.albumType,
+            totalTracks: album.totalTracks,
+            currentNote: album.note ?? null,
+        });
+        setNoteDialogOpen(true);
+    }
+
+    function handleNoteSubmitted(albumId: number, note: string | null) {
+        setOrderedAlbums((prev) =>
+            prev.map((a) => (a.id === albumId ? { ...a, note } : a)),
+        );
     }
 
     function handleReviewSubmitted(albumId: number, rating: number, review: string | null) {
@@ -1630,6 +1680,7 @@ export default function Show({ list, albums, sort, direction }: ShowProps) {
                                             onMove={handleMoveAlbum}
                                             onRemove={handleRemoveAlbum}
                                             onRate={() => handleRateAlbum(album)}
+                                            onEditNote={() => handleEditNote(album)}
                                             draggable={isManual && !isReviewedList}
                                         />
                                     ))}
@@ -1655,6 +1706,7 @@ export default function Show({ list, albums, sort, direction }: ShowProps) {
                                             onMove={() => undefined}
                                             onRemove={() => undefined}
                                             onRate={() => {}}
+                                            onEditNote={() => {}}
                                             draggable={false}
                                         />
                                     </div>
@@ -1714,6 +1766,14 @@ export default function Show({ list, albums, sort, direction }: ShowProps) {
                 allowUnreview={isReviewedList}
                 onUnreviewed={handleAlbumUnreviewed}
                 onMoveUndone={handleReviewUndone}
+            />
+
+            <NoteDialog
+                listId={list.id}
+                album={albumToNote}
+                open={noteDialogOpen}
+                onOpenChange={setNoteDialogOpen}
+                onSubmitted={handleNoteSubmitted}
             />
         </>
     );
