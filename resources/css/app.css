@@ -270,6 +270,7 @@ body {
     font-weight: 400;
     -webkit-font-smoothing: antialiased;
     text-rendering: optimizeLegibility;
+    overscroll-behavior-y: none;
 }
 
 /* Scrollbar styling — visually consistent with archival aesthetic. */
@@ -281,6 +282,14 @@ body {
     background: var(--line-strong);
     border-radius: 999px;
     border: 3px solid var(--bg);
+}
+
+/* Touch viewports scroll without a gutter; reclaim the width. */
+@media (max-width: 760px) {
+    ::-webkit-scrollbar {
+        width: 0;
+        height: 0;
+    }
 }
 
 /* Typography helpers used by pages. */
@@ -390,6 +399,31 @@ body {
     }
     to {
         transform: translateX(0);
+    }
+}
+@keyframes sheetIn {
+    from {
+        transform: translateY(100%);
+    }
+    to {
+        transform: translateY(0);
+    }
+}
+
+/* Horizontal scroller with no visible track — used for mobile chip rows. */
+.hscroll {
+    scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
+}
+.hscroll::-webkit-scrollbar {
+    height: 0;
+    width: 0;
+}
+
+/* Secondary table columns that are dropped on narrow viewports. */
+@media (max-width: 760px) {
+    .meta-col {
+        display: none !important;
     }
 }
 @keyframes toastIn {

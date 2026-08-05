@@ -13,4 +13,6 @@ export { applyTheme, readStoredTheme, listColor, listCode, THEME_STORAGE_KEY } f
 export type { Theme } from './theme';
 export { Sidebar } from './Sidebar';
 export { TopBar } from './TopBar';
+export { MobileMenuProvider, useMobileMenu } from './MobileMenuContext';
+export type { MobileMenuContextValue } from './MobileMenuContext';
 export { PlaceholderCover } from './PlaceholderCover';

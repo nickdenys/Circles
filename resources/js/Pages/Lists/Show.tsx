@@ -56,6 +56,7 @@ import { listColor } from '@/components/hoopify/theme';
 import { TopBar } from '@/components/hoopify/TopBar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+import { useIsMobile } from '@/hooks/use-is-mobile';
 import AddAlbumDialog, { type AddedAlbum } from './AddAlbumDialog';
 import DeleteListDialog from './DeleteListDialog';
 import EditListDialog from './EditListDialog';
@@ -524,6 +525,7 @@ function AlbumRowMenu({
     onRemove,
     onRate,
     onEditNote,
+    boxSize = 32,
 }: {
     album: AlbumItem;
     listType: ListType;
@@ -532,6 +534,7 @@ function AlbumRowMenu({
     onRemove: (album: { id: number; title: string }) => void;
     onRate: () => void;
     onEditNote: () => void;
+    boxSize?: number;
 }) {
     const [open, setOpen] = useState(false);
     const isReviewedList = listType === 'reviewed';
@@ -546,7 +549,7 @@ function AlbumRowMenu({
                         icon={MoreHorizontal}
                         label="Album options"
                         size={18}
-                        boxSize={32}
+                        boxSize={boxSize}
                         className="album-actions-button"
                         data-album-id={album.id}
                         data-album-title={album.title}
@@ -856,9 +859,137 @@ function TableAlbumRow({
     draggable: boolean;
 }) {
     const [hover, setHover] = useState(false);
+    const isMobile = useIsMobile();
     const isReviewedList = listType === 'reviewed';
     const releaseYear = album.releaseDate ? album.releaseDate.slice(0, 4) : '';
     const hasNote = !!album.note && album.note.trim().length > 0;
+
+    /* Mobile: one compact row, no hover-only affordances, note indented below. */
+    if (isMobile) {
+        return (
+            <div
+                data-album-db-id={album.id}
+                className={'album-card' + (isReviewedList ? ' reviewed-card' : '')}
+                style={{ borderBottom: '1px solid var(--line)' }}
+            >
+                <div
+                    style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 12,
+                        padding: '10px 2px',
+                        minHeight: 72,
+                    }}
+                >
+                    <span
+                        {...dragHandleProps}
+                        className={'drag-handle' + (draggable ? ' cursor-grab' : '')}
+                        style={{
+                            display: draggable ? 'inline-flex' : 'none',
+                            justifyContent: 'center',
+                            color: 'var(--fg3)',
+                            cursor: 'grab',
+                            flex: 'none',
+                            touchAction: 'none',
+                        }}
+                    >
+                        <GripVertical size={16} strokeWidth={2} />
+                    </span>
+                    <Label style={{ fontSize: 10, width: 18, flex: 'none' }}>
+                        {String(index + 1).padStart(2, '0')}
+                    </Label>
+                    <div
+                        style={{
+                            width: 54,
+                            height: 54,
+                            flex: 'none',
+                            borderRadius: 8,
+                            overflow: 'hidden',
+                            border: '1px solid var(--line)',
+                        }}
+                    >
+                        <AlbumCover album={album} size={54} radius={0} />
+                    </div>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                        <div
+                            style={{
+                                fontSize: 15.5,
+                                fontWeight: 600,
+                                letterSpacing: '-0.01em',
+                                whiteSpace: 'nowrap',
+                                overflow: 'hidden',
+                                textOverflow: 'ellipsis',
+                            }}
+                        >
+                            {album.title}
+                        </div>
+                        <div
+                            style={{
+                                fontSize: 13,
+                                color: 'var(--fg2)',
+                                marginTop: 1,
+                                whiteSpace: 'nowrap',
+                                overflow: 'hidden',
+                                textOverflow: 'ellipsis',
+                            }}
+                        >
+                            {album.artists}
+                        </div>
+                        <Label style={{ fontSize: 10, display: 'block', marginTop: 3 }}>
+                            {releaseYear && `${releaseYear} · `}
+                            {album.totalTracks} TRK ·{' '}
+                            {metric === 'rating'
+                                ? album.rating != null
+                                    ? album.rating.toFixed(1)
+                                    : '—'
+                                : album.runtimeMs > 0
+                                    ? formatRuntimeShort(album.runtimeMs)
+                                    : '—'}
+                        </Label>
+                    </div>
+                    <div style={{ flex: 'none' }}>
+                        <AlbumRowMenu
+                            album={album}
+                            listType={listType}
+                            mode={mode}
+                            onMove={onMove}
+                            onRemove={onRemove}
+                            onRate={onRate}
+                            onEditNote={onEditNote}
+                            boxSize={44}
+                        />
+                    </div>
+                </div>
+
+                {hasNote && (
+                    <div
+                        style={{
+                            padding: '0 2px 12px 84px',
+                            display: 'flex',
+                            flexDirection: 'column',
+                            gap: 6,
+                        }}
+                    >
+                        <Label accent style={{ fontSize: 10 }}>
+                            Note
+                        </Label>
+                        <p
+                            className="album-review"
+                            style={{
+                                margin: 0,
+                                fontSize: 13,
+                                lineHeight: 1.5,
+                                color: 'var(--fg2)',
+                                whiteSpace: 'pre-wrap',
+                            }}
+                        >
+                            {album.note}
+                        </p>
+                    </div>
+                )}
+            </div>
+        );
+    }
 
     return (
         <div
@@ -945,6 +1076,7 @@ function TableAlbumRow({
                     shown={hover}
                 />
                 <Label
+                    className="meta-col"
                     style={{
                         textAlign: 'right',
                         whiteSpace: 'nowrap',
@@ -1074,6 +1206,7 @@ function SortableTableRow({
 export default function Show({ list, albums, sort, direction }: ShowProps) {
     const isManual = sort === 'manual';
     const isReviewedList = list.type === 'reviewed';
+    const isMobile = useIsMobile();
     const [refreshing, setRefreshing] = useState(false);
 
     const [viewMode, setViewMode] = useState<ViewMode>(() => {
@@ -1331,25 +1464,44 @@ export default function Show({ list, albums, sort, direction }: ShowProps) {
                 )}
             </TopBar>
 
-            <div style={{ maxWidth: 1140, margin: '0 auto', padding: '0 40px 96px' }}>
+            <div
+                style={{
+                    maxWidth: 1140,
+                    margin: '0 auto',
+                    padding: isMobile
+                        ? '0 16px calc(64px + env(safe-area-inset-bottom))'
+                        : '0 40px 96px',
+                }}
+            >
                 <div
-                    style={{
-                        display: 'flex',
-                        justifyContent: 'space-between',
-                        alignItems: 'flex-start',
-                        gap: 48,
-                        padding: '26px 0 22px',
-                        flexWrap: 'wrap',
-                    }}
+                    style={
+                        isMobile
+                            ? {
+                                  display: 'flex',
+                                  flexDirection: 'column-reverse',
+                                  alignItems: 'flex-start',
+                                  gap: 20,
+                                  padding: '20px 0 18px',
+                              }
+                            : {
+                                  display: 'flex',
+                                  justifyContent: 'space-between',
+                                  alignItems: 'flex-start',
+                                  gap: 48,
+                                  padding: '26px 0 22px',
+                                  flexWrap: 'wrap',
+                              }
+                    }
                 >
                     <div
                         style={{
                             display: 'flex',
                             flexDirection: 'column',
-                            gap: 14,
+                            gap: isMobile ? 12 : 14,
                             flex: 1,
-                            minWidth: 320,
+                            minWidth: isMobile ? 0 : 320,
                             maxWidth: 620,
+                            width: isMobile ? '100%' : undefined,
                         }}
                     >
                         <HeroBadge list={list} />
@@ -1357,11 +1509,12 @@ export default function Show({ list, albums, sort, direction }: ShowProps) {
                             style={{
                                 fontFamily: 'var(--font-display)',
                                 fontWeight: 800,
-                                fontSize: 54,
-                                lineHeight: 0.98,
+                                fontSize: isMobile ? 'clamp(32px, 10vw, 42px)' : 54,
+                                lineHeight: isMobile ? 1.02 : 0.98,
                                 letterSpacing: '-0.03em',
                                 margin: 0,
                                 color: 'var(--fg1)',
+                                textWrap: 'balance',
                             }}
                         >
                             {list.title}
@@ -1369,7 +1522,7 @@ export default function Show({ list, albums, sort, direction }: ShowProps) {
                         {list.description && (
                             <p
                                 style={{
-                                    fontSize: 17,
+                                    fontSize: isMobile ? 15.5 : 17,
                                     margin: 0,
                                     maxWidth: 540,
                                     color: 'var(--fg2)',
@@ -1395,6 +1548,7 @@ export default function Show({ list, albums, sort, direction }: ShowProps) {
                                     variant="primary"
                                     icon={Plus}
                                     onClick={() => setAddAlbumDialogOpen(true)}
+                                    style={isMobile ? { flex: 1, minHeight: 46 } : undefined}
                                 >
                                     Add album
                                 </Button>
@@ -1405,6 +1559,7 @@ export default function Show({ list, albums, sort, direction }: ShowProps) {
                                     icon={Pencil}
                                     onClick={() => setEditDialogOpen(true)}
                                     id="edit-list-button"
+                                    style={isMobile ? { minHeight: 46 } : undefined}
                                 >
                                     Edit
                                 </Button>
@@ -1415,6 +1570,7 @@ export default function Show({ list, albums, sort, direction }: ShowProps) {
                                     icon={Trash2}
                                     onClick={() => setDeleteDialogOpen(true)}
                                     id="delete-list-button"
+                                    style={isMobile ? { minHeight: 46 } : undefined}
                                 >
                                     Delete
                                 </Button>
@@ -1426,13 +1582,13 @@ export default function Show({ list, albums, sort, direction }: ShowProps) {
                         style={{
                             display: 'flex',
                             flexDirection: 'column',
-                            alignItems: 'flex-end',
+                            alignItems: isMobile ? 'flex-start' : 'flex-end',
                             gap: 28,
                         }}
                     >
                         <CoverMosaic
                             covers={orderedAlbums.slice(0, 4).map((a) => a.coverUrl)}
-                            size={208}
+                            size={isMobile ? 132 : 208}
                             gap={3}
                             radius={14}
                             inner={4}
@@ -1444,18 +1600,25 @@ export default function Show({ list, albums, sort, direction }: ShowProps) {
                 <div
                     style={{
                         display: 'flex',
-                        gap: 48,
+                        gap: isMobile ? 32 : 48,
                         alignItems: 'center',
-                        padding: '16px 0',
+                        padding: isMobile ? '14px 0' : '16px 0',
                         borderTop: '1px solid var(--line)',
                         borderBottom: '1px solid var(--line)',
                         flexWrap: 'wrap',
                     }}
                 >
-                    <StatBlock value={albumCount} caption="Albums filed" />
-                    {totalTracks > 0 && <StatBlock value={totalTracks} caption="Total tracks" />}
+                    <StatBlock value={albumCount} caption="Albums filed" size={isMobile ? 22 : 26} />
+                    {totalTracks > 0 && (
+                        <StatBlock value={totalTracks} caption="Total tracks" size={isMobile ? 22 : 26} />
+                    )}
                     {runtimeStat && (
-                        <StatBlock value={runtimeStat.value} unit={runtimeStat.unit} caption="Total runtime" />
+                        <StatBlock
+                            value={runtimeStat.value}
+                            unit={runtimeStat.unit}
+                            caption="Total runtime"
+                            size={isMobile ? 22 : 26}
+                        />
                     )}
                 </div>
 
@@ -1464,22 +1627,37 @@ export default function Show({ list, albums, sort, direction }: ShowProps) {
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'space-between',
-                        margin: '20px 0 22px',
-                        flexWrap: 'wrap',
-                        gap: 14,
+                        margin: isMobile ? '16px 0' : '20px 0 22px',
+                        flexWrap: isMobile ? 'nowrap' : 'wrap',
+                        gap: isMobile ? 10 : 14,
                     }}
                 >
-                    <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
+                    <div
+                        className={isMobile ? 'hscroll' : undefined}
+                        style={{
+                            display: 'flex',
+                            gap: 10,
+                            alignItems: 'center',
+                            flexWrap: isMobile ? 'nowrap' : 'wrap',
+                            overflowX: isMobile ? 'auto' : 'visible',
+                            minWidth: 0,
+                            padding: isMobile ? '2px 0' : 0,
+                        }}
+                    >
                         {hasAlbums && (
                             <>
-                                <Label style={{ marginRight: 4 }}>Sort</Label>
+                                <Label style={{ marginRight: 4, flex: 'none' }}>Sort</Label>
                                 <SortControl listId={list.id} sort={sort} direction={direction} />
                             </>
                         )}
                     </div>
                     {hasAlbums && (
-                        <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
-                            <Label style={{ fontSize: 10 }}>{viewMode === 'grid' ? 'Grid' : 'Table'}</Label>
+                        <div style={{ display: 'flex', gap: 10, alignItems: 'center', flex: 'none' }}>
+                            {!isMobile && (
+                                <Label style={{ fontSize: 10 }}>
+                                    {viewMode === 'grid' ? 'Grid' : 'Table'}
+                                </Label>
+                            )}
                             <div
                                 style={{
                                     display: 'flex',
@@ -1494,7 +1672,7 @@ export default function Show({ list, albums, sort, direction }: ShowProps) {
                                     icon={ListIcon}
                                     label="Table"
                                     size={18}
-                                    boxSize={34}
+                                    boxSize={isMobile ? 40 : 34}
                                     active={viewMode === 'table'}
                                     onClick={() => changeViewMode('table')}
                                     id="view-mode-list"
@@ -1503,7 +1681,7 @@ export default function Show({ list, albums, sort, direction }: ShowProps) {
                                     icon={LayoutGrid}
                                     label="Grid"
                                     size={18}
-                                    boxSize={34}
+                                    boxSize={isMobile ? 40 : 34}
                                     active={viewMode === 'grid'}
                                     onClick={() => changeViewMode('grid')}
                                     id="view-mode-grid"
@@ -1514,7 +1692,13 @@ export default function Show({ list, albums, sort, direction }: ShowProps) {
                 </div>
 
                 {!hasAlbums ? (
-                    <div style={{ textAlign: 'center', padding: '96px 0', color: 'var(--fg3)' }}>
+                    <div
+                        style={{
+                            textAlign: 'center',
+                            padding: isMobile ? '56px 0' : '96px 0',
+                            color: 'var(--fg3)',
+                        }}
+                    >
                         <Music
                             size={42}
                             strokeWidth={2}
@@ -1524,7 +1708,7 @@ export default function Show({ list, albums, sort, direction }: ShowProps) {
                             style={{
                                 fontFamily: 'var(--font-display)',
                                 fontWeight: 700,
-                                fontSize: 24,
+                                fontSize: isMobile ? 21 : 24,
                                 color: 'var(--fg1)',
                                 marginBottom: 6,
                             }}
@@ -1562,8 +1746,10 @@ export default function Show({ list, albums, sort, direction }: ShowProps) {
                                 data="albums"
                                 style={{
                                     display: 'grid',
-                                    gridTemplateColumns: 'repeat(auto-fill, minmax(168px, 1fr))',
-                                    gap: 26,
+                                    gridTemplateColumns: isMobile
+                                        ? 'repeat(auto-fill, minmax(min(100%, 140px), 1fr))'
+                                        : 'repeat(auto-fill, minmax(168px, 1fr))',
+                                    gap: isMobile ? 14 : 26,
                                 }}
                                 loading={() => (
                                     <div
@@ -1598,7 +1784,13 @@ export default function Show({ list, albums, sort, direction }: ShowProps) {
                         </SortableContext>
                         <DragOverlay>
                             {activeAlbum && (
-                                <div style={{ width: 168, transform: 'scale(1.05)', cursor: 'grabbing' }}>
+                                <div
+                                    style={{
+                                        width: isMobile ? 140 : 168,
+                                        transform: 'scale(1.05)',
+                                        cursor: 'grabbing',
+                                    }}
+                                >
                                     <GridAlbumCard
                                         album={activeAlbum}
                                         index={0}
@@ -1611,28 +1803,32 @@ export default function Show({ list, albums, sort, direction }: ShowProps) {
                     </DndContext>
                 ) : (
                     <>
-                        <div
-                            style={{
-                                display: 'grid',
-                                gridTemplateColumns: '20px 26px 76px 1fr 72px 200px 50px 34px',
-                                alignItems: 'center',
-                                gap: 14,
-                                padding: '0 12px 10px',
-                                borderBottom: '1px solid var(--line)',
-                                marginBottom: 6,
-                            }}
-                        >
-                            <span />
-                            <Label style={{ textAlign: 'right' }}>#</Label>
-                            <span />
-                            <Label>Album</Label>
-                            <span />
-                            <Label style={{ textAlign: 'right' }}>Year · Tracks</Label>
-                            <Label style={{ textAlign: 'right' }}>
-                                {metric === 'rating' ? 'Rating' : 'Runtime'}
-                            </Label>
-                            <span />
-                        </div>
+                        {!isMobile && (
+                            <div
+                                style={{
+                                    display: 'grid',
+                                    gridTemplateColumns: '20px 26px 76px 1fr 72px 200px 50px 34px',
+                                    alignItems: 'center',
+                                    gap: 14,
+                                    padding: '0 12px 10px',
+                                    borderBottom: '1px solid var(--line)',
+                                    marginBottom: 6,
+                                }}
+                            >
+                                <span />
+                                <Label style={{ textAlign: 'right' }}>#</Label>
+                                <span />
+                                <Label>Album</Label>
+                                <span />
+                                <Label className="meta-col" style={{ textAlign: 'right' }}>
+                                    Year · Tracks
+                                </Label>
+                                <Label style={{ textAlign: 'right' }}>
+                                    {metric === 'rating' ? 'Rating' : 'Runtime'}
+                                </Label>
+                                <span />
+                            </div>
+                        )}
                         <DndContext
                             sensors={sensors}
                             collisionDetection={closestCenter}
@@ -1648,7 +1844,7 @@ export default function Show({ list, albums, sort, direction }: ShowProps) {
                                     style={{
                                         display: 'flex',
                                         flexDirection: 'column',
-                                        gap: 2,
+                                        gap: isMobile ? 0 : 2,
                                     }}
                                     loading={() => (
                                         <div

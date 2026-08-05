@@ -1,7 +1,8 @@
-import { ReactNode, useEffect } from 'react';
+import { CSSProperties, ReactNode, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { X } from 'lucide-react';
 
+import { useIsMobile } from '@/hooks/use-is-mobile';
 import { IconButton } from './IconButton';
 import { Label } from './Label';
 
@@ -30,6 +31,9 @@ interface CardModalProps {
  * catalog header strip and an optional bordered footer. Closes on scrim click
  * and Escape. Renders into a portal on document.body so it is never clipped by
  * the page's transformed (drag-and-drop) containers.
+ *
+ * Below 760px it becomes a bottom sheet: full width, anchored to the bottom
+ * edge, rounded on top only, and slid up from below.
  */
 export function CardModal({
     label = 'CARD',
@@ -43,6 +47,8 @@ export function CardModal({
     contentPad = '26px 30px 30px',
     children,
 }: CardModalProps) {
+    const isMobile = useIsMobile();
+
     useEffect(() => {
         function onKey(event: KeyboardEvent) {
             if (event.key === 'Escape' && onClose) {
@@ -65,6 +71,18 @@ export function CardModal({
         return null;
     }
 
+    const sheet: CSSProperties | null = isMobile
+        ? {
+              width: '100%',
+              maxWidth: 'none',
+              maxHeight: '92dvh',
+              borderRadius: '16px 16px 0 0',
+              borderBottom: 'none',
+              boxShadow: 'var(--shadow-lg)',
+              animation: 'sheetIn var(--dur-base) var(--ease-out) both',
+          }
+        : null;
+
     return createPortal(
         <div
             onClick={(event) => {
@@ -77,9 +95,9 @@ export function CardModal({
                 inset: 0,
                 zIndex: 500,
                 display: 'flex',
-                alignItems: 'center',
+                alignItems: isMobile ? 'flex-end' : 'center',
                 justifyContent: 'center',
-                padding: 28,
+                padding: isMobile ? 0 : 28,
                 background: 'var(--overlay)',
             }}
         >
@@ -88,7 +106,7 @@ export function CardModal({
                 role="dialog"
                 aria-modal="true"
                 aria-label={ariaLabel || label || 'Dialog'}
-                className="hoopify-card-modal"
+                className={isMobile ? undefined : 'hoopify-card-modal'}
                 style={{
                     width,
                     maxWidth: '100%',
@@ -100,8 +118,22 @@ export function CardModal({
                     border: '1.5px solid var(--line-ink)',
                     boxShadow: 'var(--shadow-hard)',
                     overflow: 'hidden',
+                    ...sheet,
                 }}
             >
+                {isMobile && (
+                    <span
+                        aria-hidden="true"
+                        style={{
+                            width: 40,
+                            height: 4,
+                            borderRadius: 999,
+                            background: 'var(--line-strong)',
+                            margin: '8px auto 4px',
+                            flex: 'none',
+                        }}
+                    />
+                )}
                 <div
                     style={{
                         flex: 'none',
@@ -109,7 +141,7 @@ export function CardModal({
                         alignItems: 'center',
                         justifyContent: 'space-between',
                         gap: 12,
-                        padding: '11px 12px 11px 22px',
+                        padding: isMobile ? '6px 10px 6px 18px' : '11px 12px 11px 22px',
                         borderBottom: '1px solid var(--line)',
                         background: 'var(--surface-2)',
                     }}
@@ -118,12 +150,30 @@ export function CardModal({
                     <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
                         {meta && <Label>{meta}</Label>}
                         {closeButton && (
-                            <IconButton icon={X} label="Close" size={17} boxSize={32} onClick={onClose} />
+                            <IconButton
+                                icon={X}
+                                label="Close"
+                                size={17}
+                                boxSize={isMobile ? 44 : 32}
+                                onClick={onClose}
+                            />
                         )}
                     </div>
                 </div>
 
-                <div style={{ flex: 1, minHeight: 0, overflowY: 'auto', padding: contentPad }}>
+                <div
+                    style={{
+                        flex: 1,
+                        minHeight: 0,
+                        overflowY: 'auto',
+                        WebkitOverflowScrolling: 'touch',
+                        padding: isMobile
+                            ? footer
+                                ? '18px 18px 22px'
+                                : '18px 18px calc(28px + env(safe-area-inset-bottom))'
+                            : contentPad,
+                    }}
+                >
                     {children}
                 </div>
 
@@ -132,7 +182,9 @@ export function CardModal({
                         style={{
                             flex: 'none',
                             borderTop: '1px solid var(--line)',
-                            padding: '14px 22px',
+                            padding: isMobile
+                                ? '12px 18px calc(12px + env(safe-area-inset-bottom))'
+                                : '14px 22px',
                             background: 'var(--surface)',
                         }}
                     >

@@ -2,6 +2,7 @@
  * Hoopify sidebar rail. Rendered on every authenticated page.
  *
  * Brand wordmark + nav: "Home" links to "/" and "All lists" links to "/lists".
+ * Below 760px the rail becomes an off-canvas drawer opened from the TopBar.
  */
 import { Link, router, usePage } from '@inertiajs/react';
 import {
@@ -18,9 +19,12 @@ import {
     Settings as SettingsIcon,
     Sun,
     User,
+    X,
 } from 'lucide-react';
 import { CSSProperties, MouseEvent, useCallback, useEffect, useRef, useState } from 'react';
+import { useIsMobile } from '@/hooks/use-is-mobile';
 import { applyTheme, listColor, Theme } from './theme';
+import { IconButton } from './IconButton';
 import { Wordmark } from './Logomark';
 import { Label } from './Label';
 
@@ -49,6 +53,9 @@ interface SidebarProps {
     onNewList?: () => void;
     theme: Theme;
     onToggleTheme: () => void;
+    /** Drawer state — only meaningful below the mobile breakpoint. */
+    open?: boolean;
+    onClose?: () => void;
 }
 
 const SYSTEM_ICONS: Record<string, LucideIcon> = {
@@ -440,12 +447,13 @@ function ProfileMenu({
     );
 }
 
-export function Sidebar({ onNewList, theme, onToggleTheme }: SidebarProps) {
+export function Sidebar({ onNewList, theme, onToggleTheme, open = false, onClose }: SidebarProps) {
     const { auth, currentRouteName, sidebarLists } = usePage<SidebarSharedProps>().props;
 
     const isHome = currentRouteName === 'home';
     const isAllLists = currentRouteName === 'lists.index';
     const activeListId = useActiveListIdFromUrl();
+    const isMobile = useIsMobile();
 
     const systemLists = (sidebarLists ?? []).filter((l) => l.type !== 'custom');
     const userLists = (sidebarLists ?? []).filter((l) => l.type === 'custom');
@@ -458,8 +466,43 @@ export function Sidebar({ onNewList, theme, onToggleTheme }: SidebarProps) {
         router.visit('/lists');
     }, [onNewList]);
 
-    return (
+    /* Lock the page behind the drawer while it is open, and close it on Escape. */
+    useEffect(() => {
+        if (!isMobile || !open) return;
+
+        const previousOverflow = document.body.style.overflow;
+        document.body.style.overflow = 'hidden';
+
+        const onKeyDown = (event: KeyboardEvent) => {
+            if (event.key === 'Escape') onClose?.();
+        };
+        document.addEventListener('keydown', onKeyDown);
+
+        return () => {
+            document.body.style.overflow = previousOverflow;
+            document.removeEventListener('keydown', onKeyDown);
+        };
+    }, [isMobile, open, onClose]);
+
+    const mobileShell: CSSProperties | null = isMobile
+        ? {
+              position: 'fixed',
+              top: 0,
+              left: 0,
+              bottom: 0,
+              zIndex: 400,
+              width: 'min(300px, 84vw)',
+              transform: open ? 'none' : 'translateX(-101%)',
+              boxShadow: open ? 'var(--shadow-lg)' : 'none',
+              transition: 'transform var(--dur-base) var(--ease-out)',
+              overflowY: 'auto',
+              paddingBottom: 'calc(18px + env(safe-area-inset-bottom))',
+          }
+        : null;
+
+    const aside = (
         <aside
+            aria-hidden={isMobile && !open ? true : undefined}
             style={{
                 width: 'var(--sidebar-w)',
                 flex: 'none',
@@ -470,6 +513,7 @@ export function Sidebar({ onNewList, theme, onToggleTheme }: SidebarProps) {
                 display: 'flex',
                 flexDirection: 'column',
                 padding: '18px 14px',
+                ...mobileShell,
             }}
         >
             <div
@@ -478,9 +522,20 @@ export function Sidebar({ onNewList, theme, onToggleTheme }: SidebarProps) {
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'space-between',
+                    gap: 8,
                 }}
             >
                 <Wordmark size={19} />
+                {isMobile && onClose && (
+                    <IconButton
+                        icon={X}
+                        label="Close menu"
+                        onClick={onClose}
+                        size={20}
+                        boxSize={44}
+                        style={{ marginRight: -8 }}
+                    />
+                )}
             </div>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
@@ -562,6 +617,26 @@ export function Sidebar({ onNewList, theme, onToggleTheme }: SidebarProps) {
 
             <ProfileMenu user={auth.user} theme={theme} onToggleTheme={onToggleTheme} />
         </aside>
+    );
+
+    if (!isMobile) return aside;
+
+    return (
+        <>
+            <div
+                onClick={onClose}
+                style={{
+                    position: 'fixed',
+                    inset: 0,
+                    zIndex: 399,
+                    background: 'var(--overlay)',
+                    opacity: open ? 1 : 0,
+                    pointerEvents: open ? 'auto' : 'none',
+                    transition: 'opacity var(--dur-base) var(--ease-out)',
+                }}
+            />
+            {aside}
+        </>
     );
 }
 
