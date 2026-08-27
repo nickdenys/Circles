@@ -43,6 +43,8 @@ interface MoveAlbumDialogProps {
     open: boolean;
     onOpenChange: (open: boolean) => void;
     onMoved: (albumId: number) => void;
+    onMoving: (albumId: number) => void;
+    onMoveFailed: (albumId: number) => void;
 }
 
 export default function MoveAlbumDialog({
@@ -51,6 +53,8 @@ export default function MoveAlbumDialog({
     open,
     onOpenChange,
     onMoved,
+    onMoving,
+    onMoveFailed,
 }: MoveAlbumDialogProps) {
     const sidebarLists = usePage<{ sidebarLists: SidebarList[] }>().props.sidebarLists ?? [];
     const [mode, setMode] = useState<MoveMode>('move');
@@ -120,12 +124,21 @@ export default function MoveAlbumDialog({
             { destination_list_id: selectedList.id },
             {
                 preserveScroll: true,
-                onStart: () => setProcessing(true),
+                onStart: () => {
+                    setProcessing(true);
+
+                    if (mode === 'move') {
+                        onMoving(album.id);
+                        handleOpenChange(false);
+                    }
+                },
                 onFinish: () => setProcessing(false),
+                onError: () => onMoveFailed(album.id),
                 onSuccess: (page) => {
                     const error = (page.props as { flash?: { error?: string } }).flash?.error;
 
                     if (error) {
+                        onMoveFailed(album.id);
                         toast.error(error);
 
                         return;

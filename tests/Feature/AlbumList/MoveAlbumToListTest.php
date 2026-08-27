@@ -221,3 +221,13 @@ test('current list updates immediately after move', function () {
             ->where('list.albumsCount', 0)
         );
 });
+
+test('a moved album is coloured blue and only dropped once its exit has played', function () {
+    $component = file_get_contents(resource_path('js/Pages/Lists/Show.tsx'));
+
+    expect($component)
+        ->toContain("startLeaving(albumId, 'moved')")
+        ->toContain("strong: 'var(--info)',")
+        ->toContain('function withLeavingAlbums')
+        ->toContain('setOrderedAlbums(withLeavingAlbums(albums.data))');
+});

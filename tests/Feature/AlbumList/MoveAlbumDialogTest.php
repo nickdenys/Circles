@@ -203,3 +203,12 @@ test('show page removes the moved album from local state', function () {
         ->toContain('handleAlbumMoved')
         ->toContain('setOrderedAlbums((prev) => prev.filter((a) => a.id !== albumId))');
 });
+
+test('move album dialog starts the leaving highlight when the move request goes out', function () {
+    $content = file_get_contents(resource_path('js/Pages/Lists/MoveAlbumDialog.tsx'));
+
+    expect($content)
+        ->toContain('onMoving(album.id)')
+        ->toContain('onError: () => onMoveFailed(album.id)')
+        ->toContain('onMoveFailed(album.id);');
+});

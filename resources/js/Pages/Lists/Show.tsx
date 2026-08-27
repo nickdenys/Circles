@@ -111,12 +111,119 @@ interface ShowProps {
 
 type ViewMode = 'grid' | 'table';
 
-const JUST_ADDED_DURATION_MS = 2600;
+const HIGHLIGHT_DURATION_MS = 2600;
 
-const JUST_ADDED_KEYFRAMES =
-    '@keyframes albumJustAdded{0%{background:var(--accent-weak);box-shadow:inset 0 0 0 1.5px var(--accent)}70%{background:var(--accent-weak);box-shadow:inset 0 0 0 1.5px var(--accent)}100%{background:transparent;box-shadow:inset 0 0 0 1.5px transparent}}';
+/**
+ * The green highlight spends its last 30% fading out, so a leaving album mirrors it and
+ * spends that same stretch fading in. Both ends use ease-out rather than a literal
+ * `direction: reverse`, which would ease *into* the colour and read as a delay.
+ */
+const LEAVE_COLOUR_MS = HIGHLIGHT_DURATION_MS * 0.3;
 
-const JUST_ADDED_ANIMATION = `albumJustAdded ${JUST_ADDED_DURATION_MS}ms var(--ease-out) forwards`;
+const LEAVE_ANIMATION_MS = 520;
+
+const LEAVE_DURATION_MS = LEAVE_COLOUR_MS + LEAVE_ANIMATION_MS;
+
+const HIGHLIGHT_KEYFRAMES = [
+    '@keyframes albumHighlight{0%{background:var(--highlight-weak);box-shadow:inset 0 0 0 1.5px var(--highlight-strong)}70%{background:var(--highlight-weak);box-shadow:inset 0 0 0 1.5px var(--highlight-strong)}100%{background:transparent;box-shadow:inset 0 0 0 1.5px transparent}}',
+    '@keyframes albumHighlightIn{0%{background:transparent;box-shadow:inset 0 0 0 1.5px transparent}100%{background:var(--highlight-weak);box-shadow:inset 0 0 0 1.5px var(--highlight-strong)}}',
+    '@keyframes albumLeaveRow{0%{opacity:1;grid-template-rows:1fr}50%{opacity:0;grid-template-rows:1fr}100%{opacity:0;grid-template-rows:0fr}}',
+    '@keyframes albumLeaveCard{0%{opacity:1;transform:scale(1)}50%{opacity:0;transform:scale(0.94)}100%{opacity:0;transform:scale(0.94)}}',
+].join('');
+
+/**
+ * An added album fades its highlight out over the tail of a long run; a leaving album
+ * fades the mirror image in, over just that tail's worth of time.
+ */
+const HIGHLIGHT_KINDS = {
+    added: {
+        weak: 'var(--accent-weak)',
+        strong: 'var(--accent)',
+        keyframes: 'albumHighlight',
+        colourMs: HIGHLIGHT_DURATION_MS,
+        holdMs: HIGHLIGHT_DURATION_MS,
+    },
+    removed: {
+        weak: 'var(--critical-weak)',
+        strong: 'var(--critical)',
+        keyframes: 'albumHighlightIn',
+        colourMs: LEAVE_COLOUR_MS,
+        holdMs: LEAVE_DURATION_MS,
+    },
+    moved: {
+        weak: 'var(--info-weak)',
+        strong: 'var(--info)',
+        keyframes: 'albumHighlightIn',
+        colourMs: LEAVE_COLOUR_MS,
+        holdMs: LEAVE_DURATION_MS,
+    },
+} as const;
+
+type HighlightKind = keyof typeof HIGHLIGHT_KINDS;
+
+/**
+ * `exitDelayMs` is only set once the server has confirmed the album is gone; until then
+ * the album is coloured but stays put, in case the request turns out to have failed.
+ */
+type AlbumHighlight = { kind: HighlightKind; exitDelayMs?: number };
+
+function isLeaving(highlight?: AlbumHighlight): boolean {
+    return highlight?.kind === 'removed' || highlight?.kind === 'moved';
+}
+
+/**
+ * @return {React.CSSProperties} Custom properties feeding the shared keyframes, plus the animation itself.
+ */
+function highlightStyle(highlight?: AlbumHighlight): React.CSSProperties {
+    if (!highlight) {
+        return {};
+    }
+
+    const { weak, strong, keyframes, colourMs } = HIGHLIGHT_KINDS[highlight.kind];
+
+    return {
+        ['--highlight-weak' as string]: weak,
+        ['--highlight-strong' as string]: strong,
+        animation: `${keyframes} ${colourMs}ms var(--ease-out) forwards`,
+    };
+}
+
+/**
+ * Fade the album out once its colour has arrived, then fold the space it occupied shut.
+ * Table rows collapse their height so the rows underneath slide up; grid cards cannot
+ * reclaim their slot that way, so they shrink away instead.
+ *
+ * @return {React.CSSProperties} Styles for the wrapper that owns the album's place in the layout.
+ */
+function leaveStyle(highlight: AlbumHighlight | undefined, layout: 'row' | 'card'): React.CSSProperties {
+    if (!isLeaving(highlight) || highlight?.exitDelayMs === undefined) {
+        return {};
+    }
+
+    const keyframes = layout === 'row' ? 'albumLeaveRow' : 'albumLeaveCard';
+
+    return {
+        display: layout === 'row' ? 'grid' : undefined,
+        gridTemplateRows: layout === 'row' ? '1fr' : undefined,
+        overflow: layout === 'row' ? 'hidden' : undefined,
+        pointerEvents: 'none',
+        animation: `${keyframes} ${LEAVE_ANIMATION_MS}ms var(--ease-out) ${highlight.exitDelayMs}ms forwards`,
+    };
+}
+
+/**
+ * @return {AlbumItem[]} The list with the album put back at `index`, or untouched when it is already there.
+ */
+function insertLeavingAlbum(albums: AlbumItem[], album: AlbumItem, index: number): AlbumItem[] {
+    if (albums.some((a) => a.id === album.id)) {
+        return albums;
+    }
+
+    const next = [...albums];
+    next.splice(Math.min(index, next.length), 0, album);
+
+    return next;
+}
 
 const SORT_OPTIONS = [
     { value: 'manual', label: 'Manual' },
@@ -316,13 +423,13 @@ function GridAlbumCard({
     index,
     listType,
     onPlay,
-    justAdded = false,
+    highlight,
 }: {
     album: AlbumItem;
     index: number;
     listType: ListType;
     onPlay: () => void;
-    justAdded?: boolean;
+    highlight?: AlbumHighlight;
 }) {
     const [hover, setHover] = useState(false);
     const isReviewedList = listType === 'reviewed';
@@ -330,7 +437,7 @@ function GridAlbumCard({
 
     return (
         <div
-            data-just-added={justAdded ? 'true' : undefined}
+            data-highlight={highlight?.kind}
             onMouseEnter={() => setHover(true)}
             onMouseLeave={() => setHover(false)}
             style={{
@@ -338,10 +445,10 @@ function GridAlbumCard({
                 display: 'flex',
                 flexDirection: 'column',
                 gap: 11,
-                padding: justAdded ? 8 : undefined,
-                margin: justAdded ? -8 : undefined,
-                borderRadius: justAdded ? 14 : undefined,
-                animation: justAdded ? JUST_ADDED_ANIMATION : undefined,
+                padding: highlight ? 8 : undefined,
+                margin: highlight ? -8 : undefined,
+                borderRadius: highlight ? 14 : undefined,
+                ...highlightStyle(highlight),
                 transition: 'transform var(--dur-fast) var(--ease-out)',
                 transform: hover ? 'translateY(-4px)' : 'none',
             }}
@@ -499,14 +606,14 @@ function GridAlbumItem({
     listType,
     onPlay,
     draggable,
-    justAdded = false,
+    highlight,
 }: {
     album: AlbumItem;
     index: number;
     listType: ListType;
     onPlay: () => void;
     draggable: boolean;
-    justAdded?: boolean;
+    highlight?: AlbumHighlight;
 }) {
     const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
         id: album.id,
@@ -520,6 +627,7 @@ function GridAlbumItem({
                 transform: CSS.Transform.toString(transform),
                 transition,
                 opacity: isDragging ? 0.35 : 1,
+                ...leaveStyle(highlight, 'card'),
             }}
             {...(draggable ? { ...attributes, ...listeners } : {})}
         >
@@ -528,7 +636,7 @@ function GridAlbumItem({
                 index={index}
                 listType={listType}
                 onPlay={onPlay}
-                justAdded={justAdded}
+                highlight={highlight}
             />
         </div>
     );
@@ -861,7 +969,7 @@ function TableAlbumRow({
     onEditNote,
     dragHandleProps,
     draggable,
-    justAdded = false,
+    highlight,
 }: {
     album: AlbumItem;
     index: number;
@@ -875,7 +983,7 @@ function TableAlbumRow({
     onEditNote: () => void;
     dragHandleProps?: React.HTMLAttributes<HTMLSpanElement>;
     draggable: boolean;
-    justAdded?: boolean;
+    highlight?: AlbumHighlight;
 }) {
     const [hover, setHover] = useState(false);
     const isMobile = useIsMobile();
@@ -888,12 +996,13 @@ function TableAlbumRow({
         return (
             <div
                 data-album-db-id={album.id}
-                data-just-added={justAdded ? 'true' : undefined}
+                data-highlight={highlight?.kind}
                 className={'album-card' + (isReviewedList ? ' reviewed-card' : '')}
                 style={{
                     borderBottom: '1px solid var(--line)',
-                    borderRadius: justAdded ? 10 : undefined,
-                    animation: justAdded ? JUST_ADDED_ANIMATION : undefined,
+                    borderRadius: highlight ? 10 : undefined,
+                    minHeight: isLeaving(highlight) ? 0 : undefined,
+                    ...highlightStyle(highlight),
                 }}
             >
                 <div
@@ -1018,7 +1127,7 @@ function TableAlbumRow({
     return (
         <div
             data-album-db-id={album.id}
-            data-just-added={justAdded ? 'true' : undefined}
+            data-highlight={highlight?.kind}
             onMouseEnter={() => setHover(true)}
             onMouseLeave={() => setHover(false)}
             className={
@@ -1028,7 +1137,8 @@ function TableAlbumRow({
                 borderRadius: 10,
                 background: hover ? 'var(--surface-3)' : 'transparent',
                 transition: 'background var(--dur-fast)',
-                animation: justAdded ? JUST_ADDED_ANIMATION : undefined,
+                minHeight: isLeaving(highlight) ? 0 : undefined,
+                ...highlightStyle(highlight),
             }}
         >
             <div
@@ -1184,7 +1294,7 @@ function SortableTableRow({
     onRate,
     onEditNote,
     draggable,
-    justAdded = false,
+    highlight,
 }: {
     album: AlbumItem;
     index: number;
@@ -1197,7 +1307,7 @@ function SortableTableRow({
     onRate: () => void;
     onEditNote: () => void;
     draggable: boolean;
-    justAdded?: boolean;
+    highlight?: AlbumHighlight;
 }) {
     const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
         id: album.id,
@@ -1211,6 +1321,7 @@ function SortableTableRow({
                 transform: CSS.Transform.toString(transform),
                 transition,
                 opacity: isDragging ? 0.35 : 1,
+                ...leaveStyle(highlight, 'row'),
             }}
         >
             <TableAlbumRow
@@ -1225,7 +1336,7 @@ function SortableTableRow({
                 onRate={onRate}
                 onEditNote={onEditNote}
                 draggable={draggable}
-                justAdded={justAdded}
+                highlight={highlight}
                 dragHandleProps={draggable ? { ...attributes, ...listeners } : undefined}
             />
         </div>
@@ -1274,12 +1385,14 @@ export default function Show({ list, albums, sort, direction }: ShowProps) {
 
     const syncRef = useRef({ count: albums.data.length, firstId: albums.data[0]?.id });
     const removedByReviewRef = useRef<Map<number, { album: AlbumItem; index: number }>>(new Map());
-    const justAddedTimersRef = useRef<Map<number, ReturnType<typeof setTimeout>>>(new Map());
+    const highlightTimersRef = useRef<Map<number, ReturnType<typeof setTimeout>>>(new Map());
+    const leavingAlbumsRef = useRef<Map<number, { album: AlbumItem; index: number }>>(new Map());
+    const leaveStartedAtRef = useRef<Map<number, number>>(new Map());
 
-    const [justAddedIds, setJustAddedIds] = useState<Set<number>>(() => new Set());
+    const [highlightedAlbums, setHighlightedAlbums] = useState<Map<number, AlbumHighlight>>(() => new Map());
 
     useEffect(() => {
-        const timers = justAddedTimersRef.current;
+        const timers = highlightTimersRef.current;
 
         return () => {
             timers.forEach((timer) => clearTimeout(timer));
@@ -1304,7 +1417,7 @@ export default function Show({ list, albums, sort, direction }: ShowProps) {
                 return [...prev, ...newItems.filter((a) => !existingIds.has(a.id))];
             });
         } else if (currFirstId !== prevFirstId || currCount < prevCount) {
-            setOrderedAlbums(albums.data);
+            setOrderedAlbums(withLeavingAlbums(albums.data));
         }
 
         syncRef.current = { count: currCount, firstId: currFirstId };
@@ -1377,30 +1490,109 @@ export default function Show({ list, albums, sort, direction }: ShowProps) {
         setOrderedAlbums((prev) => [album, ...prev.filter((entry) => entry.id !== album.id)]);
         setAlbumCount((prev) => prev + 1);
         addToTotals(album);
-        markJustAdded(album.id);
+        highlightAlbum(album.id, 'added');
     }
 
-    function markJustAdded(albumId: number) {
-        const existingTimer = justAddedTimersRef.current.get(albumId);
+    function clearHighlightTimer(albumId: number) {
+        const existingTimer = highlightTimersRef.current.get(albumId);
 
         if (existingTimer) {
             clearTimeout(existingTimer);
+            highlightTimersRef.current.delete(albumId);
         }
+    }
 
-        setJustAddedIds((prev) => new Set(prev).add(albumId));
+    function forgetHighlight(albumId: number) {
+        setHighlightedAlbums((prev) => {
+            const next = new Map(prev);
+            next.delete(albumId);
 
-        justAddedTimersRef.current.set(
+            return next;
+        });
+    }
+
+    function highlightAlbum(albumId: number, kind: HighlightKind) {
+        clearHighlightTimer(albumId);
+        setHighlightedAlbums((prev) => new Map(prev).set(albumId, { kind }));
+
+        highlightTimersRef.current.set(
             albumId,
             setTimeout(() => {
-                justAddedTimersRef.current.delete(albumId);
-                setJustAddedIds((prev) => {
-                    const next = new Set(prev);
-                    next.delete(albumId);
-
-                    return next;
-                });
-            }, JUST_ADDED_DURATION_MS),
+                highlightTimersRef.current.delete(albumId);
+                forgetHighlight(albumId);
+            }, HIGHLIGHT_KINDS[kind].holdMs),
         );
+    }
+
+    /**
+     * Colour the album the moment the request goes out, so the feedback is immediate. The
+     * album only fades and folds away once the server confirms, in `startLeaving`.
+     */
+    function beginLeaving(albumId: number, kind: 'removed' | 'moved') {
+        clearHighlightTimer(albumId);
+        leaveStartedAtRef.current.set(albumId, performance.now());
+        setHighlightedAlbums((prev) => new Map(prev).set(albumId, { kind }));
+    }
+
+    function cancelLeaving(albumId: number) {
+        clearHighlightTimer(albumId);
+        leaveStartedAtRef.current.delete(albumId);
+        leavingAlbumsRef.current.delete(albumId);
+        forgetHighlight(albumId);
+    }
+
+    /**
+     * Keep the album on screen until its exit finishes, then drop it. The server has
+     * already forgotten it, so reloaded props are patched back up in the meantime. The
+     * exit waits out whatever is left of the colour build-up the click already started.
+     */
+    function startLeaving(albumId: number, kind: 'removed' | 'moved') {
+        const index = orderedAlbums.findIndex((a) => a.id === albumId);
+        const album = index === -1 ? null : orderedAlbums[index];
+
+        if (!album) {
+            removeAlbumFromList(albumId);
+            cancelLeaving(albumId);
+
+            return;
+        }
+
+        const startedAt = leaveStartedAtRef.current.get(albumId);
+        const colourElapsed = startedAt === undefined ? 0 : performance.now() - startedAt;
+        const exitDelayMs = Math.max(0, LEAVE_COLOUR_MS - colourElapsed);
+
+        leaveStartedAtRef.current.delete(albumId);
+        leavingAlbumsRef.current.set(albumId, { album, index });
+        setOrderedAlbums((prev) => insertLeavingAlbum(prev, album, index));
+
+        clearHighlightTimer(albumId);
+        setHighlightedAlbums((prev) => new Map(prev).set(albumId, { kind, exitDelayMs }));
+
+        highlightTimersRef.current.set(
+            albumId,
+            setTimeout(() => {
+                highlightTimersRef.current.delete(albumId);
+                forgetHighlight(albumId);
+                leavingAlbumsRef.current.delete(albumId);
+                setOrderedAlbums((prev) => prev.filter((a) => a.id !== albumId));
+                setAlbumCount((prev) => Math.max(0, prev - 1));
+                subtractFromTotals(album);
+            }, exitDelayMs + LEAVE_ANIMATION_MS),
+        );
+    }
+
+    /**
+     * @param {AlbumItem[]} data Freshly reloaded albums, already missing anything that is leaving.
+     * @return {AlbumItem[]} The same list with leaving albums slotted back into their old positions.
+     */
+    function withLeavingAlbums(data: AlbumItem[]): AlbumItem[] {
+        if (leavingAlbumsRef.current.size === 0) {
+            return data;
+        }
+
+        return [...leavingAlbumsRef.current.values()]
+            .sort((a, b) => a.index - b.index)
+            .reduce((carry, { album, index }) => insertLeavingAlbum(carry, album, index), data);
     }
 
     function handleMoveAlbum(album: MoveTarget) {
@@ -1409,7 +1601,7 @@ export default function Show({ list, albums, sort, direction }: ShowProps) {
     }
 
     function handleAlbumMoved(albumId: number) {
-        removeAlbumFromList(albumId);
+        startLeaving(albumId, 'moved');
     }
 
     function handleRemoveAlbum(album: { id: number; title: string }) {
@@ -1418,7 +1610,7 @@ export default function Show({ list, albums, sort, direction }: ShowProps) {
     }
 
     function handleAlbumRemoved(albumId: number) {
-        removeAlbumFromList(albumId);
+        startLeaving(albumId, 'removed');
     }
 
     function handleRateAlbum(album: AlbumItem) {
@@ -1501,7 +1693,7 @@ export default function Show({ list, albums, sort, direction }: ShowProps) {
         <>
             <Head title={list.title} />
 
-            <style>{JUST_ADDED_KEYFRAMES}</style>
+            <style>{HIGHLIGHT_KEYFRAMES}</style>
 
             <TopBar crumbs={['Library', list.title]}>
                 <Button
@@ -1850,7 +2042,7 @@ export default function Show({ list, albums, sort, direction }: ShowProps) {
                                         listType={list.type}
                                         onPlay={() => {}}
                                         draggable={isManual && !isReviewedList}
-                                        justAdded={justAddedIds.has(album.id)}
+                                        highlight={highlightedAlbums.get(album.id)}
                                     />
                                 ))}
                             </InfiniteScroll>
@@ -1951,7 +2143,7 @@ export default function Show({ list, albums, sort, direction }: ShowProps) {
                                             onRate={() => handleRateAlbum(album)}
                                             onEditNote={() => handleEditNote(album)}
                                             draggable={isManual && !isReviewedList}
-                                            justAdded={justAddedIds.has(album.id)}
+                                            highlight={highlightedAlbums.get(album.id)}
                                         />
                                     ))}
                                 </InfiniteScroll>
@@ -2017,6 +2209,8 @@ export default function Show({ list, albums, sort, direction }: ShowProps) {
                 open={moveDialogOpen}
                 onOpenChange={setMoveDialogOpen}
                 onMoved={handleAlbumMoved}
+                onMoving={(albumId) => beginLeaving(albumId, 'moved')}
+                onMoveFailed={cancelLeaving}
             />
 
             <RemoveAlbumDialog
@@ -2025,6 +2219,8 @@ export default function Show({ list, albums, sort, direction }: ShowProps) {
                 open={removeDialogOpen}
                 onOpenChange={setRemoveDialogOpen}
                 onRemoved={handleAlbumRemoved}
+                onRemoving={(albumId) => beginLeaving(albumId, 'removed')}
+                onRemoveFailed={cancelLeaving}
             />
 
             <RatingDialog
