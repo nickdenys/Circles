@@ -1,6 +1,7 @@
 import { router } from '@inertiajs/react';
 import { Loader2, Trash2 } from 'lucide-react';
 import { useState } from 'react';
+import { toast } from 'sonner';
 
 import { Button } from '@/components/hoopify/Button';
 import { CardModal } from '@/components/hoopify/CardModal';
@@ -11,6 +12,8 @@ interface RemoveAlbumDialogProps {
     open: boolean;
     onOpenChange: (open: boolean) => void;
     onRemoved: (albumId: number) => void;
+    onRemoving: (albumId: number) => void;
+    onRemoveFailed: (albumId: number) => void;
 }
 
 export default function RemoveAlbumDialog({
@@ -19,20 +22,31 @@ export default function RemoveAlbumDialog({
     open,
     onOpenChange,
     onRemoved,
+    onRemoving,
+    onRemoveFailed,
 }: RemoveAlbumDialogProps) {
     const [processing, setProcessing] = useState(false);
 
+    /**
+     * The dialog closes right away so the album's leaving highlight is visible behind it
+     * instead of sitting under the modal overlay until the server answers.
+     */
     function handleConfirm() {
         if (!album) return;
 
         router.delete(`/lists/${listId}/albums/${album.id}`, {
             preserveScroll: true,
-            onStart: () => setProcessing(true),
-            onFinish: () => setProcessing(false),
-            onSuccess: () => {
-                onRemoved(album.id);
+            onStart: () => {
+                setProcessing(true);
+                onRemoving(album.id);
                 onOpenChange(false);
             },
+            onFinish: () => setProcessing(false),
+            onError: () => {
+                onRemoveFailed(album.id);
+                toast.error(`Could not remove "${album.title}"`);
+            },
+            onSuccess: () => onRemoved(album.id),
         });
     }
 

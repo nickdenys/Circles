@@ -154,3 +154,44 @@ test('album card passes album data for removal', function () {
             ->where('albums.data.0.title', 'Test Album Title')
         );
 });
+
+test('a removed album is coloured red and only dropped once its exit has played', function () {
+    $component = file_get_contents(resource_path('js/Pages/Lists/Show.tsx'));
+
+    expect($component)
+        ->toContain("startLeaving(albumId, 'removed')")
+        ->toContain("strong: 'var(--critical)',")
+        ->toContain('function startLeaving')
+        ->toContain('setOrderedAlbums((prev) => insertLeavingAlbum(prev, album, index))')
+        ->toContain('setOrderedAlbums((prev) => prev.filter((a) => a.id !== albumId))');
+});
+
+test('the leaving highlight colours are defined for both themes', function () {
+    $css = file_get_contents(resource_path('css/app.css'));
+
+    expect(substr_count($css, '--critical-weak:'))->toBe(2)
+        ->and(substr_count($css, '--info-weak:'))->toBe(2)
+        ->and(substr_count($css, '--info:'))->toBe(2);
+});
+
+test('the colour starts on click and the exit waits out whatever is left of it', function () {
+    $component = file_get_contents(resource_path('js/Pages/Lists/Show.tsx'));
+
+    expect($component)
+        ->toContain('function beginLeaving')
+        ->toContain('function cancelLeaving')
+        ->toContain('LEAVE_COLOUR_MS - colourElapsed')
+        ->toContain('HIGHLIGHT_KINDS[kind].holdMs');
+});
+
+test('a leaving album fades out and folds its space shut', function () {
+    $component = file_get_contents(resource_path('js/Pages/Lists/Show.tsx'));
+
+    expect($component)
+        ->toContain('@keyframes albumLeaveRow')
+        ->toContain('grid-template-rows:0fr')
+        ->toContain('@keyframes albumLeaveCard')
+        ->toContain("leaveStyle(highlight, 'row')")
+        ->toContain("leaveStyle(highlight, 'card')")
+        ->toContain('holdMs: LEAVE_DURATION_MS');
+});

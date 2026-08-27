@@ -128,9 +128,9 @@ test('a newly added album is surfaced at the top of the list with a highlight', 
     expect($component)
         ->toContain('function handleAlbumAdded')
         ->toContain('setOrderedAlbums((prev) => [album, ...prev.filter((entry) => entry.id !== album.id)])')
-        ->toContain('markJustAdded(album.id)')
-        ->toContain('JUST_ADDED_KEYFRAMES')
-        ->toContain('justAdded={justAddedIds.has(album.id)}');
+        ->toContain("highlightAlbum(album.id, 'added')")
+        ->toContain('HIGHLIGHT_KEYFRAMES')
+        ->toContain('highlight={highlightedAlbums.get(album.id)}');
 });
 
 test('existing album record is reused when adding to a different list', function () {

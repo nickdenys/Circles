@@ -98,3 +98,12 @@ test('remove album dialog shows processing state during deletion', function () {
     expect($content)->toContain("'Removing...'");
     expect($content)->toContain('disabled={processing}');
 });
+
+test('remove album dialog starts the leaving highlight when the request goes out', function () {
+    $content = file_get_contents(resource_path('js/Pages/Lists/RemoveAlbumDialog.tsx'));
+
+    expect($content)
+        ->toContain('onRemoving(album.id)')
+        ->toContain('onRemoveFailed(album.id)')
+        ->toContain('onOpenChange(false)');
+});
