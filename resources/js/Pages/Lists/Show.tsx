@@ -111,6 +111,13 @@ interface ShowProps {
 
 type ViewMode = 'grid' | 'table';
 
+const JUST_ADDED_DURATION_MS = 2600;
+
+const JUST_ADDED_KEYFRAMES =
+    '@keyframes albumJustAdded{0%{background:var(--accent-weak);box-shadow:inset 0 0 0 1.5px var(--accent)}70%{background:var(--accent-weak);box-shadow:inset 0 0 0 1.5px var(--accent)}100%{background:transparent;box-shadow:inset 0 0 0 1.5px transparent}}';
+
+const JUST_ADDED_ANIMATION = `albumJustAdded ${JUST_ADDED_DURATION_MS}ms var(--ease-out) forwards`;
+
 const SORT_OPTIONS = [
     { value: 'manual', label: 'Manual' },
     { value: 'added', label: 'Date added' },
@@ -309,11 +316,13 @@ function GridAlbumCard({
     index,
     listType,
     onPlay,
+    justAdded = false,
 }: {
     album: AlbumItem;
     index: number;
     listType: ListType;
     onPlay: () => void;
+    justAdded?: boolean;
 }) {
     const [hover, setHover] = useState(false);
     const isReviewedList = listType === 'reviewed';
@@ -321,6 +330,7 @@ function GridAlbumCard({
 
     return (
         <div
+            data-just-added={justAdded ? 'true' : undefined}
             onMouseEnter={() => setHover(true)}
             onMouseLeave={() => setHover(false)}
             style={{
@@ -328,6 +338,10 @@ function GridAlbumCard({
                 display: 'flex',
                 flexDirection: 'column',
                 gap: 11,
+                padding: justAdded ? 8 : undefined,
+                margin: justAdded ? -8 : undefined,
+                borderRadius: justAdded ? 14 : undefined,
+                animation: justAdded ? JUST_ADDED_ANIMATION : undefined,
                 transition: 'transform var(--dur-fast) var(--ease-out)',
                 transform: hover ? 'translateY(-4px)' : 'none',
             }}
@@ -485,12 +499,14 @@ function GridAlbumItem({
     listType,
     onPlay,
     draggable,
+    justAdded = false,
 }: {
     album: AlbumItem;
     index: number;
     listType: ListType;
     onPlay: () => void;
     draggable: boolean;
+    justAdded?: boolean;
 }) {
     const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
         id: album.id,
@@ -512,6 +528,7 @@ function GridAlbumItem({
                 index={index}
                 listType={listType}
                 onPlay={onPlay}
+                justAdded={justAdded}
             />
         </div>
     );
@@ -844,6 +861,7 @@ function TableAlbumRow({
     onEditNote,
     dragHandleProps,
     draggable,
+    justAdded = false,
 }: {
     album: AlbumItem;
     index: number;
@@ -857,6 +875,7 @@ function TableAlbumRow({
     onEditNote: () => void;
     dragHandleProps?: React.HTMLAttributes<HTMLSpanElement>;
     draggable: boolean;
+    justAdded?: boolean;
 }) {
     const [hover, setHover] = useState(false);
     const isMobile = useIsMobile();
@@ -869,8 +888,13 @@ function TableAlbumRow({
         return (
             <div
                 data-album-db-id={album.id}
+                data-just-added={justAdded ? 'true' : undefined}
                 className={'album-card' + (isReviewedList ? ' reviewed-card' : '')}
-                style={{ borderBottom: '1px solid var(--line)' }}
+                style={{
+                    borderBottom: '1px solid var(--line)',
+                    borderRadius: justAdded ? 10 : undefined,
+                    animation: justAdded ? JUST_ADDED_ANIMATION : undefined,
+                }}
             >
                 <div
                     style={{
@@ -994,6 +1018,7 @@ function TableAlbumRow({
     return (
         <div
             data-album-db-id={album.id}
+            data-just-added={justAdded ? 'true' : undefined}
             onMouseEnter={() => setHover(true)}
             onMouseLeave={() => setHover(false)}
             className={
@@ -1003,6 +1028,7 @@ function TableAlbumRow({
                 borderRadius: 10,
                 background: hover ? 'var(--surface-3)' : 'transparent',
                 transition: 'background var(--dur-fast)',
+                animation: justAdded ? JUST_ADDED_ANIMATION : undefined,
             }}
         >
             <div
@@ -1158,6 +1184,7 @@ function SortableTableRow({
     onRate,
     onEditNote,
     draggable,
+    justAdded = false,
 }: {
     album: AlbumItem;
     index: number;
@@ -1170,6 +1197,7 @@ function SortableTableRow({
     onRate: () => void;
     onEditNote: () => void;
     draggable: boolean;
+    justAdded?: boolean;
 }) {
     const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
         id: album.id,
@@ -1197,6 +1225,7 @@ function SortableTableRow({
                 onRate={onRate}
                 onEditNote={onEditNote}
                 draggable={draggable}
+                justAdded={justAdded}
                 dragHandleProps={draggable ? { ...attributes, ...listeners } : undefined}
             />
         </div>
@@ -1245,6 +1274,18 @@ export default function Show({ list, albums, sort, direction }: ShowProps) {
 
     const syncRef = useRef({ count: albums.data.length, firstId: albums.data[0]?.id });
     const removedByReviewRef = useRef<Map<number, { album: AlbumItem; index: number }>>(new Map());
+    const justAddedTimersRef = useRef<Map<number, ReturnType<typeof setTimeout>>>(new Map());
+
+    const [justAddedIds, setJustAddedIds] = useState<Set<number>>(() => new Set());
+
+    useEffect(() => {
+        const timers = justAddedTimersRef.current;
+
+        return () => {
+            timers.forEach((timer) => clearTimeout(timer));
+            timers.clear();
+        };
+    }, []);
 
     const sensors = useSensors(
         useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
@@ -1327,10 +1368,39 @@ export default function Show({ list, albums, sort, direction }: ShowProps) {
         }
     }
 
+    /**
+     * New albums are filed at the end of the list server-side, which sits below the
+     * fold (or on a later page) for anything longer than a screen. Surface the album
+     * at the top instead so the add is visible straight away, even with the dialog open.
+     */
     function handleAlbumAdded(album: AddedAlbum) {
-        setOrderedAlbums((prev) => [...prev, album]);
+        setOrderedAlbums((prev) => [album, ...prev.filter((entry) => entry.id !== album.id)]);
         setAlbumCount((prev) => prev + 1);
         addToTotals(album);
+        markJustAdded(album.id);
+    }
+
+    function markJustAdded(albumId: number) {
+        const existingTimer = justAddedTimersRef.current.get(albumId);
+
+        if (existingTimer) {
+            clearTimeout(existingTimer);
+        }
+
+        setJustAddedIds((prev) => new Set(prev).add(albumId));
+
+        justAddedTimersRef.current.set(
+            albumId,
+            setTimeout(() => {
+                justAddedTimersRef.current.delete(albumId);
+                setJustAddedIds((prev) => {
+                    const next = new Set(prev);
+                    next.delete(albumId);
+
+                    return next;
+                });
+            }, JUST_ADDED_DURATION_MS),
+        );
     }
 
     function handleMoveAlbum(album: MoveTarget) {
@@ -1430,6 +1500,8 @@ export default function Show({ list, albums, sort, direction }: ShowProps) {
     return (
         <>
             <Head title={list.title} />
+
+            <style>{JUST_ADDED_KEYFRAMES}</style>
 
             <TopBar crumbs={['Library', list.title]}>
                 <Button
@@ -1778,6 +1850,7 @@ export default function Show({ list, albums, sort, direction }: ShowProps) {
                                         listType={list.type}
                                         onPlay={() => {}}
                                         draggable={isManual && !isReviewedList}
+                                        justAdded={justAddedIds.has(album.id)}
                                     />
                                 ))}
                             </InfiniteScroll>
@@ -1878,6 +1951,7 @@ export default function Show({ list, albums, sort, direction }: ShowProps) {
                                             onRate={() => handleRateAlbum(album)}
                                             onEditNote={() => handleEditNote(album)}
                                             draggable={isManual && !isReviewedList}
+                                            justAdded={justAddedIds.has(album.id)}
                                         />
                                     ))}
                                 </InfiniteScroll>

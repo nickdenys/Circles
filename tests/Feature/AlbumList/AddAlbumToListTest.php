@@ -122,6 +122,17 @@ test('album appears in the list immediately after being added', function () {
         ->toHaveKeys(['id', 'spotify_id', 'title', 'artists', 'cover_url', 'runtime_ms', 'album_type', 'total_tracks', 'release_date', 'spotify_uri', 'genres']);
 });
 
+test('a newly added album is surfaced at the top of the list with a highlight', function () {
+    $component = file_get_contents(resource_path('js/Pages/Lists/Show.tsx'));
+
+    expect($component)
+        ->toContain('function handleAlbumAdded')
+        ->toContain('setOrderedAlbums((prev) => [album, ...prev.filter((entry) => entry.id !== album.id)])')
+        ->toContain('markJustAdded(album.id)')
+        ->toContain('JUST_ADDED_KEYFRAMES')
+        ->toContain('justAdded={justAddedIds.has(album.id)}');
+});
+
 test('existing album record is reused when adding to a different list', function () {
     Queue::fake();
 
