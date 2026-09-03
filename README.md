@@ -1,3 +1,5 @@
+<img src="https://raw.githubusercontent.com/nickdenys/circles/main/public/favicon.svg" width="64" height="64" alt="Circles icon">
+
 # Circles
 
 Keep track of the albums you love, the ones you mean to get to, and what you thought of them.
