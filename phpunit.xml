@@ -29,6 +29,8 @@
         <env name="QUEUE_CONNECTION" value="sync"/>
         <env name="SESSION_DRIVER" value="array"/>
         <env name="SIGNUP_ALLOWLIST" value=""/>
+        <env name="DEV_LOGIN_ENABLED" value="true"/>
+        <env name="DEV_LOGIN_EMAIL" value="dev@example.com"/>
         <env name="PULSE_ENABLED" value="false"/>
         <env name="TELESCOPE_ENABLED" value="false"/>
         <env name="NIGHTWATCH_ENABLED" value="false"/>

@@ -4,6 +4,7 @@ use App\Http\Controllers\AlbumListAlbumController;
 use App\Http\Controllers\AlbumListController;
 use App\Http\Controllers\AlbumListMembershipController;
 use App\Http\Controllers\AlbumReviewController;
+use App\Http\Controllers\Auth\DevLoginController;
 use App\Http\Controllers\Auth\SpotifyAuthController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\SettingsController;
@@ -12,8 +13,15 @@ use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
 Route::middleware('guest')->group(function (): void {
-    Route::get('/login', fn () => Inertia::render('Auth/Login'))->name('login');
+    Route::get('/login', fn () => Inertia::render('Auth/Login', [
+        'devLoginUrl' => Route::has('dev.login') ? route('dev.login') : null,
+    ]))->name('login');
     Route::get('/auth/spotify/redirect', [SpotifyAuthController::class, 'redirect'])->name('spotify.redirect');
+
+    /** Never registered unless opted in, so production has no route to reach at all. */
+    if (DevLoginController::isEnabled()) {
+        Route::post('/dev/login', DevLoginController::class)->name('dev.login');
+    }
 });
 
 Route::get('/auth/spotify/callback', [SpotifyAuthController::class, 'callback'])->name('spotify.callback');
