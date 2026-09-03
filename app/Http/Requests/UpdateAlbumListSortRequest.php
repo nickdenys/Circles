@@ -19,12 +19,20 @@ class UpdateAlbumListSortRequest extends FormRequest
     /**
      * Get the validation rules that apply to the request.
      *
+     * The score sort is only available on the Reviewed list, the only list that carries ratings.
+     *
      * @return array<string, \Illuminate\Contracts\Validation\ValidationRule|array<mixed>|string>
      */
     public function rules(): array
     {
+        $sortRule = Rule::enum(AlbumSort::class);
+
+        if (! $this->route('albumList')->isReviewed()) {
+            $sortRule->except(AlbumSort::Score);
+        }
+
         return [
-            'sort' => ['required', Rule::enum(AlbumSort::class)],
+            'sort' => ['required', $sortRule],
             'direction' => ['required', 'in:asc,desc'],
         ];
     }

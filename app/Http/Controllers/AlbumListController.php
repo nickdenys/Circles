@@ -126,6 +126,10 @@ class AlbumListController extends Controller
         $sort = AlbumSort::coerce($albumList->sort);
         $direction = $albumList->direction === 'desc' ? 'desc' : 'asc';
 
+        if ($sort->requiresReviews() && ! $albumList->isReviewed()) {
+            $sort = AlbumSort::Manual;
+        }
+
         if ($request->wantsJson()) {
             $albums = $this->sortedAlbums($albumList, $sort, $direction);
             $reviews = $this->reviewsFor($request, $albumList, $albums->getCollection()->pluck('id'));
@@ -209,7 +213,7 @@ class AlbumListController extends Controller
     {
         $query = $albumList->albums();
 
-        $sort->applyTo($query, $direction);
+        $sort->applyTo($query, $direction, $albumList->user_id);
 
         return $query->simplePaginate(20);
     }

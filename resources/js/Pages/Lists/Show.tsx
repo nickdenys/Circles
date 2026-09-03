@@ -233,11 +233,15 @@ const SORT_OPTIONS = [
     { value: 'artist', label: 'Artist' },
 ] as const;
 
+/** Sorting by score only makes sense on the Reviewed list, the only list that carries ratings. */
+const SCORE_SORT_OPTION = { value: 'score', label: 'Score' } as const;
+
 const DEFAULT_SORT_DIRECTION: Record<string, 'asc' | 'desc'> = {
     title: 'asc',
     artist: 'asc',
     release_date: 'desc',
     added: 'desc',
+    score: 'desc',
 };
 
 function formatRuntime(ms: number): string {
@@ -303,9 +307,22 @@ function HeroBadge({ list }: { list: AlbumListDetail }) {
     );
 }
 
-function SortControl({ listId, sort, direction }: { listId: number; sort: string; direction: 'asc' | 'desc' }) {
+function SortControl({
+    listId,
+    sort,
+    direction,
+    isReviewedList,
+}: {
+    listId: number;
+    sort: string;
+    direction: 'asc' | 'desc';
+    isReviewedList: boolean;
+}) {
     const [open, setOpen] = useState(false);
-    const activeLabel = SORT_OPTIONS.find((option) => option.value === sort)?.label ?? 'Manual';
+    const options: readonly { value: string; label: string }[] = isReviewedList
+        ? [SORT_OPTIONS[0], SCORE_SORT_OPTION, ...SORT_OPTIONS.slice(1)]
+        : SORT_OPTIONS;
+    const activeLabel = options.find((option) => option.value === sort)?.label ?? 'Manual';
 
     function applySort(value: string) {
         setOpen(false);
@@ -347,7 +364,7 @@ function SortControl({ listId, sort, direction }: { listId: number; sort: string
                     boxShadow: 'var(--shadow-md)',
                 }}
             >
-                {SORT_OPTIONS.map((option) => {
+                {options.map((option) => {
                     const isActive = option.value === sort;
                     return (
                         <button
@@ -1911,7 +1928,12 @@ export default function Show({ list, albums, sort, direction }: ShowProps) {
                         {hasAlbums && (
                             <>
                                 <Label style={{ marginRight: 4, flex: 'none' }}>Sort</Label>
-                                <SortControl listId={list.id} sort={sort} direction={direction} />
+                                <SortControl
+                                    listId={list.id}
+                                    sort={sort}
+                                    direction={direction}
+                                    isReviewedList={isReviewedList}
+                                />
                             </>
                         )}
                     </div>
