@@ -1,5 +1,19 @@
 import { Label } from './Label';
 
+/**
+ * Colour a score on the 0.5 to 5 scale: green from 3.5 up, amber for the
+ * middling 2 to 3, red at 1.5 and below.
+ */
+export function scoreColor(value: number): string {
+    if (value >= 3.5) {
+        return 'var(--accent)';
+    }
+    if (value >= 2) {
+        return 'var(--warning)';
+    }
+    return 'var(--critical)';
+}
+
 interface ScoreProps {
     value?: number | null;
     size?: number;
@@ -15,7 +29,8 @@ export function Score({ value, size = 15 }: ScoreProps) {
                 fontFamily: 'var(--font-mono)',
                 fontWeight: 700,
                 fontSize: size,
-                color: 'var(--accent)',
+                color: scoreColor(value),
+                transition: 'color var(--dur-fast) var(--ease-out)',
             }}
         >
             {value.toFixed(1)}
