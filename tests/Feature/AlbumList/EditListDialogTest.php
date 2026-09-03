@@ -6,7 +6,7 @@ use App\Models\User;
 test('edit list dialog uses the index-card CardModal', function () {
     $content = file_get_contents(resource_path('js/Pages/Lists/EditListDialog.tsx'));
 
-    expect($content)->toContain("from '@/components/hoopify/CardModal'");
+    expect($content)->toContain("from '@/components/circles/CardModal'");
     expect($content)->toContain('<CardModal');
 });
 
@@ -37,10 +37,10 @@ test('edit list dialog submits a PUT to the list update endpoint', function () {
     expect($content)->toContain('.put(`/lists/');
 });
 
-test('edit list dialog has Cancel and Save buttons using the hoopify Button', function () {
+test('edit list dialog has Cancel and Save buttons using the circles Button', function () {
     $content = file_get_contents(resource_path('js/Pages/Lists/EditListDialog.tsx'));
 
-    expect($content)->toContain("from '@/components/hoopify/Button'");
+    expect($content)->toContain("from '@/components/circles/Button'");
     expect($content)->toContain('Cancel');
     expect($content)->toContain('Save');
     expect($content)->toContain('<Button');

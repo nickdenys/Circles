@@ -7,7 +7,7 @@
 @source '../**/*.tsx';
 
 /* ============================================================================
-   HOOPIFY — Design tokens
+   CIRCLES — Design tokens
    Adapted from design/colors_and_type.css. Light is default; dark mode flips
    via data-theme="dark" on <html>.
    ============================================================================ */

@@ -3,7 +3,7 @@
     <head>
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-        <title>{{ config('app.name', 'Hoopify') }}</title>
+        <title>{{ config('app.name', 'Circles') }}</title>
 
         <link rel="icon" type="image/svg+xml" href="/favicon.svg">
         <link rel="icon" type="image/x-icon" href="/favicon.ico">
@@ -11,7 +11,7 @@
 
         <script>
             (function () {
-                var stored = localStorage.getItem('hoopify-theme');
+                var stored = localStorage.getItem('circles-theme');
                 var prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
                 var theme = stored || (prefersDark ? 'dark' : 'light');
                 document.documentElement.setAttribute('data-theme', theme);

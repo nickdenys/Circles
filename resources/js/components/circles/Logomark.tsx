@@ -38,7 +38,7 @@ export function Wordmark({ size = 22, invert = false }: WordmarkProps) {
                     color: invert ? 'var(--warm-25)' : 'var(--fg1)',
                 }}
             >
-                Hoopify
+                Circles
             </span>
             <span
                 style={{

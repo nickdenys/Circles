@@ -17,10 +17,10 @@ use Laravel\Mcp\Server\Attributes\Instructions;
 use Laravel\Mcp\Server\Attributes\Name;
 use Laravel\Mcp\Server\Attributes\Version;
 
-#[Name('Hoopify')]
+#[Name('Circles')]
 #[Version('1.0.0')]
-#[Instructions('Hoopify lets you manage album lists and create Spotify playlists. When searching for albums or tracks, always present the results to the user for confirmation before taking action. When no list is specified, default to the "Listen Later" list. You can search albums, view and create lists, add or remove albums from lists, move albums between lists, search for tracks, and create private Spotify playlists from confirmed track selections.')]
-class HoopifyServer extends Server
+#[Instructions('Circles lets you manage album lists and create Spotify playlists. When searching for albums or tracks, always present the results to the user for confirmation before taking action. When no list is specified, default to the "Listen Later" list. You can search albums, view and create lists, add or remove albums from lists, move albums between lists, search for tracks, and create private Spotify playlists from confirmed track selections.')]
+class CirclesServer extends Server
 {
     protected array $tools = [
         AddAlbumToList::class,

@@ -44,7 +44,7 @@ class SpotifyAuthController extends Controller
         if (! empty($allowlist) && ! in_array($spotifyUser->getId(), $allowlist, true)) {
             return redirect()->route('login')->with(
                 'error',
-                'Your Spotify account isn\'t authorized to use Hoopify.',
+                'Your Spotify account isn\'t authorized to use Circles.',
             );
         }
 

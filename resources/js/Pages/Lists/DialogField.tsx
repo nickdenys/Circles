@@ -1,6 +1,6 @@
 import { CSSProperties, useState } from 'react';
 
-import { Label } from '@/components/hoopify/Label';
+import { Label } from '@/components/circles/Label';
 
 interface DialogFieldProps {
     id: string;

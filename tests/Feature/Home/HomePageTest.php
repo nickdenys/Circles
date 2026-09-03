@@ -160,11 +160,11 @@ test('home page shares auth user data', function () {
         );
 });
 
-test('home page renders with the Hoopify design system primitives', function () {
+test('home page renders with the Circles design system primitives', function () {
     $content = file_get_contents(resource_path('js/Pages/Home.tsx'));
 
     expect($content)
-        ->toContain("from '@/components/hoopify/")
+        ->toContain("from '@/components/circles/")
         ->toContain('StatTile')
         ->toContain('ListCard')
         ->toContain('TopBar');

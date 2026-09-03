@@ -1,8 +1,8 @@
 import { usePage } from '@inertiajs/react';
 import { ShieldCheck } from 'lucide-react';
-import { Label } from '@/components/hoopify/Label';
-import { Logomark } from '@/components/hoopify/Logomark';
-import { PlaceholderCover } from '@/components/hoopify/PlaceholderCover';
+import { Label } from '@/components/circles/Label';
+import { Logomark } from '@/components/circles/Logomark';
+import { PlaceholderCover } from '@/components/circles/PlaceholderCover';
 
 interface LoginProps {
     flash: {
@@ -144,7 +144,7 @@ export default function Login() {
                         color: 'var(--warm-25)',
                     }}
                 >
-                    Hoopify
+                    Circles
                 </span>
                 <span
                     style={{

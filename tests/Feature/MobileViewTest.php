@@ -11,7 +11,7 @@ test('the app agrees on a single mobile breakpoint', function () {
 });
 
 test('the sidebar becomes an off-canvas drawer on mobile', function () {
-    $content = file_get_contents(resource_path('js/components/hoopify/Sidebar.tsx'));
+    $content = file_get_contents(resource_path('js/components/circles/Sidebar.tsx'));
 
     expect($content)
         ->toContain('useIsMobile')
@@ -22,7 +22,7 @@ test('the sidebar becomes an off-canvas drawer on mobile', function () {
 });
 
 test('the mobile drawer locks page scroll and closes on escape', function () {
-    $content = file_get_contents(resource_path('js/components/hoopify/Sidebar.tsx'));
+    $content = file_get_contents(resource_path('js/components/circles/Sidebar.tsx'));
 
     expect($content)
         ->toContain("document.body.style.overflow = 'hidden'")
@@ -30,7 +30,7 @@ test('the mobile drawer locks page scroll and closes on escape', function () {
 });
 
 test('the top bar exposes a menu button on mobile', function () {
-    $content = file_get_contents(resource_path('js/components/hoopify/TopBar.tsx'));
+    $content = file_get_contents(resource_path('js/components/circles/TopBar.tsx'));
 
     expect($content)
         ->toContain('useIsMobile')

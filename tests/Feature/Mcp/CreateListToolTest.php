@@ -1,6 +1,6 @@
 <?php
 
-use App\Mcp\Servers\HoopifyServer;
+use App\Mcp\Servers\CirclesServer;
 use App\Mcp\Tools\CreateList;
 use App\Models\User;
 
@@ -9,7 +9,7 @@ beforeEach(function () {
 });
 
 test('it creates a custom list', function () {
-    HoopifyServer::actingAs($this->user)
+    CirclesServer::actingAs($this->user)
         ->tool(CreateList::class, [
             'title' => 'My Playlist',
             'description' => 'A great playlist',
@@ -26,7 +26,7 @@ test('it creates a custom list', function () {
 });
 
 test('it validates title is required', function () {
-    HoopifyServer::actingAs($this->user)
+    CirclesServer::actingAs($this->user)
         ->tool(CreateList::class, [])
         ->assertHasErrors(['title']);
 });

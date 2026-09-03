@@ -10,21 +10,21 @@ import {
     Plus,
 } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
-import { Button } from '@/components/hoopify/Button';
-import { Chip } from '@/components/hoopify/Chip';
-import { CoverRow, CoverSpine } from '@/components/hoopify/CoverArt';
-import { IconButton } from '@/components/hoopify/IconButton';
-import { Label } from '@/components/hoopify/Label';
-import { Score } from '@/components/hoopify/Score';
-import { StatBlock } from '@/components/hoopify/StatBlock';
-import { listCode, listColor } from '@/components/hoopify/theme';
-import { TopBar } from '@/components/hoopify/TopBar';
+import { Button } from '@/components/circles/Button';
+import { Chip } from '@/components/circles/Chip';
+import { CoverRow, CoverSpine } from '@/components/circles/CoverArt';
+import { IconButton } from '@/components/circles/IconButton';
+import { Label } from '@/components/circles/Label';
+import { Score } from '@/components/circles/Score';
+import { StatBlock } from '@/components/circles/StatBlock';
+import { listCode, listColor } from '@/components/circles/theme';
+import { TopBar } from '@/components/circles/TopBar';
 import CreateListDialog from '@/Pages/Lists/CreateListDialog';
 
 type ListType = 'system' | 'reviewed' | 'custom';
 type ViewMode = 'list' | 'grid';
 
-const VIEW_MODE_STORAGE_KEY = 'hoopify-lists-view';
+const VIEW_MODE_STORAGE_KEY = 'circles-lists-view';
 
 interface AlbumListItem {
     id: number;

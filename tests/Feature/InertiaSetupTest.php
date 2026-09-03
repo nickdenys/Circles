@@ -29,7 +29,7 @@ test('inertia root template contains required directives', function () {
 test('inertia root template includes anti-FOUC theme script', function () {
     $content = file_get_contents(resource_path('views/app.blade.php'));
 
-    expect($content)->toContain("localStorage.getItem('hoopify-theme')")
+    expect($content)->toContain("localStorage.getItem('circles-theme')")
         ->and($content)->toContain("setAttribute('data-theme'");
 });
 

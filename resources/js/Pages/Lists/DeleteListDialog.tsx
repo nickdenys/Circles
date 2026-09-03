@@ -2,8 +2,8 @@ import { router } from '@inertiajs/react';
 import { Loader2, Trash2 } from 'lucide-react';
 import { useState } from 'react';
 
-import { Button } from '@/components/hoopify/Button';
-import { CardModal } from '@/components/hoopify/CardModal';
+import { Button } from '@/components/circles/Button';
+import { CardModal } from '@/components/circles/CardModal';
 
 interface DeleteListDialogProps {
     listId: number;

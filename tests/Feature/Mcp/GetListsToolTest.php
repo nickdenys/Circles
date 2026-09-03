@@ -1,6 +1,6 @@
 <?php
 
-use App\Mcp\Servers\HoopifyServer;
+use App\Mcp\Servers\CirclesServer;
 use App\Mcp\Tools\GetLists;
 use App\Models\Album;
 use App\Models\AlbumList;
@@ -19,7 +19,7 @@ test('it returns user lists with album counts', function () {
     $albums = Album::factory()->count(3)->create();
     $customList->albums()->attach($albums->pluck('id'), ['position' => 0]);
 
-    HoopifyServer::actingAs($this->user)
+    CirclesServer::actingAs($this->user)
         ->tool(GetLists::class)
         ->assertOk()
         ->assertSee('Listen Later')
@@ -27,7 +27,7 @@ test('it returns user lists with album counts', function () {
 });
 
 test('it shows system list for new user with no custom lists', function () {
-    HoopifyServer::actingAs($this->user)
+    CirclesServer::actingAs($this->user)
         ->tool(GetLists::class)
         ->assertOk()
         ->assertSee('Listen Later');

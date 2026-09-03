@@ -4,7 +4,7 @@ test('move album dialog uses the index-card CardModal', function () {
     $content = file_get_contents(resource_path('js/Pages/Lists/MoveAlbumDialog.tsx'));
 
     expect($content)
-        ->toContain("from '@/components/hoopify/CardModal'")
+        ->toContain("from '@/components/circles/CardModal'")
         ->toContain('<CardModal')
         ->toContain('MOVE ALBUM');
 });
@@ -121,11 +121,11 @@ test('move album dialog surfaces a duplicate destination error from the flash', 
         ->toContain('toast.error');
 });
 
-test('move album dialog has cancel and confirm buttons using the hoopify Button', function () {
+test('move album dialog has cancel and confirm buttons using the circles Button', function () {
     $content = file_get_contents(resource_path('js/Pages/Lists/MoveAlbumDialog.tsx'));
 
     expect($content)
-        ->toContain("from '@/components/hoopify/Button'")
+        ->toContain("from '@/components/circles/Button'")
         ->toContain('<Button')
         ->toContain('Cancel')
         ->toContain('} to ${selectedList.title}');

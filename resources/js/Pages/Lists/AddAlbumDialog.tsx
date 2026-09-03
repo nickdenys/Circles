@@ -20,11 +20,11 @@ import {
 } from 'react';
 import { toast } from 'sonner';
 
-import { Button } from '@/components/hoopify/Button';
-import { CardModal } from '@/components/hoopify/CardModal';
-import { MiniCover } from '@/components/hoopify/CoverArt';
-import { IconButton } from '@/components/hoopify/IconButton';
-import { Label } from '@/components/hoopify/Label';
+import { Button } from '@/components/circles/Button';
+import { CardModal } from '@/components/circles/CardModal';
+import { MiniCover } from '@/components/circles/CoverArt';
+import { IconButton } from '@/components/circles/IconButton';
+import { Label } from '@/components/circles/Label';
 
 const ROW_KEYFRAMES = '@keyframes rapidAddRowIn{from{opacity:0;transform:translateY(-5px)}to{opacity:1;transform:none}}';
 

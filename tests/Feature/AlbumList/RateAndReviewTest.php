@@ -198,16 +198,16 @@ test('the rating dialog renders the index-card review design', function () {
         ->toContain('Save review');
 });
 
-test('the hoopify kit exposes the review-card primitives', function () {
-    $index = file_get_contents(resource_path('js/components/hoopify/index.ts'));
+test('the circles kit exposes the review-card primitives', function () {
+    $index = file_get_contents(resource_path('js/components/circles/index.ts'));
 
     expect($index)
         ->toContain('CardModal')
         ->toContain('StarRating')
         ->toContain('ScoreReadout');
 
-    expect(file_exists(resource_path('js/components/hoopify/CardModal.tsx')))->toBeTrue();
-    expect(file_exists(resource_path('js/components/hoopify/StarRating.tsx')))->toBeTrue();
+    expect(file_exists(resource_path('js/components/circles/CardModal.tsx')))->toBeTrue();
+    expect(file_exists(resource_path('js/components/circles/StarRating.tsx')))->toBeTrue();
 });
 
 test('reviewing from a non-Reviewed list records the source list, position, and original added timestamp', function () {

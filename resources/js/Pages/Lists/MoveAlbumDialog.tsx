@@ -14,11 +14,11 @@ import {
 import { CSSProperties, useEffect, useState } from 'react';
 import { toast } from 'sonner';
 
-import { Button } from '@/components/hoopify/Button';
-import { CardModal } from '@/components/hoopify/CardModal';
-import { MiniCover } from '@/components/hoopify/CoverArt';
-import { Label } from '@/components/hoopify/Label';
-import { listColor } from '@/components/hoopify/theme';
+import { Button } from '@/components/circles/Button';
+import { CardModal } from '@/components/circles/CardModal';
+import { MiniCover } from '@/components/circles/CoverArt';
+import { Label } from '@/components/circles/Label';
+import { listColor } from '@/components/circles/theme';
 
 type MoveMode = 'move' | 'copy';
 

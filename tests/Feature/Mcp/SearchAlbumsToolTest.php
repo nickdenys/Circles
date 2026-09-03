@@ -1,6 +1,6 @@
 <?php
 
-use App\Mcp\Servers\HoopifyServer;
+use App\Mcp\Servers\CirclesServer;
 use App\Mcp\Tools\SearchAlbums;
 use App\Models\User;
 use Illuminate\Support\Facades\Http;
@@ -33,7 +33,7 @@ test('it returns search results from spotify', function () {
         ]),
     ]);
 
-    HoopifyServer::actingAs($this->user)
+    CirclesServer::actingAs($this->user)
         ->tool(SearchAlbums::class, ['query' => 'global warming'])
         ->assertOk()
         ->assertSee('Global Warming')
@@ -47,14 +47,14 @@ test('it returns empty array when no match found', function () {
         ]),
     ]);
 
-    HoopifyServer::actingAs($this->user)
+    CirclesServer::actingAs($this->user)
         ->tool(SearchAlbums::class, ['query' => 'nonexistentalbumasdf'])
         ->assertOk()
         ->assertDontSee('Global Warming');
 });
 
 test('it validates query is required', function () {
-    HoopifyServer::actingAs($this->user)
+    CirclesServer::actingAs($this->user)
         ->tool(SearchAlbums::class, [])
         ->assertHasErrors(['query']);
 });
@@ -66,7 +66,7 @@ test('it surfaces a reconnect message when the spotify refresh token is invalid'
         'accounts.spotify.com/api/token' => Http::response(['error' => 'invalid_grant'], 400),
     ]);
 
-    HoopifyServer::actingAs($user)
+    CirclesServer::actingAs($user)
         ->tool(SearchAlbums::class, ['query' => 'doesnt matter'])
         ->assertSee('Your Spotify connection has expired')
         ->assertSee('/auth/spotify/reconnect');
@@ -79,7 +79,7 @@ test('it surfaces a try again message when spotify is temporarily unavailable', 
         'accounts.spotify.com/api/token' => Http::response(['error' => 'server_error'], 500),
     ]);
 
-    HoopifyServer::actingAs($user)
+    CirclesServer::actingAs($user)
         ->tool(SearchAlbums::class, ['query' => 'doesnt matter'])
         ->assertSee('Spotify is temporarily unavailable');
 });

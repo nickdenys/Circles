@@ -11,11 +11,11 @@ import {
     Star,
 } from 'lucide-react';
 import { CSSProperties, useState } from 'react';
-import { Button } from '@/components/hoopify/Button';
-import { CoverStack } from '@/components/hoopify/CoverArt';
-import { Label } from '@/components/hoopify/Label';
-import { listColor } from '@/components/hoopify/theme';
-import { TopBar } from '@/components/hoopify/TopBar';
+import { Button } from '@/components/circles/Button';
+import { CoverStack } from '@/components/circles/CoverArt';
+import { Label } from '@/components/circles/Label';
+import { listColor } from '@/components/circles/theme';
+import { TopBar } from '@/components/circles/TopBar';
 import { useCountUp } from '@/hooks/use-count-up';
 import { useIsMobile } from '@/hooks/use-is-mobile';
 

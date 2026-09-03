@@ -11,9 +11,9 @@ import {
 } from 'lucide-react';
 import { CSSProperties, FormEvent, useCallback, useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
-import { Button } from '@/components/hoopify/Button';
-import { Label } from '@/components/hoopify/Label';
-import { TopBar } from '@/components/hoopify/TopBar';
+import { Button } from '@/components/circles/Button';
+import { Label } from '@/components/circles/Label';
+import { TopBar } from '@/components/circles/TopBar';
 
 interface Token {
     id: number;
@@ -377,7 +377,7 @@ export default function Index() {
             JSON.stringify(
                 {
                     mcpServers: {
-                        hoopify: {
+                        circles: {
                             command: 'npx',
                             args: [
                                 '-y',
@@ -449,7 +449,7 @@ export default function Index() {
                                 <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
                                     <SettingsCard
                                         title="Display name"
-                                        description="This is how your name appears across Hoopify. It comes from your Spotify account."
+                                        description="This is how your name appears across Circles. It comes from your Spotify account."
                                     >
                                         <div
                                             style={{
@@ -501,7 +501,7 @@ export default function Index() {
                                 <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
                                     <SettingsCard
                                         title="Create API token"
-                                        description="Generate a token to access Hoopify via the MCP API or external integrations."
+                                        description="Generate a token to access Circles via the MCP API or external integrations."
                                     >
                                         <form
                                             onSubmit={handleCreateToken}
