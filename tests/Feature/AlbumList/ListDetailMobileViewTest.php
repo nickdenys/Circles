@@ -87,3 +87,11 @@ test('the sheet animation and horizontal scroller utilities exist', function () 
         ->toContain('.hscroll')
         ->toContain('scrollbar-width: none');
 });
+
+test('the mobile row shows the reviewed score with the desktop score style', function () {
+    $content = file_get_contents(resource_path('js/Pages/Lists/Show.tsx'));
+
+    expect($content)
+        ->toContain("                    {metric === 'rating' && (\n                        <div style={{ flex: 'none' }}>\n                            <Score value={album.rating ?? null} />\n                        </div>\n                    )}")
+        ->toContain("                            {metric === 'runtime' &&\n                                ` · \${album.runtimeMs > 0 ? formatRuntimeShort(album.runtimeMs) : '—'}`}");
+});

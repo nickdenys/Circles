@@ -1,5 +1,7 @@
 import { CSSProperties, useId, useState } from 'react';
 
+import { scoreColor } from './Score';
+
 const STAR_PATH =
     'M12 2.6l2.82 5.72 6.31.92-4.57 4.45 1.08 6.29L12 17.02 6.36 19.99l1.08-6.29L2.87 9.24l6.31-.92z';
 
@@ -179,7 +181,8 @@ export function ScoreReadout({ value, size = 34, suffix = true }: ScoreReadoutPr
                 fontSize: size,
                 lineHeight: 1,
                 letterSpacing: '-0.01em',
-                color: hasValue ? 'var(--accent)' : 'var(--fg3)',
+                color: hasValue ? scoreColor(numeric) : 'var(--fg3)',
+                transition: 'color var(--dur-fast) var(--ease-out)',
             }}
         >
             {hasValue ? numeric.toFixed(1) : '—'}

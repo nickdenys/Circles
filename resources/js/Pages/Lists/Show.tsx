@@ -1070,16 +1070,16 @@ function TableAlbumRow({
                         </div>
                         <Label style={{ fontSize: 10, display: 'block', marginTop: 3 }}>
                             {releaseYear && `${releaseYear} · `}
-                            {album.totalTracks} TRK ·{' '}
-                            {metric === 'rating'
-                                ? album.rating != null
-                                    ? album.rating.toFixed(1)
-                                    : '—'
-                                : album.runtimeMs > 0
-                                    ? formatRuntimeShort(album.runtimeMs)
-                                    : '—'}
+                            {album.totalTracks} TRK
+                            {metric === 'runtime' &&
+                                ` · ${album.runtimeMs > 0 ? formatRuntimeShort(album.runtimeMs) : '—'}`}
                         </Label>
                     </div>
+                    {metric === 'rating' && (
+                        <div style={{ flex: 'none' }}>
+                            <Score value={album.rating ?? null} />
+                        </div>
+                    )}
                     <div style={{ flex: 'none' }}>
                         <AlbumRowMenu
                             album={album}

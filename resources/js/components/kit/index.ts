@@ -6,7 +6,7 @@ export { Chip } from './Chip';
 export { Label } from './Label';
 export { StarRating, ScoreReadout } from './StarRating';
 export { Logomark, Wordmark } from './Logomark';
-export { Score, DotRating } from './Score';
+export { Score, DotRating, scoreColor } from './Score';
 export { CoverMosaic, CoverStack, CoverSpine, CoverRow, MiniCover } from './CoverArt';
 export { StatBlock } from './StatBlock';
 export { applyTheme, readStoredTheme, listColor, listCode, THEME_STORAGE_KEY } from './theme';
