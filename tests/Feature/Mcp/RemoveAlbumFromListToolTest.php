@@ -1,6 +1,6 @@
 <?php
 
-use App\Mcp\Servers\CirclesServer;
+use App\Mcp\Servers\AlbumListServer;
 use App\Mcp\Tools\RemoveAlbumFromList;
 use App\Models\Album;
 use App\Models\AlbumList;
@@ -23,7 +23,7 @@ test('it removes album from list with warning', function () {
 
     $list->albums()->attach($album->id, ['position' => 1]);
 
-    CirclesServer::actingAs($this->user)
+    AlbumListServer::actingAs($this->user)
         ->tool(RemoveAlbumFromList::class, [
             'spotify_id' => 'removeMe',
             'list' => 'My List',
@@ -41,7 +41,7 @@ test('it returns error when album not in list', function () {
         'title' => 'My List',
     ]);
 
-    CirclesServer::actingAs($this->user)
+    AlbumListServer::actingAs($this->user)
         ->tool(RemoveAlbumFromList::class, [
             'spotify_id' => 'nonexistent',
             'list' => 'My List',

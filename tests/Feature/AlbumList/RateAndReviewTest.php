@@ -198,16 +198,16 @@ test('the rating dialog renders the index-card review design', function () {
         ->toContain('Save review');
 });
 
-test('the circles kit exposes the review-card primitives', function () {
-    $index = file_get_contents(resource_path('js/components/circles/index.ts'));
+test('the kit exposes the review-card primitives', function () {
+    $index = file_get_contents(resource_path('js/components/kit/index.ts'));
 
     expect($index)
         ->toContain('CardModal')
         ->toContain('StarRating')
         ->toContain('ScoreReadout');
 
-    expect(file_exists(resource_path('js/components/circles/CardModal.tsx')))->toBeTrue();
-    expect(file_exists(resource_path('js/components/circles/StarRating.tsx')))->toBeTrue();
+    expect(file_exists(resource_path('js/components/kit/CardModal.tsx')))->toBeTrue();
+    expect(file_exists(resource_path('js/components/kit/StarRating.tsx')))->toBeTrue();
 });
 
 test('reviewing from a non-Reviewed list records the source list, position, and original added timestamp', function () {

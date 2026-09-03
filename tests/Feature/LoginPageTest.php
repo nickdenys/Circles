@@ -24,11 +24,11 @@ test('login page component contains spotify login link', function () {
         ->toContain('/auth/spotify/redirect');
 });
 
-test('login page component contains circles branding', function () {
+test('login page renders the application name', function () {
     $content = file_get_contents(resource_path('js/Pages/Auth/Login.tsx'));
 
     expect($content)
-        ->toContain('Circles')
+        ->toContain('{appName}')
         ->toContain('Your music, finally filed.');
 });
 

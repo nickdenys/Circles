@@ -3,8 +3,8 @@ import axios, { AxiosError } from 'axios';
 import { Check, Loader2 } from 'lucide-react';
 import { FormEvent, useEffect, useState } from 'react';
 
-import { Button } from '@/components/circles/Button';
-import { CardModal } from '@/components/circles/CardModal';
+import { Button } from '@/components/kit/Button';
+import { CardModal } from '@/components/kit/CardModal';
 import ConfirmSlugOverrideDialog, { type SlugHistoryConflict } from './ConfirmSlugOverrideDialog';
 import { DialogField } from './DialogField';
 

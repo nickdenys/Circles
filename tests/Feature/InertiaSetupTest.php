@@ -29,7 +29,7 @@ test('inertia root template contains required directives', function () {
 test('inertia root template includes anti-FOUC theme script', function () {
     $content = file_get_contents(resource_path('views/app.blade.php'));
 
-    expect($content)->toContain("localStorage.getItem('circles-theme')")
+    expect($content)->toContain("localStorage.getItem('theme')")
         ->and($content)->toContain("setAttribute('data-theme'");
 });
 
@@ -39,4 +39,20 @@ test('inertia can render a page via a test route', function () {
     $this->actingAs(User::factory()->create())
         ->get('/_inertia-test')
         ->assertSuccessful();
+});
+
+test('the application name is shared with every page so the brand lives in config', function () {
+    config()->set('app.name', 'Test App Name');
+
+    $this->actingAs(User::factory()->create())
+        ->get(route('home'))
+        ->assertInertia(fn ($page) => $page->where('appName', 'Test App Name'));
+});
+
+test('the page title comes from the configured application name', function () {
+    config()->set('app.name', 'Test App Name');
+
+    $this->actingAs(User::factory()->create())
+        ->get(route('home'))
+        ->assertSee('<title>Test App Name</title>', false);
 });

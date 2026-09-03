@@ -69,7 +69,7 @@ test('manual reordering stays reachable on the mobile row', function () {
 });
 
 test('card modal becomes a bottom sheet on mobile', function () {
-    $content = file_get_contents(resource_path('js/components/circles/CardModal.tsx'));
+    $content = file_get_contents(resource_path('js/components/kit/CardModal.tsx'));
 
     expect($content)
         ->toContain('useIsMobile')

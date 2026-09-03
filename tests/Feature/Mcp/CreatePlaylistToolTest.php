@@ -1,6 +1,6 @@
 <?php
 
-use App\Mcp\Servers\CirclesServer;
+use App\Mcp\Servers\AlbumListServer;
 use App\Mcp\Tools\CreatePlaylist;
 use App\Models\User;
 use Illuminate\Support\Facades\Http;
@@ -22,7 +22,7 @@ test('it creates a playlist and adds tracks', function () {
         ]),
     ]);
 
-    CirclesServer::actingAs($this->user)
+    AlbumListServer::actingAs($this->user)
         ->tool(CreatePlaylist::class, [
             'name' => 'Road Trip',
             'track_uris' => [
@@ -48,7 +48,7 @@ test('it accepts an optional description', function () {
         ]),
     ]);
 
-    CirclesServer::actingAs($this->user)
+    AlbumListServer::actingAs($this->user)
         ->tool(CreatePlaylist::class, [
             'name' => 'Workout Mix',
             'description' => 'Songs to get pumped',
@@ -63,7 +63,7 @@ test('it returns error when playlist creation fails', function () {
         'api.spotify.com/v1/me/playlists' => Http::response([], 403),
     ]);
 
-    CirclesServer::actingAs($this->user)
+    AlbumListServer::actingAs($this->user)
         ->tool(CreatePlaylist::class, [
             'name' => 'Fail Playlist',
             'track_uris' => ['spotify:track:4iV5W9uYEdYUVa79Axb7Rh'],
@@ -72,7 +72,7 @@ test('it returns error when playlist creation fails', function () {
 });
 
 test('it validates name is required', function () {
-    CirclesServer::actingAs($this->user)
+    AlbumListServer::actingAs($this->user)
         ->tool(CreatePlaylist::class, [
             'track_uris' => ['spotify:track:4iV5W9uYEdYUVa79Axb7Rh'],
         ])
@@ -80,7 +80,7 @@ test('it validates name is required', function () {
 });
 
 test('it validates track_uris is required', function () {
-    CirclesServer::actingAs($this->user)
+    AlbumListServer::actingAs($this->user)
         ->tool(CreatePlaylist::class, [
             'name' => 'Test Playlist',
         ])
@@ -88,7 +88,7 @@ test('it validates track_uris is required', function () {
 });
 
 test('it validates track uris match spotify format', function () {
-    CirclesServer::actingAs($this->user)
+    AlbumListServer::actingAs($this->user)
         ->tool(CreatePlaylist::class, [
             'name' => 'Test Playlist',
             'track_uris' => ['not-a-valid-uri'],

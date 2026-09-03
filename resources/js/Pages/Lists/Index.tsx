@@ -10,21 +10,21 @@ import {
     Plus,
 } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
-import { Button } from '@/components/circles/Button';
-import { Chip } from '@/components/circles/Chip';
-import { CoverRow, CoverSpine } from '@/components/circles/CoverArt';
-import { IconButton } from '@/components/circles/IconButton';
-import { Label } from '@/components/circles/Label';
-import { Score } from '@/components/circles/Score';
-import { StatBlock } from '@/components/circles/StatBlock';
-import { listCode, listColor } from '@/components/circles/theme';
-import { TopBar } from '@/components/circles/TopBar';
+import { Button } from '@/components/kit/Button';
+import { Chip } from '@/components/kit/Chip';
+import { CoverRow, CoverSpine } from '@/components/kit/CoverArt';
+import { IconButton } from '@/components/kit/IconButton';
+import { Label } from '@/components/kit/Label';
+import { Score } from '@/components/kit/Score';
+import { StatBlock } from '@/components/kit/StatBlock';
+import { listCode, listColor } from '@/components/kit/theme';
+import { TopBar } from '@/components/kit/TopBar';
 import CreateListDialog from '@/Pages/Lists/CreateListDialog';
 
 type ListType = 'system' | 'reviewed' | 'custom';
 type ViewMode = 'list' | 'grid';
 
-const VIEW_MODE_STORAGE_KEY = 'circles-lists-view';
+const VIEW_MODE_STORAGE_KEY = 'lists-view';
 
 interface AlbumListItem {
     id: number;

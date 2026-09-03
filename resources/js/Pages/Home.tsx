@@ -11,11 +11,11 @@ import {
     Star,
 } from 'lucide-react';
 import { CSSProperties, useState } from 'react';
-import { Button } from '@/components/circles/Button';
-import { CoverStack } from '@/components/circles/CoverArt';
-import { Label } from '@/components/circles/Label';
-import { listColor } from '@/components/circles/theme';
-import { TopBar } from '@/components/circles/TopBar';
+import { Button } from '@/components/kit/Button';
+import { CoverStack } from '@/components/kit/CoverArt';
+import { Label } from '@/components/kit/Label';
+import { listColor } from '@/components/kit/theme';
+import { TopBar } from '@/components/kit/TopBar';
 import { useCountUp } from '@/hooks/use-count-up';
 import { useIsMobile } from '@/hooks/use-is-mobile';
 

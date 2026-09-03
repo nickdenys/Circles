@@ -20,11 +20,11 @@ import {
 } from 'react';
 import { toast } from 'sonner';
 
-import { Button } from '@/components/circles/Button';
-import { CardModal } from '@/components/circles/CardModal';
-import { MiniCover } from '@/components/circles/CoverArt';
-import { IconButton } from '@/components/circles/IconButton';
-import { Label } from '@/components/circles/Label';
+import { Button } from '@/components/kit/Button';
+import { CardModal } from '@/components/kit/CardModal';
+import { MiniCover } from '@/components/kit/CoverArt';
+import { IconButton } from '@/components/kit/IconButton';
+import { Label } from '@/components/kit/Label';
 
 const ROW_KEYFRAMES = '@keyframes rapidAddRowIn{from{opacity:0;transform:translateY(-5px)}to{opacity:1;transform:none}}';
 

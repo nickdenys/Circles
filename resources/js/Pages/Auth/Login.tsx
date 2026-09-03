@@ -1,10 +1,11 @@
 import { usePage } from '@inertiajs/react';
 import { ShieldCheck } from 'lucide-react';
-import { Label } from '@/components/circles/Label';
-import { Logomark } from '@/components/circles/Logomark';
-import { PlaceholderCover } from '@/components/circles/PlaceholderCover';
+import { Label } from '@/components/kit/Label';
+import { Logomark } from '@/components/kit/Logomark';
+import { PlaceholderCover } from '@/components/kit/PlaceholderCover';
 
 interface LoginProps {
+    appName: string;
     flash: {
         error: string | null;
     };
@@ -59,7 +60,7 @@ function Corner({ position }: { position: 'tl' | 'tr' | 'bl' | 'br' }) {
 }
 
 export default function Login() {
-    const { flash } = usePage<LoginProps>().props;
+    const { appName, flash } = usePage<LoginProps>().props;
 
     return (
         <div
@@ -144,7 +145,7 @@ export default function Login() {
                         color: 'var(--warm-25)',
                     }}
                 >
-                    Circles
+                    {appName}
                 </span>
                 <span
                     style={{

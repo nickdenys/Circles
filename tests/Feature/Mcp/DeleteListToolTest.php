@@ -1,6 +1,6 @@
 <?php
 
-use App\Mcp\Servers\CirclesServer;
+use App\Mcp\Servers\AlbumListServer;
 use App\Mcp\Tools\DeleteList;
 use App\Models\AlbumList;
 use App\Models\User;
@@ -15,7 +15,7 @@ test('it deletes a custom list with warning', function () {
         'title' => 'Old Favorites',
     ]);
 
-    CirclesServer::actingAs($this->user)
+    AlbumListServer::actingAs($this->user)
         ->tool(DeleteList::class, ['list' => 'Old Favorites'])
         ->assertOk()
         ->assertSee('Warning')
@@ -27,7 +27,7 @@ test('it deletes a custom list with warning', function () {
 });
 
 test('it rejects deletion of system list', function () {
-    CirclesServer::actingAs($this->user)
+    AlbumListServer::actingAs($this->user)
         ->tool(DeleteList::class, ['list' => 'Listen Later'])
         ->assertHasErrors(['System lists cannot be deleted.']);
 });

@@ -1,6 +1,6 @@
 <?php
 
-use App\Mcp\Servers\CirclesServer;
+use App\Mcp\Servers\AlbumListServer;
 use App\Mcp\Tools\SearchTracks;
 use App\Models\User;
 use Illuminate\Support\Facades\Http;
@@ -27,7 +27,7 @@ test('it returns search results for multiple queries', function () {
         ]),
     ]);
 
-    CirclesServer::actingAs($this->user)
+    AlbumListServer::actingAs($this->user)
         ->tool(SearchTracks::class, ['queries' => ['Bohemian Rhapsody', 'Stairway to Heaven']])
         ->assertOk()
         ->assertSee('Bohemian Rhapsody')
@@ -37,7 +37,7 @@ test('it returns search results for multiple queries', function () {
 test('it passes through spotify track uris without searching', function () {
     Http::fake();
 
-    CirclesServer::actingAs($this->user)
+    AlbumListServer::actingAs($this->user)
         ->tool(SearchTracks::class, ['queries' => ['spotify:track:4iV5W9uYEdYUVa79Axb7Rh']])
         ->assertOk()
         ->assertSee('4iV5W9uYEdYUVa79Axb7Rh');
@@ -48,7 +48,7 @@ test('it passes through spotify track uris without searching', function () {
 test('it passes through spotify track urls without searching', function () {
     Http::fake();
 
-    CirclesServer::actingAs($this->user)
+    AlbumListServer::actingAs($this->user)
         ->tool(SearchTracks::class, ['queries' => ['https://open.spotify.com/track/4iV5W9uYEdYUVa79Axb7Rh']])
         ->assertOk()
         ->assertSee('4iV5W9uYEdYUVa79Axb7Rh');
@@ -63,20 +63,20 @@ test('it returns empty results when no match found', function () {
         ]),
     ]);
 
-    CirclesServer::actingAs($this->user)
+    AlbumListServer::actingAs($this->user)
         ->tool(SearchTracks::class, ['queries' => ['nonexistenttrackasdf']])
         ->assertOk()
         ->assertDontSee('Bohemian Rhapsody');
 });
 
 test('it validates queries is required', function () {
-    CirclesServer::actingAs($this->user)
+    AlbumListServer::actingAs($this->user)
         ->tool(SearchTracks::class, [])
         ->assertHasErrors(['queries']);
 });
 
 test('it validates queries must be an array', function () {
-    CirclesServer::actingAs($this->user)
+    AlbumListServer::actingAs($this->user)
         ->tool(SearchTracks::class, ['queries' => 'not an array'])
         ->assertHasErrors(['queries']);
 });
@@ -99,7 +99,7 @@ test('it respects custom limit', function () {
         ]),
     ]);
 
-    CirclesServer::actingAs($this->user)
+    AlbumListServer::actingAs($this->user)
         ->tool(SearchTracks::class, ['queries' => ['test'], 'limit' => 5])
         ->assertOk()
         ->assertSee('Track 1');

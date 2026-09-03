@@ -24,10 +24,10 @@ test('authenticated layout uses the design system sidebar', function () {
 });
 
 test('sidebar contains navigation links', function () {
-    $content = file_get_contents(resource_path('js/components/circles/Sidebar.tsx'));
+    $content = file_get_contents(resource_path('js/components/kit/Sidebar.tsx'));
 
     expect($content)
-        ->toContain('Circles')
+        ->toContain('Wordmark')
         ->toContain('Home')
         ->toContain('href="/"')
         ->toContain('All lists')
@@ -42,7 +42,7 @@ test('sidebar contains dark mode toggle and theme state', function () {
         ->toContain('readStoredTheme')
         ->toContain('onToggleTheme');
 
-    $sidebarContent = file_get_contents(resource_path('js/components/circles/Sidebar.tsx'));
+    $sidebarContent = file_get_contents(resource_path('js/components/kit/Sidebar.tsx'));
     expect($sidebarContent)
         ->toContain('Sun')
         ->toContain('Moon')
@@ -50,7 +50,7 @@ test('sidebar contains dark mode toggle and theme state', function () {
 });
 
 test('sidebar contains user display with avatar and name', function () {
-    $content = file_get_contents(resource_path('js/components/circles/Sidebar.tsx'));
+    $content = file_get_contents(resource_path('js/components/kit/Sidebar.tsx'));
 
     expect($content)
         ->toContain('user.avatar')
@@ -58,7 +58,7 @@ test('sidebar contains user display with avatar and name', function () {
 });
 
 test('sidebar contains logout button', function () {
-    $content = file_get_contents(resource_path('js/components/circles/Sidebar.tsx'));
+    $content = file_get_contents(resource_path('js/components/kit/Sidebar.tsx'));
 
     expect($content)
         ->toContain('Log out')
@@ -81,7 +81,7 @@ test('the dark theme hard shadow is not invisible black', function () {
 });
 
 test('sidebar marks the active nav item', function () {
-    $content = file_get_contents(resource_path('js/components/circles/Sidebar.tsx'));
+    $content = file_get_contents(resource_path('js/components/kit/Sidebar.tsx'));
 
     expect($content)
         ->toContain('currentRouteName')

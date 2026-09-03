@@ -1,8 +1,8 @@
 import { usePage } from '@inertiajs/react';
 import { PropsWithChildren, useCallback, useEffect, useMemo, useState } from 'react';
-import { MobileMenuProvider } from '@/components/circles/MobileMenuContext';
-import { Sidebar } from '@/components/circles/Sidebar';
-import { applyTheme, readStoredTheme, Theme } from '@/components/circles/theme';
+import { MobileMenuProvider } from '@/components/kit/MobileMenuContext';
+import { Sidebar } from '@/components/kit/Sidebar';
+import { applyTheme, readStoredTheme, Theme } from '@/components/kit/theme';
 import { Toaster } from '@/components/ui/sonner';
 import { useIsMobile } from '@/hooks/use-is-mobile';
 

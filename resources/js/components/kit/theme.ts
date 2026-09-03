@@ -1,6 +1,6 @@
 export type Theme = 'light' | 'dark';
 
-export const THEME_STORAGE_KEY = 'circles-theme';
+export const THEME_STORAGE_KEY = 'theme';
 
 export function readStoredTheme(): Theme {
     if (typeof document === 'undefined') {

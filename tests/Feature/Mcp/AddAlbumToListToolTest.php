@@ -1,6 +1,6 @@
 <?php
 
-use App\Mcp\Servers\CirclesServer;
+use App\Mcp\Servers\AlbumListServer;
 use App\Mcp\Tools\AddAlbumToList;
 use App\Models\Album;
 use App\Models\AlbumList;
@@ -39,7 +39,7 @@ test('it adds a new album by fetching from spotify', function () {
         'title' => 'My List',
     ]);
 
-    CirclesServer::actingAs($this->user)
+    AlbumListServer::actingAs($this->user)
         ->tool(AddAlbumToList::class, [
             'spotify_id' => '4aawyAB9vmqN3uQ7FjRGTy',
             'list' => 'My List',
@@ -63,7 +63,7 @@ test('it reuses an existing album record', function () {
         'title' => 'My List',
     ]);
 
-    CirclesServer::actingAs($this->user)
+    AlbumListServer::actingAs($this->user)
         ->tool(AddAlbumToList::class, [
             'spotify_id' => 'existingAlbumId',
             'list' => 'My List',
@@ -80,7 +80,7 @@ test('it defaults to listen later when no list specified', function () {
         'title' => 'Default List Album',
     ]);
 
-    CirclesServer::actingAs($this->user)
+    AlbumListServer::actingAs($this->user)
         ->tool(AddAlbumToList::class, [
             'spotify_id' => 'defaultListAlbum',
         ])
@@ -94,7 +94,7 @@ test('it parses spotify urls', function () {
         'title' => 'URL Album',
     ]);
 
-    CirclesServer::actingAs($this->user)
+    AlbumListServer::actingAs($this->user)
         ->tool(AddAlbumToList::class, [
             'spotify_id' => 'https://open.spotify.com/album/4aawyAB9vmqN3uQ7FjRGTy',
         ])
@@ -113,7 +113,7 @@ test('it stores a note when provided', function () {
         'title' => 'My List',
     ]);
 
-    CirclesServer::actingAs($this->user)
+    AlbumListServer::actingAs($this->user)
         ->tool(AddAlbumToList::class, [
             'spotify_id' => 'notedAlbumId',
             'list' => 'My List',
@@ -140,7 +140,7 @@ test('it stores a null note when the note is blank', function () {
         'title' => 'My List',
     ]);
 
-    CirclesServer::actingAs($this->user)
+    AlbumListServer::actingAs($this->user)
         ->tool(AddAlbumToList::class, [
             'spotify_id' => 'blankNoteAlbumId',
             'list' => 'My List',
@@ -168,7 +168,7 @@ test('it prevents duplicate albums in a list', function () {
 
     $list->albums()->attach($album->id, ['position' => 1]);
 
-    CirclesServer::actingAs($this->user)
+    AlbumListServer::actingAs($this->user)
         ->tool(AddAlbumToList::class, [
             'spotify_id' => 'dupeAlbumId',
             'list' => 'My List',

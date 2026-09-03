@@ -1,6 +1,6 @@
 <?php
 
-use App\Mcp\Servers\CirclesServer;
+use App\Mcp\Servers\AlbumListServer;
 use App\Mcp\Tools\MoveAlbum;
 use App\Models\Album;
 use App\Models\AlbumList;
@@ -28,7 +28,7 @@ test('it moves album between lists', function () {
 
     $fromList->albums()->attach($album->id, ['position' => 1]);
 
-    CirclesServer::actingAs($this->user)
+    AlbumListServer::actingAs($this->user)
         ->tool(MoveAlbum::class, [
             'spotify_id' => 'moveMe',
             'from_list' => 'Source List',
@@ -61,7 +61,7 @@ test('it preserves note when moving album between lists', function () {
 
     $fromList->albums()->attach($album->id, ['position' => 1, 'note' => 'Must listen']);
 
-    CirclesServer::actingAs($this->user)
+    AlbumListServer::actingAs($this->user)
         ->tool(MoveAlbum::class, [
             'spotify_id' => 'noteAlbum',
             'from_list' => 'Source List',
@@ -92,7 +92,7 @@ test('it prevents duplicate in destination list', function () {
     $fromList->albums()->attach($album->id, ['position' => 1]);
     $toList->albums()->attach($album->id, ['position' => 1]);
 
-    CirclesServer::actingAs($this->user)
+    AlbumListServer::actingAs($this->user)
         ->tool(MoveAlbum::class, [
             'spotify_id' => 'dupeMove',
             'from_list' => 'Source List',
