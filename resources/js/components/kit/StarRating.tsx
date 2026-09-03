@@ -65,7 +65,7 @@ interface StarRatingProps {
 
 /**
  * Half-step (0.5 to 5) star rating with hover preview and keyboard control.
- * Renders teal gradient-filled stars per the Hoopify review-card design.
+ * Renders teal gradient-filled stars per the review-card design.
  */
 export function StarRating({
     value = 0,

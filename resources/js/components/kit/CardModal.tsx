@@ -7,9 +7,9 @@ import { IconButton } from './IconButton';
 import { Label } from './Label';
 
 const CARD_KEYFRAMES = [
-    '@keyframes hoopifyCardIn{from{transform:translateY(12px)}to{transform:none}}',
+    '@keyframes cardModalIn{from{transform:translateY(12px)}to{transform:none}}',
     '@media (prefers-reduced-motion: no-preference){',
-    '  .hoopify-card-modal{animation:hoopifyCardIn var(--dur-base) var(--ease-spring)}',
+    '  .card-modal{animation:cardModalIn var(--dur-base) var(--ease-spring)}',
     '}',
 ].join('\n');
 
@@ -106,7 +106,7 @@ export function CardModal({
                 role="dialog"
                 aria-modal="true"
                 aria-label={ariaLabel || label || 'Dialog'}
-                className={isMobile ? undefined : 'hoopify-card-modal'}
+                className={isMobile ? undefined : 'card-modal'}
                 style={{
                     width,
                     maxWidth: '100%',

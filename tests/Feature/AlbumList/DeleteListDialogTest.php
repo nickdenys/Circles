@@ -3,7 +3,7 @@
 test('delete list dialog uses the index-card CardModal', function () {
     $content = file_get_contents(resource_path('js/Pages/Lists/DeleteListDialog.tsx'));
 
-    expect($content)->toContain("from '@/components/hoopify/CardModal'");
+    expect($content)->toContain("from '@/components/kit/CardModal'");
     expect($content)->toContain('<CardModal');
 });
 

@@ -3,10 +3,10 @@ import { Check, Loader2, Trash2 } from 'lucide-react';
 import { CSSProperties, FormEvent, useEffect, useState } from 'react';
 import { toast } from 'sonner';
 
-import { Button } from '@/components/hoopify/Button';
-import { CardModal } from '@/components/hoopify/CardModal';
-import { MiniCover } from '@/components/hoopify/CoverArt';
-import { Label } from '@/components/hoopify/Label';
+import { Button } from '@/components/kit/Button';
+import { CardModal } from '@/components/kit/CardModal';
+import { MiniCover } from '@/components/kit/CoverArt';
+import { Label } from '@/components/kit/Label';
 import { Textarea } from '@/components/ui/textarea';
 
 export interface NoteDialogAlbum {

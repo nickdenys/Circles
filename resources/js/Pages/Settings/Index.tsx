@@ -11,9 +11,9 @@ import {
 } from 'lucide-react';
 import { CSSProperties, FormEvent, useCallback, useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
-import { Button } from '@/components/hoopify/Button';
-import { Label } from '@/components/hoopify/Label';
-import { TopBar } from '@/components/hoopify/TopBar';
+import { Button } from '@/components/kit/Button';
+import { Label } from '@/components/kit/Label';
+import { TopBar } from '@/components/kit/TopBar';
 
 interface Token {
     id: number;
@@ -29,6 +29,7 @@ interface AuthUser {
 }
 
 interface SettingsProps {
+    appName: string;
     tokens: Token[];
     auth: { user: AuthUser };
     flash: {
@@ -336,7 +337,8 @@ function TokenReveal({ token, onDismiss }: { token: string; onDismiss: () => voi
 }
 
 export default function Index() {
-    const { tokens, flash, auth } = usePage<SettingsProps>().props;
+    const { appName, tokens, flash, auth } = usePage<SettingsProps>().props;
+    const mcpServerKey = appName.toLowerCase().replace(/[^a-z0-9]+/g, '-');
     const [activeSection, setActiveSection] = useState<SectionId>('account');
     const [revealedToken, setRevealedToken] = useState<string | null>(null);
     const [displayName, setDisplayName] = useState(auth.user.name);
@@ -377,7 +379,7 @@ export default function Index() {
             JSON.stringify(
                 {
                     mcpServers: {
-                        hoopify: {
+                        [mcpServerKey]: {
                             command: 'npx',
                             args: [
                                 '-y',
@@ -395,7 +397,7 @@ export default function Index() {
                 null,
                 2,
             ),
-        [revealedToken],
+        [mcpServerKey, revealedToken],
     );
 
     return (
@@ -449,7 +451,7 @@ export default function Index() {
                                 <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
                                     <SettingsCard
                                         title="Display name"
-                                        description="This is how your name appears across Hoopify. It comes from your Spotify account."
+                                        description={`This is how your name appears across ${appName}. It comes from your Spotify account.`}
                                     >
                                         <div
                                             style={{
@@ -501,7 +503,7 @@ export default function Index() {
                                 <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
                                     <SettingsCard
                                         title="Create API token"
-                                        description="Generate a token to access Hoopify via the MCP API or external integrations."
+                                        description={`Generate a token to access ${appName} via the MCP API or external integrations.`}
                                     >
                                         <form
                                             onSubmit={handleCreateToken}

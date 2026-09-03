@@ -20,17 +20,17 @@ test('home page returns inertia response with shared auth data', function () {
 });
 
 test('sidebar contains branding and navigation', function () {
-    $content = file_get_contents(resource_path('js/components/hoopify/Sidebar.tsx'));
+    $content = file_get_contents(resource_path('js/components/kit/Sidebar.tsx'));
 
     expect($content)
-        ->toContain('Hoopify')
+        ->toContain('Wordmark')
         ->toContain('Home')
         ->toContain('All lists')
         ->toContain('Log out');
 });
 
 test('sidebar displays user name and avatar', function () {
-    $content = file_get_contents(resource_path('js/components/hoopify/Sidebar.tsx'));
+    $content = file_get_contents(resource_path('js/components/kit/Sidebar.tsx'));
 
     expect($content)
         ->toContain('user.name')

@@ -138,11 +138,11 @@ test('lists overview page exposes an empty-filter copy', function () {
     expect($content)->toContain('No lists to show.');
 });
 
-test('lists overview page uses the Hoopify design primitives', function () {
+test('lists overview page uses the design primitives', function () {
     $content = file_get_contents(resource_path('js/Pages/Lists/Index.tsx'));
 
     expect($content)
-        ->toContain("from '@/components/hoopify/")
+        ->toContain("from '@/components/kit/")
         ->toContain('TopBar')
         ->toContain('CoverSpine');
 });

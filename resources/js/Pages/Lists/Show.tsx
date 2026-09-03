@@ -45,15 +45,15 @@ import {
     Trash2,
 } from 'lucide-react';
 import { CSSProperties, useEffect, useRef, useState } from 'react';
-import { Button } from '@/components/hoopify/Button';
-import { Chip } from '@/components/hoopify/Chip';
-import { CoverMosaic, MiniCover } from '@/components/hoopify/CoverArt';
-import { IconButton } from '@/components/hoopify/IconButton';
-import { Label } from '@/components/hoopify/Label';
-import { Score } from '@/components/hoopify/Score';
-import { StatBlock } from '@/components/hoopify/StatBlock';
-import { listColor } from '@/components/hoopify/theme';
-import { TopBar } from '@/components/hoopify/TopBar';
+import { Button } from '@/components/kit/Button';
+import { Chip } from '@/components/kit/Chip';
+import { CoverMosaic, MiniCover } from '@/components/kit/CoverArt';
+import { IconButton } from '@/components/kit/IconButton';
+import { Label } from '@/components/kit/Label';
+import { Score } from '@/components/kit/Score';
+import { StatBlock } from '@/components/kit/StatBlock';
+import { listColor } from '@/components/kit/theme';
+import { TopBar } from '@/components/kit/TopBar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { useIsMobile } from '@/hooks/use-is-mobile';

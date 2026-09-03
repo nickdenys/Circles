@@ -3,8 +3,8 @@ import { Loader2, Trash2 } from 'lucide-react';
 import { useState } from 'react';
 import { toast } from 'sonner';
 
-import { Button } from '@/components/hoopify/Button';
-import { CardModal } from '@/components/hoopify/CardModal';
+import { Button } from '@/components/kit/Button';
+import { CardModal } from '@/components/kit/CardModal';
 
 interface RemoveAlbumDialogProps {
     listId: number;

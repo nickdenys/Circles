@@ -97,7 +97,10 @@ test('non-allowlisted spotify id is rejected with a flash error', function () {
 
     $this->get(route('spotify.callback'))
         ->assertRedirect(route('login'))
-        ->assertSessionHas('error', 'Your Spotify account isn\'t authorized to use Hoopify.');
+        ->assertSessionHas('error', sprintf(
+            'Your Spotify account isn\'t authorized to use %s.',
+            config('app.name'),
+        ));
 
     $this->assertGuest();
     $this->assertDatabaseMissing('users', ['spotify_id' => 'spotify_123']);

@@ -1,3 +1,5 @@
+import { usePage } from '@inertiajs/react';
+
 interface LogomarkProps {
     size?: number;
     className?: string;
@@ -26,6 +28,8 @@ interface WordmarkProps {
 }
 
 export function Wordmark({ size = 22, invert = false }: WordmarkProps) {
+    const appName = usePage().props.appName as string;
+
     return (
         <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
             <Logomark size={Math.round(size * 1.25)} />
@@ -38,7 +42,7 @@ export function Wordmark({ size = 22, invert = false }: WordmarkProps) {
                     color: invert ? 'var(--warm-25)' : 'var(--fg1)',
                 }}
             >
-                Hoopify
+                {appName}
             </span>
             <span
                 style={{

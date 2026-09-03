@@ -1,5 +1,5 @@
 /**
- * Hoopify sidebar rail. Rendered on every authenticated page.
+ * Sidebar rail. Rendered on every authenticated page.
  *
  * Brand wordmark + nav: "Home" links to "/" and "All lists" links to "/lists".
  * Below 760px the rail becomes an off-canvas drawer opened from the TopBar.

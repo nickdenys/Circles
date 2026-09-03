@@ -29,7 +29,7 @@ test('cn utility exists at resources/js/lib/utils.ts', function () {
         ->toContain('export function cn');
 });
 
-test('Hoopify design tokens are configured for light and dark mode', function () {
+test('design tokens are configured for light and dark mode', function () {
     $css = file_get_contents(resource_path('css/app.css'));
 
     expect($css)

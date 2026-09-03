@@ -292,4 +292,4 @@ protected function isAccessible(User $user, ?string $path = null): bool
 </laravel-boost-guidelines>
 
 # Design System
-See /design/HOOPIFY_DESIGN.md for the full Hoopify design system, tokens, and screen-by-screen specs.
+See /design/HOOPIFY_DESIGN.md for the full Circles design system, tokens, and screen-by-screen specs.

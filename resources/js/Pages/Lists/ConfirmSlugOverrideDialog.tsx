@@ -1,5 +1,5 @@
-import { CardModal } from '@/components/hoopify/CardModal';
-import { Button } from '@/components/hoopify/Button';
+import { CardModal } from '@/components/kit/CardModal';
+import { Button } from '@/components/kit/Button';
 
 export interface SlugHistoryConflict {
     conflicting_slug: string;
