@@ -1,11 +1,13 @@
-import { usePage } from '@inertiajs/react';
-import { ShieldCheck } from 'lucide-react';
+import { Link, usePage } from '@inertiajs/react';
+import { FlaskConical, ShieldCheck } from 'lucide-react';
 import { Label } from '@/components/kit/Label';
 import { Logomark } from '@/components/kit/Logomark';
 import { PlaceholderCover } from '@/components/kit/PlaceholderCover';
 
 interface LoginProps {
     appName: string;
+    /** Only set in the local environment. */
+    devLoginUrl: string | null;
     flash: {
         error: string | null;
     };
@@ -60,7 +62,7 @@ function Corner({ position }: { position: 'tl' | 'tr' | 'bl' | 'br' }) {
 }
 
 export default function Login() {
-    const { appName, flash } = usePage<LoginProps>().props;
+    const { appName, devLoginUrl, flash } = usePage<LoginProps>().props;
 
     return (
         <div
@@ -295,6 +297,44 @@ export default function Login() {
                     </span>
                     Continue with Spotify
                 </a>
+
+                {devLoginUrl && (
+                    <Link
+                        href={devLoginUrl}
+                        method="post"
+                        as="button"
+                        type="button"
+                        style={{
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: 9,
+                            marginTop: 14,
+                            padding: '11px 20px',
+                            background: 'transparent',
+                            color: 'var(--warm-300)',
+                            border: '1px dashed rgba(255,255,255,0.22)',
+                            borderRadius: 999,
+                            fontFamily: 'var(--font-mono)',
+                            fontSize: 12,
+                            letterSpacing: '0.08em',
+                            textTransform: 'uppercase',
+                            cursor: 'pointer',
+                            width: 'fit-content',
+                            transition: 'color var(--dur-fast) var(--ease-out), border-color var(--dur-fast) var(--ease-out)',
+                        }}
+                        onMouseEnter={(e) => {
+                            e.currentTarget.style.color = 'var(--warm-25)';
+                            e.currentTarget.style.borderColor = 'rgba(255,255,255,0.45)';
+                        }}
+                        onMouseLeave={(e) => {
+                            e.currentTarget.style.color = 'var(--warm-300)';
+                            e.currentTarget.style.borderColor = 'rgba(255,255,255,0.22)';
+                        }}
+                    >
+                        <FlaskConical size={14} strokeWidth={2} />
+                        Skip login (dev only)
+                    </Link>
+                )}
 
                 <div
                     style={{

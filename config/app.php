@@ -122,6 +122,22 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Development Login
+    |--------------------------------------------------------------------------
+    |
+    | The "Skip login" button on the login page bypasses Spotify OAuth, so it
+    | must be opted into explicitly and is refused outside development. Both
+    | values are required: with no email set there is no account to sign in
+    | as, so an unconfigured environment exposes nothing.
+    |
+    */
+
+    'dev_login_enabled' => (bool) env('DEV_LOGIN_ENABLED', false),
+
+    'dev_login_email' => env('DEV_LOGIN_EMAIL'),
+
+    /*
+    |--------------------------------------------------------------------------
     | Maintenance Mode Driver
     |--------------------------------------------------------------------------
     |
