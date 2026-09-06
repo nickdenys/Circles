@@ -96,6 +96,17 @@ class AlbumList extends Model
     }
 
     /**
+     * The four most recently added albums, used for list cover previews.
+     */
+    public function previewAlbums(): BelongsToMany
+    {
+        return $this->albums()
+            ->reorder('album_album_list.created_at', 'desc')
+            ->orderByDesc('album_album_list.id')
+            ->limit(4);
+    }
+
+    /**
      * Get the user that owns the list.
      */
     public function user(): BelongsTo

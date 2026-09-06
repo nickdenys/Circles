@@ -65,6 +65,32 @@ test('home page exposes the per-list overview with covers', function () {
         );
 });
 
+test('home page preview covers show the last 4 added albums, newest first', function () {
+    $user = User::factory()->create();
+
+    $list = AlbumList::factory()->for($user)->create(['title' => 'Big List']);
+    $albums = Album::factory()->count(5)->create();
+
+    foreach ($albums as $index => $album) {
+        $this->travelTo(now()->addMinutes($index));
+        $list->albums()->attach($album->id, ['position' => $index]);
+    }
+
+    $this->travelBack();
+
+    $this->actingAs($user)
+        ->get(route('home'))
+        ->assertSuccessful()
+        ->assertInertia(fn (AssertableInertia $page) => $page
+            ->component('Home')
+            ->has('lists.2.previewCovers', 4)
+            ->where('lists.2.previewCovers.0', $albums[4]->cover_url)
+            ->where('lists.2.previewCovers.1', $albums[3]->cover_url)
+            ->where('lists.2.previewCovers.2', $albums[2]->cover_url)
+            ->where('lists.2.previewCovers.3', $albums[1]->cover_url)
+        );
+});
+
 test('home page exposes zero stats for a fresh account', function () {
     $user = User::factory()->create();
 

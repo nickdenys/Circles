@@ -31,7 +31,7 @@ class AlbumListController extends Controller
         $query = $request->user()
             ->albumLists()
             ->withCount('albums')
-            ->with(['albums' => fn ($q) => $q->orderBy('position')->limit(4)])
+            ->with('previewAlbums')
             ->orderByRaw("CASE WHEN type IN ('system', 'reviewed') THEN 0 ELSE 1 END")
             ->orderBy('title');
 
@@ -45,7 +45,7 @@ class AlbumListController extends Controller
                     'description' => $list->description,
                     'type' => $list->type,
                     'albums_count' => $list->albums_count ?? 0,
-                    'preview_covers' => $list->albums->pluck('cover_url')->values()->all(),
+                    'preview_covers' => $list->previewAlbums->pluck('cover_url')->values()->all(),
                     'updated_label' => $this->shortRelative($list->updated_at),
                     'url' => route('lists.show', ['listSlug' => $list->slug]),
                 ]),
@@ -62,7 +62,7 @@ class AlbumListController extends Controller
                     'description' => $list->description,
                     'type' => $list->type,
                     'albumsCount' => $list->albums_count ?? 0,
-                    'previewCovers' => $list->albums->pluck('cover_url')->values()->all(),
+                    'previewCovers' => $list->previewAlbums->pluck('cover_url')->values()->all(),
                     'updatedLabel' => $this->shortRelative($list->updated_at),
                     'url' => route('lists.show', ['listSlug' => $list->slug]),
                 ])
