@@ -93,21 +93,47 @@ test('empty state when user has no lists', function () {
         );
 });
 
-test('each list includes preview covers from the first 4 albums', function () {
+test('each list includes preview covers from the last 4 added albums, newest first', function () {
     $user = User::factory()->create();
     $list = $user->albumLists->first();
 
     $albums = \App\Models\Album::factory()->count(5)->create();
-    $list->albums()->attach($albums->pluck('id')->mapWithKeys(fn ($id, $i) => [$id => ['position' => $i]]));
+
+    foreach ($albums as $index => $album) {
+        $this->travelTo(now()->addMinutes($index));
+        $list->albums()->attach($album->id, ['position' => $index]);
+    }
+
+    $this->travelBack();
 
     $this->actingAs($user)
         ->get(route('lists.index'))
         ->assertInertia(fn (AssertableInertia $page) => $page
             ->has('lists.data.0.previewCovers', 4)
-            ->where('lists.data.0.previewCovers.0', $albums[0]->cover_url)
-            ->where('lists.data.0.previewCovers.1', $albums[1]->cover_url)
+            ->where('lists.data.0.previewCovers.0', $albums[4]->cover_url)
+            ->where('lists.data.0.previewCovers.1', $albums[3]->cover_url)
             ->where('lists.data.0.previewCovers.2', $albums[2]->cover_url)
-            ->where('lists.data.0.previewCovers.3', $albums[3]->cover_url)
+            ->where('lists.data.0.previewCovers.3', $albums[1]->cover_url)
+        );
+});
+
+test('preview covers ignore manual ordering and follow when albums were added', function () {
+    $user = User::factory()->create();
+    $list = $user->albumLists->first();
+
+    $albums = \App\Models\Album::factory()->count(5)->create();
+
+    foreach ($albums as $index => $album) {
+        $this->travelTo(now()->addMinutes($index));
+        $list->albums()->attach($album->id, ['position' => 5 - $index]);
+    }
+
+    $this->travelBack();
+
+    $this->actingAs($user)
+        ->get(route('lists.index'))
+        ->assertInertia(fn (AssertableInertia $page) => $page
+            ->where('lists.data.0.previewCovers.0', $albums[4]->cover_url)
         );
 });
 

@@ -17,7 +17,7 @@ class HomeController extends Controller
 
         $lists = $user->albumLists()
             ->withCount('albums')
-            ->with(['albums' => fn ($q) => $q->orderBy('position')->limit(4)])
+            ->with('previewAlbums')
             ->orderByRaw("CASE WHEN type IN ('system', 'reviewed') THEN 0 ELSE 1 END")
             ->orderBy('title')
             ->get();
@@ -43,7 +43,7 @@ class HomeController extends Controller
                 'slug' => $list->slug,
                 'type' => $list->type,
                 'albumsCount' => $list->albums_count ?? 0,
-                'previewCovers' => $list->albums->pluck('cover_url')->values()->all(),
+                'previewCovers' => $list->previewAlbums->pluck('cover_url')->values()->all(),
                 'url' => route('lists.show', ['listSlug' => $list->slug]),
             ])->values(),
         ]);
