@@ -32,6 +32,25 @@ test('login page renders the application name', function () {
         ->toContain('Your music, finally filed.');
 });
 
+test('login page sells what Circles does, not just that it exists', function () {
+    $content = file_get_contents(resource_path('js/Pages/Auth/Login.tsx'));
+
+    expect($content)
+        ->toContain('Rate them in half stars')
+        ->toContain('private Spotify')
+        ->toContain('Half-star ratings')
+        ->toContain('Share links');
+});
+
+test('login page stacks instead of splitting on mobile', function () {
+    $content = file_get_contents(resource_path('js/Pages/Auth/Login.tsx'));
+
+    expect($content)
+        ->toContain('useIsMobile')
+        ->toContain("width: isMobile ? '100%' : 'min(56%, 660px)'")
+        ->toContain("minHeight: isMobile ? '100dvh' : undefined");
+});
+
 test('login page uses the dark archive theme', function () {
     $content = file_get_contents(resource_path('js/Pages/Auth/Login.tsx'));
 
