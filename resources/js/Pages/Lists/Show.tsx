@@ -40,6 +40,7 @@ import {
     Play,
     Plus,
     RefreshCw,
+    Share2,
     Star,
     StickyNote,
     Trash2,
@@ -64,6 +65,7 @@ import MoveAlbumDialog, { MoveTarget } from './MoveAlbumDialog';
 import NoteDialog, { type NoteDialogAlbum } from './NoteDialog';
 import RatingDialog, { type RatingDialogAlbum } from './RatingDialog';
 import RemoveAlbumDialog from './RemoveAlbumDialog';
+import ShareListDialog from './ShareListDialog';
 
 type ListType = 'system' | 'custom' | 'reviewed';
 type ListMode = 'default' | 'listening';
@@ -77,6 +79,8 @@ interface AlbumListDetail {
     albumsCount: number;
     totalTracks: number;
     totalRuntimeMs: number;
+    isShared: boolean;
+    shareUrl: string | null;
 }
 
 interface AlbumItem {
@@ -1392,6 +1396,7 @@ export default function Show({ list, albums, sort, direction }: ShowProps) {
     const [addAlbumDialogOpen, setAddAlbumDialogOpen] = useState(false);
     const [editDialogOpen, setEditDialogOpen] = useState(false);
     const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+    const [shareDialogOpen, setShareDialogOpen] = useState(false);
     const [activeAlbum, setActiveAlbum] = useState<AlbumItem | null>(null);
     const [albumToReview, setAlbumToReview] = useState<RatingDialogAlbum | null>(null);
     const [ratingDialogOpen, setRatingDialogOpen] = useState(false);
@@ -1845,6 +1850,15 @@ export default function Show({ list, albums, sort, direction }: ShowProps) {
                                     Edit
                                 </Button>
                             )}
+                            <Button
+                                variant="secondary"
+                                icon={Share2}
+                                onClick={() => setShareDialogOpen(true)}
+                                id="share-list-button"
+                                style={isMobile ? { minHeight: 46 } : undefined}
+                            >
+                                {list.isShared ? 'Shared' : 'Share'}
+                            </Button>
                             {list.type === 'custom' && (
                                 <Button
                                     variant="ghost"
@@ -2215,6 +2229,14 @@ export default function Show({ list, albums, sort, direction }: ShowProps) {
                 listId={list.id}
                 open={deleteDialogOpen}
                 onOpenChange={setDeleteDialogOpen}
+            />
+
+            <ShareListDialog
+                listId={list.id}
+                isShared={list.isShared}
+                shareUrl={list.shareUrl}
+                open={shareDialogOpen}
+                onOpenChange={setShareDialogOpen}
             />
 
             <EditListDialog

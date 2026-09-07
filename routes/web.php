@@ -3,11 +3,13 @@
 use App\Http\Controllers\AlbumListAlbumController;
 use App\Http\Controllers\AlbumListController;
 use App\Http\Controllers\AlbumListMembershipController;
+use App\Http\Controllers\AlbumListShareController;
 use App\Http\Controllers\AlbumReviewController;
 use App\Http\Controllers\Auth\DevLoginController;
 use App\Http\Controllers\Auth\SpotifyAuthController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\SettingsController;
+use App\Http\Controllers\SharedAlbumListController;
 use App\Http\Controllers\SpotifySearchController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
@@ -26,6 +28,11 @@ Route::middleware('guest')->group(function (): void {
 
 Route::get('/auth/spotify/callback', [SpotifyAuthController::class, 'callback'])->name('spotify.callback');
 
+/** Open to everyone, account or not. Reaches exactly one list and nothing around it. */
+Route::get('/shared/{shareHash}', SharedAlbumListController::class)
+    ->where('shareHash', '[A-Za-z0-9]+')
+    ->name('lists.shared');
+
 Route::middleware('auth')->group(function (): void {
     Route::post('/logout', [SpotifyAuthController::class, 'logout'])->name('logout');
     Route::get('/auth/spotify/reconnect', [SpotifyAuthController::class, 'reconnect'])->name('spotify.reconnect');
@@ -38,6 +45,8 @@ Route::middleware('auth')->group(function (): void {
         ->where('listSlug', '[a-z0-9-]+')
         ->name('lists.show');
     Route::post('/lists/{albumList:id}/refresh', [AlbumListController::class, 'refresh'])->name('lists.refresh');
+    Route::post('/lists/{albumList:id}/share', [AlbumListShareController::class, 'store'])->name('lists.share.store');
+    Route::delete('/lists/{albumList:id}/share', [AlbumListShareController::class, 'destroy'])->name('lists.share.destroy');
     Route::patch('/lists/{albumList:id}/sort', [AlbumListController::class, 'updateSort'])->name('lists.sort.update');
     Route::put('/lists/{albumList:id}', [AlbumListController::class, 'update'])->name('lists.update');
     Route::delete('/lists/{albumList:id}', [AlbumListController::class, 'destroy'])->name('lists.destroy');

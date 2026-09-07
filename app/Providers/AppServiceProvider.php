@@ -34,6 +34,7 @@ class AppServiceProvider extends ServiceProvider
         Auth::setRememberDuration(60 * 24 * 30); // 30 days
 
         $this->bindListSlug();
+        $this->bindShareHash();
     }
 
     private function bindListSlug(): void
@@ -63,5 +64,17 @@ class AppServiceProvider extends ServiceProvider
 
             abort(404);
         });
+    }
+
+    /**
+     * Share links resolve for anyone, account or not, but only while the list
+     * is actually shared. An unshared list is a 404 until it is shared again.
+     */
+    private function bindShareHash(): void
+    {
+        Route::bind('shareHash', fn (string $hash): AlbumList => AlbumList::query()
+            ->where('share_hash', $hash)
+            ->whereNotNull('shared_at')
+            ->firstOrFail());
     }
 }
