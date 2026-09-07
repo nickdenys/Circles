@@ -1,4 +1,4 @@
-import { Link, usePage } from '@inertiajs/react';
+import { Head, Link, usePage } from '@inertiajs/react';
 import {
     ArrowUpRight,
     CheckCircle,
@@ -247,6 +247,7 @@ export default function Home() {
 
     return (
         <>
+            <Head title="Your library" />
             <TopBar crumbs={['Library', 'Home']} />
             <div
                 style={{

@@ -9,7 +9,11 @@ interface PageModule {
     };
 }
 
+const appName = import.meta.env.VITE_APP_NAME || 'Circles';
+
 createInertiaApp({
+    /** Mirrors the brand suffix Blade prints on the first load. */
+    title: (title) => (title ? `${title} | ${appName}` : appName),
     resolve: (name) => {
         const pages = import.meta.glob('./Pages/**/*.tsx', { eager: true });
         const page = pages[`./Pages/${name}.tsx`] as PageModule;

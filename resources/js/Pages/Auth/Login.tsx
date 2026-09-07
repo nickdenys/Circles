@@ -1,8 +1,9 @@
-import { Link, usePage } from '@inertiajs/react';
+import { Head, Link, usePage } from '@inertiajs/react';
 import { FlaskConical, ShieldCheck } from 'lucide-react';
 import { Label } from '@/components/kit/Label';
 import { Logomark } from '@/components/kit/Logomark';
 import { PlaceholderCover } from '@/components/kit/PlaceholderCover';
+import { useIsMobile } from '@/hooks/use-is-mobile';
 
 interface LoginProps {
     appName: string;
@@ -63,31 +64,37 @@ function Corner({ position }: { position: 'tl' | 'tr' | 'bl' | 'br' }) {
 
 export default function Login() {
     const { appName, devLoginUrl, flash } = usePage<LoginProps>().props;
+    const isMobile = useIsMobile();
 
     return (
         <div
             data-theme="dark"
             style={{
                 position: 'relative',
-                height: '100vh',
-                width: '100vw',
+                height: isMobile ? undefined : '100vh',
+                minHeight: isMobile ? '100dvh' : undefined,
+                width: '100%',
                 overflow: 'hidden',
                 background: 'var(--warm-950)',
                 color: 'var(--warm-25)',
                 fontFamily: 'var(--font-sans)',
             }}
         >
+            <Head title="Album lists, ratings and notes for Spotify" />
+
             {/* Album cover wall — bleeds past the right edge. */}
             <div
                 aria-hidden="true"
                 style={{
                     position: 'absolute',
                     top: -24,
-                    bottom: -24,
+                    bottom: isMobile ? undefined : -24,
                     right: -12,
-                    width: '58%',
+                    left: isMobile ? -12 : undefined,
+                    height: isMobile ? '46%' : undefined,
+                    width: isMobile ? undefined : '58%',
                     display: 'grid',
-                    gridTemplateColumns: 'repeat(4, 1fr)',
+                    gridTemplateColumns: isMobile ? 'repeat(6, 1fr)' : 'repeat(4, 1fr)',
                     gridAutoRows: '1fr',
                     gap: 12,
                 }}
@@ -106,8 +113,9 @@ export default function Login() {
                     position: 'absolute',
                     inset: 0,
                     pointerEvents: 'none',
-                    background:
-                        'linear-gradient(90deg, var(--warm-950) 0%, var(--warm-950) 38%, rgba(14,12,9,0.88) 48%, rgba(14,12,9,0.32) 62%, rgba(14,12,9,0) 78%)',
+                    background: isMobile
+                        ? 'linear-gradient(180deg, rgba(14,12,9,0.80) 0%, rgba(14,12,9,0.62) 14%, rgba(14,12,9,0.90) 30%, var(--warm-950) 46%, var(--warm-950) 100%)'
+                        : 'linear-gradient(90deg, var(--warm-950) 0%, var(--warm-950) 38%, rgba(14,12,9,0.88) 48%, rgba(14,12,9,0.32) 62%, rgba(14,12,9,0) 78%)',
                 }}
             />
             <div
@@ -128,9 +136,10 @@ export default function Login() {
             {/* Brand row */}
             <div
                 style={{
-                    position: 'absolute',
-                    top: 'clamp(36px, 4.4vw, 60px)',
-                    left: 'clamp(36px, 4.4vw, 64px)',
+                    position: isMobile ? 'relative' : 'absolute',
+                    top: isMobile ? undefined : 'clamp(36px, 4.4vw, 60px)',
+                    left: isMobile ? undefined : 'clamp(36px, 4.4vw, 64px)',
+                    padding: isMobile ? '26px 24px 0' : undefined,
                     display: 'flex',
                     alignItems: 'center',
                     gap: 9,
@@ -168,12 +177,14 @@ export default function Login() {
                 style={{
                     position: 'relative',
                     zIndex: 3,
-                    height: '100%',
+                    height: isMobile ? undefined : '100%',
                     display: 'flex',
                     flexDirection: 'column',
                     justifyContent: 'center',
-                    padding: 'clamp(36px, 4.4vw, 60px) clamp(36px, 4.4vw, 64px)',
-                    width: 'min(56%, 660px)',
+                    padding: isMobile
+                        ? '34vh 24px calc(52px + env(safe-area-inset-bottom))'
+                        : 'clamp(36px, 4.4vw, 60px) clamp(36px, 4.4vw, 64px)',
+                    width: isMobile ? '100%' : 'min(56%, 660px)',
                     boxSizing: 'border-box',
                 }}
             >
@@ -213,7 +224,8 @@ export default function Login() {
                         maxWidth: '42ch',
                     }}
                 >
-                    Group the albums you love into lists that actually make sense. Log in with Spotify, that's the only way in.
+                    Group the albums you love into lists that actually make sense. Rate them in half stars,
+                    keep a note on every record, and turn any list into a private Spotify playlist.
                 </p>
 
                 {flash?.error && (
@@ -349,6 +361,18 @@ export default function Login() {
                     <ShieldCheck size={15} strokeWidth={2} />
                     <span>We never post to your account. Read-only by default.</span>
                 </div>
+
+                <Label
+                    style={{
+                        display: 'block',
+                        marginTop: 18,
+                        fontSize: 10,
+                        color: 'var(--warm-400)',
+                        lineHeight: 1.9,
+                    }}
+                >
+                    Lists · Half-star ratings · Album notes · Spotify search · Playlists · Share links · MCP
+                </Label>
             </div>
         </div>
     );

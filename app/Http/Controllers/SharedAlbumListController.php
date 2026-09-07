@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Http\Controllers\Concerns\ResolvesListAlbums;
 use App\Models\AlbumList;
 use App\Models\AlbumReview;
+use App\Support\PageMeta;
 use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
@@ -61,9 +62,26 @@ class SharedAlbumListController extends Controller
                         : null,
                 ]);
             }),
+        ])->withViewData([
+            'meta' => PageMeta::sharedList(
+                $albumList,
+                $albumList->albums_count,
+                $this->previewCoverUrl($albumList),
+            ),
         ]);
 
         return $page->toResponse($request)->header('X-Robots-Tag', 'noindex, nofollow');
+    }
+
+    /**
+     * The newest cover in the list, used as the preview image when the link is
+     * pasted somewhere that unfurls it.
+     */
+    private function previewCoverUrl(AlbumList $albumList): ?string
+    {
+        return $albumList->previewAlbums()
+            ->whereNotNull('cover_url')
+            ->value('cover_url');
     }
 
     /**

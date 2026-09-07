@@ -354,7 +354,7 @@ export default function Shared({ list, albums }: SharedProps) {
 
     return (
         <>
-            <Head title={`${list.title} — shared list`} />
+            <Head title={list.title} />
 
             <div
                 style={{

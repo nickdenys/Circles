@@ -1,0 +1,39 @@
+{
+    "name": "Circles",
+    "short_name": "Circles",
+    "description": "Album lists, ratings and notes for Spotify. Circles files the albums you love into lists that make sense.",
+    "id": "/",
+    "start_url": "/",
+    "scope": "/",
+    "display": "standalone",
+    "orientation": "any",
+    "background_color": "#0E0C09",
+    "theme_color": "#0E0C09",
+    "categories": ["music", "productivity", "lifestyle"],
+    "icons": [
+        {
+            "src": "/favicon.svg",
+            "sizes": "any",
+            "type": "image/svg+xml",
+            "purpose": "any"
+        },
+        {
+            "src": "/favicon-192.png",
+            "sizes": "192x192",
+            "type": "image/png",
+            "purpose": "any"
+        },
+        {
+            "src": "/favicon-512.png",
+            "sizes": "512x512",
+            "type": "image/png",
+            "purpose": "any"
+        },
+        {
+            "src": "/apple-touch-icon.png",
+            "sizes": "180x180",
+            "type": "image/png",
+            "purpose": "any"
+        }
+    ]
+}
