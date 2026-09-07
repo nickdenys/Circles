@@ -22,8 +22,15 @@ test('layout includes inline data-theme initialization script', function () {
     $this->actingAs(User::factory()->create())
         ->get(route('home'))
         ->assertSuccessful()
-        ->assertSee("localStorage.getItem('theme')", false)
-        ->assertSee('prefers-color-scheme: dark', false);
+        ->assertSee("localStorage.getItem('theme')", false);
+});
+
+test('layout defaults to the light theme and ignores the system preference', function () {
+    $this->actingAs(User::factory()->create())
+        ->get(route('home'))
+        ->assertSuccessful()
+        ->assertSee("var theme = stored === 'dark' ? 'dark' : 'light';", false)
+        ->assertDontSee('prefers-color-scheme', false);
 });
 
 test('theme module updates the data-theme attribute', function () {

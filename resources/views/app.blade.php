@@ -34,8 +34,7 @@
         <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
         <link rel="manifest" href="/site.webmanifest">
         <meta name="apple-mobile-web-app-title" content="{{ PageMeta::siteName() }}">
-        <meta name="theme-color" media="(prefers-color-scheme: light)" content="#FBFAF7">
-        <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#0E0C09">
+        <meta name="theme-color" content="#FBFAF7">
 
         @if($meta->structuredData)
             <script type="application/ld+json">{!! json_encode($meta->structuredData, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) !!}</script>
@@ -44,8 +43,7 @@
         <script>
             (function () {
                 var stored = localStorage.getItem('theme');
-                var prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-                var theme = stored || (prefersDark ? 'dark' : 'light');
+                var theme = stored === 'dark' ? 'dark' : 'light';
                 document.documentElement.setAttribute('data-theme', theme);
             })();
         </script>
