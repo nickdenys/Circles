@@ -2,18 +2,16 @@
 
 namespace App\Http\Controllers;
 
-use App\Enums\AlbumSort;
+use App\Http\Controllers\Concerns\ResolvesListAlbums;
 use App\Http\Requests\DestroyAlbumListRequest;
 use App\Http\Requests\StoreAlbumListRequest;
 use App\Http\Requests\UpdateAlbumListRequest;
 use App\Http\Requests\UpdateAlbumListSortRequest;
 use App\Jobs\FetchAlbumGenres;
 use App\Models\AlbumList;
-use App\Models\AlbumListAlbum;
 use App\Models\AlbumListSlugHistory;
 use App\Services\SpotifyService;
 use App\Support\AlbumListSlugger;
-use Illuminate\Contracts\Pagination\Paginator;
 use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -23,6 +21,8 @@ use Inertia\Response;
 
 class AlbumListController extends Controller
 {
+    use ResolvesListAlbums;
+
     /**
      * Display the lists overview page.
      */
@@ -123,12 +123,7 @@ class AlbumListController extends Controller
 
         $albumList->loadCount('albums');
 
-        $sort = AlbumSort::coerce($albumList->sort);
-        $direction = $albumList->direction === 'desc' ? 'desc' : 'asc';
-
-        if ($sort->requiresReviews() && ! $albumList->isReviewed()) {
-            $sort = AlbumSort::Manual;
-        }
+        [$sort, $direction] = $this->resolveSort($albumList);
 
         if ($request->wantsJson()) {
             $albums = $this->sortedAlbums($albumList, $sort, $direction);
@@ -154,12 +149,6 @@ class AlbumListController extends Controller
             ]);
         }
 
-        $totals = AlbumListAlbum::query()
-            ->join('albums', 'albums.id', '=', 'album_album_list.album_id')
-            ->where('album_album_list.album_list_id', $albumList->id)
-            ->selectRaw('COALESCE(SUM(albums.total_tracks), 0) as total_tracks, COALESCE(SUM(albums.runtime_ms), 0) as runtime_ms')
-            ->first();
-
         return Inertia::render('Lists/Show', [
             'list' => [
                 'id' => $albumList->id,
@@ -168,8 +157,9 @@ class AlbumListController extends Controller
                 'type' => $albumList->type,
                 'mode' => $albumList->mode->value,
                 'albumsCount' => $albumList->albums_count,
-                'totalTracks' => (int) $totals->total_tracks,
-                'totalRuntimeMs' => (int) $totals->runtime_ms,
+                'isShared' => $albumList->isShared(),
+                'shareUrl' => $albumList->shareUrl(),
+                ...$this->listTotals($albumList),
             ],
             'sort' => $sort->value,
             'direction' => $direction,
@@ -204,18 +194,6 @@ class AlbumListController extends Controller
         $albumList->update($request->validated());
 
         return to_route('lists.show', ['listSlug' => $albumList->slug]);
-    }
-
-    /**
-     * Paginate a list's albums with the list's stored sort applied.
-     */
-    private function sortedAlbums(AlbumList $albumList, AlbumSort $sort, string $direction): Paginator
-    {
-        $query = $albumList->albums();
-
-        $sort->applyTo($query, $direction, $albumList->user_id);
-
-        return $query->simplePaginate(20);
     }
 
     /**

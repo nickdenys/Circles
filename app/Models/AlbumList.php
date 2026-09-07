@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Str;
 
 class AlbumList extends Model
 {
@@ -36,6 +37,8 @@ class AlbumList extends Model
         'mode',
         'sort',
         'direction',
+        'share_hash',
+        'shared_at',
     ];
 
     /**
@@ -47,6 +50,7 @@ class AlbumList extends Model
     {
         return [
             'mode' => AlbumListMode::class,
+            'shared_at' => 'datetime',
         ];
     }
 
@@ -81,6 +85,47 @@ class AlbumList extends Model
     public function isLocked(): bool
     {
         return $this->isSystem() || $this->isReviewed();
+    }
+
+    /**
+     * Determine if the list is reachable through its public share link.
+     */
+    public function isShared(): bool
+    {
+        return $this->shared_at !== null;
+    }
+
+    /**
+     * Open the list up to anyone holding its share link.
+     *
+     * The hash is minted once and kept for the lifetime of the list, so a link
+     * that has been handed out keeps working even if sharing is switched off
+     * and on again.
+     */
+    public function share(): void
+    {
+        $this->forceFill([
+            'share_hash' => $this->share_hash ?? Str::random(32),
+            'shared_at' => $this->shared_at ?? now(),
+        ])->save();
+    }
+
+    /**
+     * Withdraw the list from public view, keeping its hash for a later re-share.
+     */
+    public function unshare(): void
+    {
+        $this->forceFill(['shared_at' => null])->save();
+    }
+
+    /**
+     * The public share link, once the list has a hash to build it from.
+     */
+    public function shareUrl(): ?string
+    {
+        return $this->share_hash
+            ? route('lists.shared', ['shareHash' => $this->share_hash])
+            : null;
     }
 
     /**
