@@ -113,6 +113,43 @@ test('update route redirects to list show page on success', function () {
         ->description->toBe('New description');
 });
 
+test('update route redirects with a 303 so XHR clients follow it as a GET', function () {
+    $user = User::factory()->create();
+    $list = AlbumList::factory()->for($user)->create([
+        'title' => 'Original Title',
+    ]);
+
+    $this->actingAs($user)
+        ->put(route('lists.update', $list), [
+            'title' => 'Original Title',
+            'description' => 'New description',
+        ])
+        ->assertStatus(303);
+});
+
+test('the slug url has no route that answers a repeated PUT', function () {
+    $user = User::factory()->create();
+    $list = AlbumList::factory()->for($user)->create([
+        'title' => 'Original Title',
+    ]);
+
+    $this->actingAs($user)
+        ->put('/lists/'.$list->slug, [
+            'title' => 'Original Title',
+            'description' => 'New description',
+        ])
+        ->assertNotFound();
+});
+
+test('edit list dialog reports success and failure with a toast', function () {
+    $content = file_get_contents(resource_path('js/Pages/Lists/EditListDialog.tsx'));
+
+    expect($content)
+        ->toContain("from 'sonner'")
+        ->toContain('toast.success')
+        ->toContain('toast.error');
+});
+
 test('edit button is available for every list', function () {
     $content = file_get_contents(resource_path('js/Pages/Lists/Show.tsx'));
 

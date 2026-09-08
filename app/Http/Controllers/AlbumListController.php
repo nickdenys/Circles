@@ -304,6 +304,10 @@ class AlbumListController extends Controller
 
     /**
      * Update the specified custom list.
+     *
+     * The redirect uses 303 See Other so browsers re-issue the follow-up
+     * request as a GET. A plain 302 makes them repeat the PUT against the
+     * slug URL, which has no matching route.
      */
     public function update(UpdateAlbumListRequest $request, AlbumList $albumList, AlbumListSlugger $slugger): RedirectResponse
     {
@@ -347,7 +351,7 @@ class AlbumListController extends Controller
             $slugger->purgeHistoryFor($user, $newSlug);
         }
 
-        return redirect()->route('lists.show', ['listSlug' => $albumList->slug]);
+        return redirect()->route('lists.show', ['listSlug' => $albumList->slug], 303);
     }
 
     /**
