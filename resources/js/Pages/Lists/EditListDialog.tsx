@@ -2,6 +2,7 @@ import { router } from '@inertiajs/react';
 import axios, { AxiosError } from 'axios';
 import { Check, Loader2 } from 'lucide-react';
 import { FormEvent, useEffect, useState } from 'react';
+import { toast } from 'sonner';
 
 import { Button } from '@/components/kit/Button';
 import { CardModal } from '@/components/kit/CardModal';
@@ -49,6 +50,7 @@ export default function EditListDialog({
                 force_slug: force,
             })
             .then(() => {
+                toast.success('List updated.');
                 onOpenChange(false);
                 router.reload();
             })
@@ -68,6 +70,10 @@ export default function EditListDialog({
                     mapped[k] = Array.isArray(v) ? v[0] : String(v);
                 });
                 setErrors(mapped);
+
+                if (Object.keys(mapped).length === 0) {
+                    toast.error('Could not save this list. Please try again.');
+                }
             })
             .finally(() => setProcessing(false));
     }
